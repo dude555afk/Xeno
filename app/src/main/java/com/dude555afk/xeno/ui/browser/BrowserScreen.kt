@@ -2,11 +2,8 @@ package com.dude555afk.xeno.ui.browser
 
 import android.view.ViewGroup
 import android.webkit.WebView
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,10 +12,10 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -28,8 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
 import com.dude555afk.xeno.ui.spaces.SpacesBar
@@ -41,9 +38,9 @@ import com.dude555afk.xeno.ui.theme.PillShape
 /**
  * The browser screen.
  *
- * Chrome hides on scroll — that's rule 3 from docs/DESIGN.md, and it's what
- * makes the content feel like the app rather than the page feeling like a
- * document inside a shell.
+ * Chrome hides on scroll — rule 3 from docs/DESIGN.md, and it's what makes the
+ * content feel like the app rather than the page feeling like a document
+ * inside a shell.
  */
 @Composable
 fun BrowserScreen(
@@ -51,24 +48,22 @@ fun BrowserScreen(
     viewModel: BrowserViewModel,
     accent: Color
 ) {
-    val context = LocalContext.current
-
     Box(Modifier.fillMaxSize().background(Color.Black)) {
 
-        // The page.
+        // The page. The factory returns a container so the session pool can do
+        // the actual WebView ownership — reusing a view across recompositions
+        // is the whole point.
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                WebView(ctx).apply {
+                val container = android.widget.FrameLayout(ctx).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                }.also { web ->
-                    val host = web.parent as? ViewGroup
-                    if (host != null) viewModel.attachHost(host) else viewModel.attachHost(web.parent as ViewGroup)
                 }
+                container.post { viewModel.attachHost(container) }
+                container
             }
         )
 
@@ -82,7 +77,7 @@ fun BrowserScreen(
 
         // Tab stack — top right.
         IconButton(
-            onClick = { viewModel.toggleTabStack() },
+            onClick = viewModel::toggleTabStack,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = Dimens.spaceM, end = Dimens.spaceM)
         ) {
             Icon(
@@ -92,7 +87,7 @@ fun BrowserScreen(
             )
         }
 
-        // The floating bar — back, search field, summarize.
+        // The floating bar.
         FloatingBar(
             loadProgress = state.load.progress,
             loading = state.load.loading,
@@ -105,7 +100,6 @@ fun BrowserScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        // Overlays
         CommandPalette(
             visible = state.paletteVisible,
             query = state.query,
@@ -162,9 +156,7 @@ fun BrowserScreen(
 }
 
 /**
- * The floating bar. A pill that holds back, address field and summarize.
- *
- * Scales up subtly when tapped — cheap, and it makes the bar feel physical.
+ * The floating bar — back, address field, summarize. A pill, like everything.
  */
 @Composable
 private fun FloatingBar(
@@ -178,18 +170,11 @@ private fun FloatingBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(160), label = "barScale"
-    )
-
     Column(modifier = modifier.padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceL)) {
         Surface(
             shape = PillShape,
             color = Color(0xF20A0A0A),
-            modifier = Modifier
-                .fillMaxWidth()
-                .scale(scale)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column {
                 Row(
@@ -227,7 +212,7 @@ private fun FloatingBar(
                             text = query.ifBlank { "Search or ask anything" },
                             color = if (query.isBlank()) Color.White.copy(alpha = 0.4f)
                             else Color.White.copy(alpha = 0.9f),
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1
                         )
                     }

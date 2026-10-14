@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
 import com.dude555afk.xeno.core.blocking.FilterListEngine
+import com.dude555afk.xeno.core.blocking.HostsList
 import com.dude555afk.xeno.core.engine.SessionListener
 import com.dude555afk.xeno.core.engine.SessionPool
 import com.dude555afk.xeno.core.engine.XenoAssetLoader
@@ -14,7 +15,12 @@ import com.dude555afk.xeno.core.engine.XenoWebViewClient
 import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.SearchEngine
-import com.dude555afk.xeno.core.model.*
+import com.dude555afk.xeno.core.blocking.ResourceType
+import com.dude555afk.xeno.core.model.Space
+import com.dude555afk.xeno.core.model.Tab
+import com.dude555afk.xeno.core.model.AnswerResult
+import com.dude555afk.xeno.core.model.PageLoadState
+import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.SettingsStore
 import com.dude555afk.xeno.core.storage.SpaceEntity
@@ -24,11 +30,13 @@ import com.dude555afk.xeno.core.storage.XenoDatabase
 import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.core.summarize.Summarizer
 import com.dude555afk.xeno.core.summarize.SummaryOutcome
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Browser UI state — every overlay surface lives here. */
 data class BrowserUiState(
@@ -76,7 +84,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = AnswerEngine(SearchEngine(app), fetcher, ai)
 
     private val _state = MutableStateFlow(
-        BrowserUiState(blockingEnabled = settings.blockingEnabled, hasApiKey = settings.hasApiKey)
+        BrowserUiState(
+            blockingEnabled = settings.blockingEnabled,
+            hasApiKey = settings.hasApiKey
+        )
     )
     val state: StateFlow<BrowserUiState> = _state.asStateFlow()
 
@@ -84,11 +95,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var summaryJob: Job? = null
 
     init {
+        // Bundled host list first so blocking works before any network call.
+        viewModelScope.launch(Dispatchers.Default) { filters.load(HostsList.rules) }
+
         viewModelScope.launch {
             if (db.spaceDao().count() == 0) {
                 val seed = defaultSpace()
                 db.spaceDao().insert(
-                    SpaceEntity(name = seed.name, accentArgb = seed.accent.value.toLong().toInt())
+                    SpaceEntity(
+                        name = seed.name,
+                        accentArgb = seed.accent.toArgb()
+                    )
                 )
             }
             db.tabDao().deletePeekTabs()
@@ -169,6 +186,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun toggleTabStack() {
+        _state.value = _state.value.copy(tabStackVisible = !_state.value.tabStackVisible)
+    }
+
+    /** Called from the Activity. See [SessionPool.onTrimMemory]. */
+    fun trimMemory(level: Int) = pool.onTrimMemory(level)
+
     // MARK: palette
 
     fun openPalette() {
@@ -237,8 +261,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (q.isEmpty()) return
 
         val url = when {
-            q.startsWith("http://") || q.startsWith("https://") ->
- q
+            q.startsWith("http://") || q.startsWith("https://") -> q
             q.matches(Regex("^[\\w.-]+\\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) -> "https://$q"
             else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
         }
@@ -269,7 +292,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         summaryJob = viewModelScope.launch {
-            val existing = pool.peek("tab-${tab.id}")
+            val existing = pool.peek(SESSION_KEY)
             val content = if (existing != null) {
                 injector.extract(existing, tab.url)
             } else {
@@ -313,7 +336,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * Bind the WebView host. Called once from the composable.
      *
      * The session lives under a stable key so re-composition reuses the same
-     * view instead of allocating a fresh 200 MB engine.
+     * view instead of allocating a fresh ~200 MB engine.
      */
     fun attachHost(host: ViewGroup) {
         val view = pool.acquire(SESSION_KEY, host)
@@ -326,7 +349,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     filters.shouldBlock(
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
-                        type = com.dude555afk.xeno.core.blocking.ResourceType.fromRequest(request),
+                        type = ResourceType.fromRequest(request),
                         thirdParty = true
                     )
                 }.getOrDefault(false)
@@ -383,17 +406,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
     }
 
-    fun loadFilterLists(context: android.content.Context, enabledIds: Set<String>) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            com.dude555afk.xeno.core.blocking.FilterListSources.defaults
-                .filter { it.id in enabledIds }
-                .forEach { spec ->
+    /**
+     * Pulls the real uBO lists from the network and merges them in.
+     *
+     * Best-effort: on failure we keep the bundled host list, which is why the
+     * first-run experience never depends on the network at all.
+     */
+    fun refreshFilterLists() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                com.dude555afk.xeno.core.blocking.FilterListSources.remote.forEach { spec ->
                     runCatching {
-                        context.assets.open(spec.assetName).bufferedReader().use { reader ->
-                            filters.load(reader.readText())
-                        }
+                        val text = java.net.URL(spec.url).readText()
+                        filters.load(text)
                     }
                 }
+            }
         }
     }
 
