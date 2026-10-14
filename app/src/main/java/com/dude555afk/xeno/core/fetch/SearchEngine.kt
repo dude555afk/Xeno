@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.core.fetch
 
+import android.content.Context
 import android.webkit.WebView
 import com.dude555afk.xeno.core.model.SearchHit
 import kotlinx.coroutines.Dispatchers
@@ -7,6 +8,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
@@ -16,18 +19,18 @@ import kotlin.coroutines.resume
 /**
  * Scrapes search results by loading a search engine in a real WebView.
  *
- * This is the trick that makes anonymous search work on Android. An `http.get()`
- * gets a 403 or a JS challenge; a real WebView has real headers, real JS
- * execution and real TLS fingerprinting, so it sails through. We already ship a
- * WebView, so the cost of using it as the scraper is roughly zero.
+ * This is the trick that makes anonymous search work on Android. A plain
+ * `http.get()` gets a 403 or a JS challenge; a real WebView has real headers,
+ * real JS execution and a real TLS fingerprint, so it sails through. We already
+ * ship a WebView, so using it as the scraper costs us roughly nothing.
  *
  * The JS targets several selectors at once because engines change their DOM
  * without warning. If every pattern misses, the caller moves to the next
  * engine in [engines].
  */
-class SearchEngine(
+class SearchEngine(private val context: Context) {
+
     private val json: Json = Json { ignoreUnknownKeys = true }
-) {
 
     data class Engine(
         val name: String,
@@ -35,10 +38,7 @@ class SearchEngine(
         val extractScript: String
     )
 
-    /**
-     * Engines in priority order. More entries here is the cheapest possible
-     * insurance against a selector change nuking the flagship feature.
-     */
+    /** Engines in priority order. More entries is cheap insurance. */
     val engines = listOf(
         Engine(
             name = "DuckDuckGo",
@@ -56,59 +56,42 @@ class SearchEngine(
             extractScript = SCRAPE_GENERIC
         ),
         Engine(
-            name = "SearxNG",
+            name = "SearXNG",
             urlFor = { q -> "https://searx.be/search?q=" + q.urlEncoded() },
             extractScript = SCRAPE_GENERIC
         )
     )
 
-    /**
-     * Try each engine in turn until one yields usable hits.
-     *
-     * @return the hits, or empty if every engine failed.
-     */
+    /** Try each engine in turn until one yields usable hits. */
     suspend fun search(query: String, limit: Int = 8): List<SearchHit> =
         withContext(Dispatchers.Main) {
             for (engine in engines) {
-                val view = WebView(context).apply {
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    settings.blockNetworkImage = true
-                    settings.loadsImagesAutomatically = false
-                }
-
+                val view = createWebView()
                 val hits = try {
-                    scrape(
-                        engine = engine,
-                        webView = view,
-                        query = query,
-                        limit = limit,
-                        timeoutMs = ENGINE_TIMEOUT_MS
-                    )
+                    scrape(engine, view, query, limit)
                 } finally {
                     runCatching { view.destroy() }
                 }
-
                 val clean = hits.filter { it.url.startsWith("http") }
                 if (clean.isNotEmpty()) return@withContext clean
             }
             emptyList()
         }
 
-    private var context: android.content.Context? = null
-
-    fun attach(context: android.content.Context) {
-        this.context = context
+    private fun createWebView(): WebView = WebView(context).apply {
+ settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        settings.blockNetworkImage = true
+        settings.loadsImagesAutomatically = false
     }
 
     private suspend fun scrape(
         engine: Engine,
         webView: WebView,
         query: String,
-        limit: Int,
-        timeoutMs: Long
+        limit: Int
     ): List<SearchHit> {
-        val loaded = withTimeoutOrNull(timeoutMs) {
+        val loaded = withTimeoutOrNull(ENGINE_TIMEOUT_MS) {
             suspendCancellableCoroutine<Unit> { cont ->
                 var resumed = false
                 fun once() { if (!resumed) { resumed = true; if (cont.isActive) cont.resume(Unit) } }
@@ -124,14 +107,15 @@ class SearchEngine(
         }
         if (loaded == null) return emptyList()
 
-        // Results render client-side; give it a beat, then scrape twice and take
-        // whichever pass found more.
+        // Results render client-side, so scrape twice and keep the bigger set.
         var best: List<SearchHit> = emptyList()
-        repeat(2) { attempt ->
-            delay(if (attempt == 0) 700 else 1_200)
-            val raw = eval(webView, engine.extractScript)
-            val parsed = parseHits(raw, limit)
-            if (parsed.size > best.size) best = parsed
+        delay(700)
+        parseHits(eval(webView, engine.extractScript), limit).let {
+            if (it.size > best.size) best = it
+        }
+        delay(1_200)
+        parseHits(eval(webView, engine.extractScript), limit).let {
+            if (it.size > best.size) best = it
         }
         return best
     }
@@ -168,10 +152,7 @@ class SearchEngine(
     companion object {
         private const val ENGINE_TIMEOUT_MS = 15_000L
 
-        /**
-         * DDG's result containers. `data-testid` is the stable one; the
-         * `.result__a` class is the fallback for older layouts.
-         */
+        /** DDG's result containers. `data-testid` is the stable one. */
         private val SCRAPE_DDG = """
             (function(){
               var out = [];
@@ -205,7 +186,7 @@ class SearchEngine(
             })()
         """.trimIndent()
 
-        /** Generic fallback — grabs any plausible external link in a result list. */
+        /** Generic fallback for anything with a plausible result list. */
         private val SCRAPE_GENERIC = """
             (function(){
               var out = [];
