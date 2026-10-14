@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Back up our own data, no Google Backup of the BYOK key. -->
+<full-backup-content>
+    <include domain="sharedpref" path="xeno_prefs.xml" />
+    <exclude domain="sharedpref" path="ai_provider.xml" />
+</full-backup-content>

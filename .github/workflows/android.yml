@@ -1,0 +1,12 @@
+# Xeno
+
+Lightweight AI-powered browser for Android.
+
+Staged automatic deployment flow:
+
+1. **Push to `main`** → this workflow builds a debug APK and uploads it as an artifact.
+2. **Push a tag `vX.Y.Z`** → this workflow builds a release APK and publishes it to the
+   GitHub release as a prerelease (tagged `-alpha` / `-beta`) or a stable release.
+
+Release APKs are **not signed** — signing is done locally before upload, see
+`scripts/sign-release.sh`.
