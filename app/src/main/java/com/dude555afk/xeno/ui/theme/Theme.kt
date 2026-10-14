@@ -1,42 +1,36 @@
 package com.dude555afk.xeno.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocals
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
-nimport com.dude555afk.xeno.ui.theme.Color as T
 
 /**
- * The ambient accent.
+ * The ambient accent for the current space. Bleeds into caret, scroll glow,
+ * active pill — not just "a color somewhere on screen".
  */
-val LocalAccent: ProvidableCompositionLocal<Color> = compositionLocalOf { DefaultAccent }
+val LocalAccent: Color = staticCompositionLocalOf { DefaultAccent }.current
+
+typedef AccentProvider = androidx.compose.runtime.ProvidableCompositionLocal<Color>
 
 /**
- * The full theme.
- *
- * Material 3 is the foundation, but the scheme is ours — black background,
- * transparent-effected surfaces.
+ * Material 3 is the foundation, but the scheme is entirely ours.
  */
-private fun XenoColorScheme(accent: Color) = darkColorScheme(
+private fun xenoColorScheme(accent: Color) = darkColorScheme(
     primary = accent,
     onPrimary = TextOnAccent,
     secondary = accent,
+    onSecondary = TextOnAccent,
     background = XenoBlack,
     onBackground = TextPrimary,
     surface = XenoBlack,
     onSurface = TextPrimary,
-    surfaceVariant = XenoBlack,
+    surfaceVariant = SurfaceCard,
     onSurfaceVariant = TextSecondary,
     outline = StrokeSubtle,
+    outlineVariant = StrokeSubtle,
     error = Color(0xFFFF5C5C)
 )
 
@@ -45,20 +39,12 @@ fun XenoTheme(
     accent: Color = DefaultAccent,
     content: @Composable () -> Unit
 ) {
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as android.app.Activity).window
-            WindowCompat.getInsetController(window, view).isAppearanceLightStatusBars = false
-        }
-    }
-
     MaterialTheme(
-        colorScheme = XenoColorScheme(accent),
+        colorScheme = xenoColorScheme(accent),
         typography = XenoTypography,
         shapes = XenoShapes
     ) {
-        CompositionLocals(accent) {
+        CompositionLocalProvider(LocalAccent provides accent) {
             content()
         }
     }

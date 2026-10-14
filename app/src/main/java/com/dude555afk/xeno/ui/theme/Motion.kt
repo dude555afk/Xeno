@@ -1,56 +1,44 @@
 package com.dude555afk.xeno.ui.theme
 
-import androidx.compose.animation.core.CubicBezierEasing
-nimport androidx.compose.animation.core.Easing
-nimport androidx.compose.animation.core.FastOutSlowInEasing
-nimport androidx.compose.animation.core.Spring
-nimport androidx.compose.animation.core.spring
-nimport androidx.compose.animation.core.tween
-nimport androidx.compose.animation.fadeIn
-nimport androidx.compose.animation.fadeOut
-nimport androidx.compose.animation.scaleIn
-nimport androidx.compose.animation.scaleOut
-nimport androidx.compose.animation.slideInVertically
-nimport androidx.compose.animation.slideOutVertically
-nimport androidx.compose.animation.AnimatedContentTransitionScope
-nimport androidx.compose.ui.unit.IntOffset
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 
 /**
- * Motion specs. Spring entrances, never slides.
+ * Motion specs. Overlays spring, they never slide in from an edge like a dialog.
+ *
+ * See docs/DESIGN.md — "spring entrance on every overlay".
  */
 object XenoMotion {
-    /** Overlay entrance — command palette, peek bubble, sheets. */
+
+    /** Overlay entrance — command palette, peek bubble, bottom sheets. */
     fun <T> overlaySpring() = spring<T>(
         dampingRatio = 0.65f,
-        stiffness = 400f
+        stiffness = Spring.StiffnessLow
+    )
+
+    /** Smaller, snappier spring for pills and chips. */
+    fun <T> pillSpring() = spring<T>(
+        dampingRatio = 0.75f,
+        stiffness = Spring.StiffnessMedium
+    )
+
+    /** Bottom sheets — a little less overshoot so they don't bounce about. */
+    fun <T> sheetSpring() = spring<T>(
+        dampingRatio = 0.82f,
+        stiffness = Spring.StiffnessMediumLow
     )
 
     /** Backdrop fade behind overlays. */
     fun <T> backdropFade() = tween<T>(durationMillis = 180)
 
-    /** Chrome hide/show on scroll. */
+    /** Chrome hide / show on scroll. */
     fun <T> chromeReveal() = tween<T>(
         durationMillis = 200,
         easing = FastOutSlowInEasing
     )
 
-    /** Sidebar */
-    fun <T> pillSpring() = spring<T>(
-        dampingRatio = 0.75f,
-        stiffness = 600f
-    )
-
-    val EmphasisEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
-}
-
-/**
- * Content — screens.
- */
-object XenoTransitions {
-    /** Space switching */
-    fun <S> spaceFlip(): AnimatedContentTransitionScope<S>.() -> ContentTransform? = {
-        (scaleIn(initialScale = 0.96f, animationSpec = tween(180)) + fadeIn(tween(180))).togetherWith(
-            fadeOut(tween(120))
-        )
-    }
+    /** Typewriter caret blink. */
+    fun <T> caretBlink() = tween<T>(durationMillis = 530)
 }
