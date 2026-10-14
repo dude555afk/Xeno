@@ -7,8 +7,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
 import com.dude555afk.xeno.core.blocking.FilterListEngine
-import com.dude555afk.xeno.core.engine.SessionPool
 import com.dude555afk.xeno.core.engine.SessionListener
+import com.dude555afk.xeno.core.engine.SessionPool
 import com.dude555afk.xeno.core.engine.XenoAssetLoader
 import com.dude555afk.xeno.core.engine.XenoWebViewClient
 import com.dude555afk.xeno.core.fetch.AnswerEngine
@@ -17,23 +17,20 @@ import com.dude555afk.xeno.core.fetch.SearchEngine
 import com.dude555afk.xeno.core.model.*
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.SettingsStore
+import com.dude555afk.xeno.core.storage.SpaceEntity
+import com.dude555afk.xeno.core.storage.TabEntity
+import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.XenoDatabase
+import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.core.summarize.Summarizer
 import com.dude555afk.xeno.core.summarize.SummaryOutcome
-import com.dude555afk.xeno.core.summarize.Prompts
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Browser UI state.
- *
- * Groups the surfaces (palette / tab stack / answer / summary) into one
- * sealed-ish set so the screen can be a compact, readable composable instead of
- * a pile of booleans.
- */
+/** Browser UI state — every overlay surface lives here. */
 data class BrowserUiState(
     val spaces: List<Space> = emptyList(),
     val activeSpace: Space? = null,
@@ -46,6 +43,7 @@ data class BrowserUiState(
     val tabStackVisible: Boolean = false,
     val answer: AnswerResult? = null,
     val answerStreaming: Boolean = false,
+    val answerError: String? = null,
     val summaryVisible: Boolean = false,
     val summaryText: String = "",
     val summaryOffline: Boolean = false,
@@ -58,9 +56,9 @@ data class BrowserUiState(
 /**
  * Owns the whole app's behaviour.
  *
- * Deliberately one ViewModel. Splitting into five per-screen ViewModels would
- * mean five places that all need the session pool, which is exactly how the
- * 2-session invariant gets quietly broken.
+ * Deliberately one ViewModel. Splitting into per-screen ViewModels would mean
+ * several places holding the session pool, which is exactly how the 2-session
+ * invariant gets quietly broken.
  */
 class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -68,34 +66,30 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val settings = SettingsStore(app)
 
     private val filters = FilterListEngine()
-    private val blocker = XenoAssetLoader.create(app)
+    private val assetLoader = XenoAssetLoader.create(app)
 
     private val pool = SessionPool(app)
-    val injector = ReadabilityInjector()
+    private val injector = ReadabilityInjector()
     private val ai = AiClient()
     private val summarizer = Summarizer(ai)
     private val fetcher = PageFetcher(app, injector)
     private val engine = AnswerEngine(SearchEngine(app), fetcher, ai)
 
-    private val _state = MutableStateFlow(BrowserUiState())
+    private val _state = MutableStateFlow(
+        BrowserUiState(blockingEnabled = settings.blockingEnabled, hasApiKey = settings.hasApiKey)
+    )
     val state: StateFlow<BrowserUiState> = _state.asStateFlow()
 
-    private var sessionHost: ViewGroup? = null
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
 
     init {
         viewModelScope.launch {
-            val spaceCount = db.spaceDao().count()
-            if (spaceCount == 0) {
-                // Seed a sensible first space so the UI never renders empty.
-                com.dude555afk.xeno.core.model.defaultSpace().let { s ->
-                    db.spaceDao().insert(
-                        com.dude555afk.xeno.core.storage.SpaceEntity(
-                            name = s.name, accentArgb = s.accent.value.toLong().toInt()
-                        )
-                    )
-                }
+            if (db.spaceDao().count() == 0) {
+                val seed = defaultSpace()
+                db.spaceDao().insert(
+                    SpaceEntity(name = seed.name, accentArgb = seed.accent.value.toLong().toInt())
+                )
             }
             db.tabDao().deletePeekTabs()
         }
@@ -118,9 +112,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        // Tabs for whichever space is active.
         viewModelScope.launch {
-            _state.collect { s ->
-                val space = s.activeSpace ?: return@collect
+            _state.collect { snapshot ->
+                val space = snapshot.activeSpace ?: return@collect
                 db.tabDao().observeForSpace(space.id).collect { entities ->
                     val tabs = entities.map {
                         Tab(
@@ -141,7 +136,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // MARK: - spaces & tabs
+    // MARK: spaces & tabs
 
     fun selectSpace(space: Space) {
         settings.activeSpaceId = space.id
@@ -149,17 +144,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
-        _state.value = _state.value.copy(activeTab = tab, load = PageLoadState(tab.url))
+        _state.value = _state.value.copy(activeTab = tab, load = PageLoadState(url = tab.url))
     }
 
     fun newTab() {
- viewModelScope.launch {
+        viewModelScope.launch {
             val spaceId = _state.value.activeSpace?.id ?: 1L
-            val id = db.tabDao().insert(
-                com.dude555afk.xeno.core.storage.TabEntity(spaceId = spaceId, url = "")
-            )
-            val tab = Tab(id = id, spaceId = spaceId)
-            selectTab(tab)
+            val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
+            selectTab(Tab(id = id, spaceId = spaceId))
             _state.value = _state.value.copy(tabStackVisible = false, paletteVisible = true)
         }
     }
@@ -168,13 +160,16 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
             pool.destroy("tab-${tab.id}")
+
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
-            if (remaining.size <= 1) newTab()
-            else _state.value.activeTab?.takeIf { it.id == tab.id }?.let { selectTab(remaining.first()) }
+            when {
+                remaining.isEmpty() -> newTab()
+                _state.value.activeTab?.id == tab.id -> selectTab(remaining.first())
+            }
         }
     }
 
-    // MARK: - palette
+    // MARK: palette
 
     fun openPalette() {
         _state.value = _state.value.copy(paletteVisible = true)
@@ -189,10 +184,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Go pressed — navigate or ask, depending on what the query looks like.
+     * Go pressed — navigate or ask, depending on the query.
      *
-     * A question routes to the answer engine; anything else is treated as a URL
-     * or a search. This single branch is the whole "bar that answers" idea.
+     * This single branch is the entire "a bar that answers" idea.
      */
     fun submit() {
         val q = _state.value.query.trim()
@@ -207,7 +201,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = _state.value.copy(
             answer = AnswerResult(query, emptyList()),
-            answerStreaming = true
+            answerStreaming = true,
+            answerError = null
         )
 
         answerJob = viewModelScope.launch {
@@ -236,31 +231,29 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(answer = null, answerStreaming = false)
     }
 
-    /** Navigate to a URL, promoting a bare search term to a search engine. */
+    /** Navigate, promoting a bare search term to a search URL. */
     fun navigate(raw: String) {
- val q = raw.trim()
+        val q = raw.trim()
         if (q.isEmpty()) return
 
         val url = when {
-            q.startsWith("http://") || q.startsWith("https://") -> q
-            q.startsWith("about:") || q.startsWith("data:") -> q
-            q.matches(Regex("^[\w.-]+\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) -> "https://$q"
+            q.startsWith("http://") || q.startsWith("https://") ->
+ q
+            q.matches(Regex("^[\\w.-]+\\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) -> "https://$q"
             else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
         }
 
         viewModelScope.launch {
             val tab = _state.value.activeTab ?: return@launch
             db.tabDao().update(
-                com.dude555afk.xeno.core.storage.TabEntity(
-                    id = tab.id, spaceId = tab.spaceId, url = url, position = tab.position
-                )
+                TabEntity(id = tab.id, spaceId = tab.spaceId, url = url, position = tab.position)
             )
             selectTab(tab.copy(url = url))
         }
         closePalette()
     }
 
-    // MARK: - summarizing
+    // MARK: summarizing
 
     fun summarizeCurrentPage(tone: Prompts.Tone = _state.value.summaryTone) {
         val tab = _state.value.activeTab ?: return
@@ -276,9 +269,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         summaryJob = viewModelScope.launch {
-            val webView = pool.peek("tab-${tab.id}")
-            val content = if (webView != null) {
-                injector.extract(webView, tab.url)
+            val existing = pool.peek("tab-${tab.id}")
+            val content = if (existing != null) {
+                injector.extract(existing, tab.url)
             } else {
                 val scratch = WebView(getApplication())
                 try {
@@ -289,26 +282,19 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             when (val outcome = summarizer.summarize(content, settings.providerConfig, tone)) {
-                is SummaryOutcome.Unreadable -> {
-                    _state.value = _state.value.copy(
-                        summaryText = "",
-                        summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
-                    )
-                }
+                is SummaryOutcome.Unreadable -> _state.value = _state.value.copy(
+                    summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
+                )
 
-                is SummaryOutcome.Offline -> {
-                    _state.value = _state.value.copy(
-                        summaryText = outcome.text,
-                        summaryOffline = true
-                    )
-                }
+                is SummaryOutcome.Offline -> _state.value = _state.value.copy(
+                    summaryText = outcome.text,
+                    summaryOffline = true
+                )
 
-                is SummaryOutcome.Streaming -> {
-                    outcome.deltas.collect { delta ->
-                        _state.value = _state.value.copy(
-                            summaryText = _state.value.summaryText + delta
-                        )
-                    }
+                is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
+                    _state.value = _state.value.copy(
+                        summaryText = _state.value.summaryText + delta
+                    )
                 }
             }
         }
@@ -321,38 +307,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(summaryVisible = false)
     }
 
-    // MARK: - WebView plumbing
+    // MARK: WebView plumbing
 
     /**
      * Bind the WebView host. Called once from the composable.
      *
-     * The cap is enforced here as well as in the pool — two places because the
-     * cost of a mistake is a gigabyte of RAM and a force-close.
+     * The session lives under a stable key so re-composition reuses the same
+     * view instead of allocating a fresh 200 MB engine.
      */
     fun attachHost(host: ViewGroup) {
-        sessionHost = host
+        val view = pool.acquire(SESSION_KEY, host)
 
-        val view = pool.acquire("tab-active", host)
-        view.webViewClient = object : XenoWebViewClient(
-            listener = sessionListener("tab-active"),
-            blocker = { request ->
-                settings.blockingEnabled && filters.shouldBlock(
-                    url = request.url.toString(),
-                    documentUrl = view.url ?: "",
-                    type = com.dude555afk.xeno.core.blocking.ResourceType.fromRequest(request),
-                    thirdParty = true
-                )
-            },
-            assetLoader = blocker
-        ) {
- // listener wiring lives outside
-        }
-
-        // The real client needs the listener too; rebuild it plainly.
         view.webViewClient = XenoWebViewClient(
-            listener = sessionListener("tab-active"),
+            listener = sessionListener(),
             blocker = { request ->
-                settings.blockingEnabled && runCatching {
+                if (!settings.blockingEnabled) return@XenoWebViewClient false
+                runCatching {
                     filters.shouldBlock(
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
@@ -361,18 +331,16 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }.getOrDefault(false)
             },
-            assetLoader = blocker
+            assetLoader = assetLoader
         )
 
         val activeUrl = _state.value.activeTab?.url
         if (!activeUrl.isNullOrBlank() && view.url != activeUrl) view.loadUrl(activeUrl)
     }
 
-    fun detachHost() {
-        pool.park("tab-active")
-    }
+    fun detachHost() = pool.park(SESSION_KEY)
 
-    private fun sessionListener(key: String) = object : SessionListener {
+    private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
             _state.value = _state.value.copy(
                 load = _state.value.load.copy(loading = true, progress = 0.05f, url = url)
@@ -387,12 +355,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onPageFinished(url: String, title: String) {
             viewModelScope.launch {
-                val tab = _state.value.activeTab ?: return@launch
-                val history = db.historyDao().byUrl(url)
-                if (history == null) {
-                    db.historyDao().insert(
-                        com.dude555afk.xeno.core.storage.HistoryEntity(url = url, title = title)
-                    )
+                val existing = db.historyDao().byUrl(url)
+                if (existing == null) {
+                    db.historyDao().insert(HistoryEntity(url = url, title = title))
                 } else {
                     db.historyDao().bump(url, title, System.currentTimeMillis())
                 }
@@ -405,21 +370,40 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
 
         override fun onExternalNavigation(requestedUrl: String): Boolean {
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(requestedUrl))
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            val intent = android.content.Intent(
+                android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse(requestedUrl)
+            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { getApplication<Application>().startActivity(intent) }
             return true
         }
     }
 
-    fun canGoBack(): Boolean = pool.peek("tab-active")?.canGoBack() == true
-
     fun goBack() {
-        pool.peek("tab-active")?.takeIf { it.canGoBack() }?.goBack()
+        pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
+    }
+
+    fun loadFilterLists(context: android.content.Context, enabledIds: Set<String>) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.dude555afk.xeno.core.blocking.FilterListSources.defaults
+                .filter { it.id in enabledIds }
+                .forEach { spec ->
+                    runCatching {
+                        context.assets.open(spec.assetName).bufferedReader().use { reader ->
+                            filters.load(reader.readText())
+                        }
+                    }
+                }
+        }
     }
 
     override fun onCleared() {
         pool.destroyAll()
         super.onCleared()
+    }
+
+    companion object {
+        /** The active tab's session key. */
+        const val SESSION_KEY = "tab-active"
     }
 }
