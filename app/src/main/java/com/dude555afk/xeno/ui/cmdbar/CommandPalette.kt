@@ -28,9 +28,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Tab
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -195,7 +195,7 @@ fun CommandPalette(
                         ) {
                             items(tabHints, key = { "tab-${it.id}" }) { tab ->
                                 SuggestionRow(
-                                    icon = Icons.Rounded.Tab,
+                                    icon = Icons.Rounded.Article,
                                     title = tab.displayTitle,
                                     subtitle = tab.url,
                                     onClick = { onOpenTab(tab) }
