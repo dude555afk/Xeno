@@ -9,19 +9,47 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+
+/**
+ * One unit of streamed summary text.
+ *
+ * The wrapper exists for one reason: when the AI path fails, the fallback is
+ * [TextRank], and the UI has to be able to show "offline" when that happens.
+ * A bare String cannot carry that flag. The previous design just dropped it
+ * silently, so a local TextRank summary and a gateway summary looked
+ * identical to the user — which is exactly the kind of thing that makes an
+ * offline capable app feel broken rather than resilient.
+ */
+data class SummaryDelta(
+    val text: String,
+    /** True once the local fallback has taken over. */
+    val offlineFallback: Boolean = false
+)
 
 /**
  * Page summarizer with a hard guarantee: the user always gets text.
  *
- * Path A is the AI: map-reduce over the page, chunk by chunk, then a merge
- * pass. Path B is [TextRank], which needs no key, no network and no quota.
+ * Path A is the AI: a single prompt for normal pages, map-reduce for long
+ * ones. Path B is [TextRank], which needs no key, no network and no quota.
  * B is not a fallback of last resort, it is a first-class mode — "offline" is
  * a legitimate state for a browser on a train.
+ *
+ * The stream is shaped as AI deltas first, local fallback only if the AI
+ * produced nothing. That ordering is deliberate: if the gateway is reachable
+ * but slow, the user watches text arrive; if it is unreachable, they get a
+ * working summary within milliseconds. What never happens is a blank sheet.
  */
 class Summarizer(private val ai: AiClient) {
 
+    /**
+     * Decide how to summarise, returning a stream the caller collects.
+     *
+     * Deliberately does not collect anything itself. The previous version
+     * called `collectDirect()` internally and returned a finished string,
+     * which meant [SummaryOutcome.Streaming] was never constructed and the
+     * ViewModel's streaming branch was dead code — the whole "typewriter"
+     * effect did not exist, and every summary arrived as one lump.
+     */
     suspend fun summarize(
         content: ExtractedContent,
         config: ProviderConfig,
@@ -29,33 +57,31 @@ class Summarizer(private val ai: AiClient) {
     ): SummaryOutcome {
         if (content.text.isBlank() || content.isJunk) return SummaryOutcome.Unreadable
 
+        // Computed once here and reused for every fallback path, so a page
+        // that goes local does not run TextRank three separate times.
+        val fallback = localSummary(content)
+
         // No key, no network path. Go straight to the local summary.
-        if (config.apiKey.isBlank()) return SummaryOutcome.Offline(localSummary(content))
+        if (config.apiKey.isBlank()) return SummaryOutcome.Offline(fallback)
 
-        return runCatching {
-            val text = if (content.text.length <= SINGLE_SHOT_CHARS) {
-                streamOnce(config, content.text, tone).collectDirect()
-            } else {
-                mapReduce(config, content.text, tone)
-            }
-
-            if (text.isBlank()) SummaryOutcome.Offline(localSummary(content))
-            else SummaryOutcome.Offline(text)
-        }.getOrElse {
-            // Never surface a raw network error as the summary.
-            SummaryOutcome.Offline(localSummary(content))
+        val upstream = if (content.text.length <= SINGLE_SHOT_CHARS) {
+            singleShot(config, content.text, tone)
+        } else {
+            mapReduce(config, content.text, tone, fallback)
         }
+
+        return SummaryOutcome.Streaming(ensureFallback(upstream, fallback))
     }
 
     /**
      * One prompt over the whole page. Fast path, and covers the large majority
      * of real pages — most articles are under the single-shot ceiling.
      */
-    private fun streamOnce(
+    private fun singleShot(
         config: ProviderConfig,
         text: String,
         tone: Prompts.Tone
-    ): Flow<String> = flow {
+    ): Flow<SummaryDelta> = flow {
         val request = ChatRequest(
             model = config.model,
             messages = listOf(
@@ -66,7 +92,9 @@ class Summarizer(private val ai: AiClient) {
             temperature = 0.3,
             maxTokens = 900
         )
-        ai.stream(config, request).collect { emit(it) }
+        ai.stream(config, request).collect { delta ->
+            emit(SummaryDelta(delta))
+        }
     }.flowOn(Dispatchers.Default)
 
     /**
@@ -75,48 +103,105 @@ class Summarizer(private val ai: AiClient) {
      * The chunks are processed sequentially on purpose. Six parallel requests
      * to a 200 req/hr free tier is a great way to be rate limited into
      * uselessness, and sequential is fast enough that nobody notices.
+     *
+     * Returns the *merge* flow, not the finished text. If every chunk failed,
+     * the merge pass would be one more doomed request for nothing, so it
+     * short-circuits to the local summary instead.
      */
     private suspend fun mapReduce(
         config: ProviderConfig,
         text: String,
-        tone: Prompts.Tone
-    ): String = withContext(Dispatchers.Default) {
+        tone: Prompts.Tone,
+        fallback: String
+    ): Flow<SummaryDelta> {
         val pieces = chunk(text, CHUNK_CHARS)
+        val summaries = ArrayList<String>(pieces.size)
+        var anyChunkSucceeded = false
 
-        val summaries = pieces.mapIndexed { index, piece ->
-            val request = ChatRequest(
-                model = config.model,
-                messages = listOf(
-                    ChatMessage.system(Prompts.SUMMARIZER_SYSTEM),
-                    ChatMessage.user(Prompts.chunkPass(piece, index + 1, pieces.size))
-                ),
-                stream = true,
-                temperature = 0.2,
-                maxTokens = 400
-            )
-            ai.stream(config, request).collectDirect().ifBlank {
-                TextRank.summarize(piece, sentenceCount = 3)
+        pieces.forEachIndexed { index, piece ->
+            val summary = runCatching {
+                val request = ChatRequest(
+                    model = config.model,
+                    messages = listOf(
+                        ChatMessage.system(Prompts.SUMMARIZER_SYSTEM),
+                        ChatMessage.user(Prompts.chunkPass(piece, index + 1, pieces.size))
+                    ),
+                    stream = true,
+                    temperature = 0.2,
+                    maxTokens = 400
+                )
+                ai.stream(config, request).collectDirect()
+            }.getOrElse { "" }
+
+            if (summary.isBlank()) {
+                // Per-chunk degradation, same guarantee as the whole page.
+                summaries += TextRank.summarize(piece, sentenceCount = 3)
+            } else {
+                summaries += summary
+                anyChunkSucceeded = true
             }
         }
 
-        if (summaries.isEmpty()) return@withContext ""
+        if (!anyChunkSucceeded) {
+            return flow {
+                emit(SummaryDelta(fallback, offlineFallback = true))
+            }.flowOn(Dispatchers.Default)
+        }
 
-        val request = ChatRequest(
-            model = config.model,
-            messages = listOf(
-                ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM),
-                ChatMessage.user(Prompts.reducePass(summaries))
-            ),
-            stream = true,
-            temperature = 0.3,
-            maxTokens = 900
-        )
-        ai.stream(config, request).collectDirect()
+        return flow {
+            val request = ChatRequest(
+                model = config.model,
+                messages = listOf(
+                    ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM),
+                    ChatMessage.user(Prompts.reducePass(summaries))
+                ),
+                stream = true,
+                temperature = 0.3,
+                maxTokens = 900
+            )
+            ai.stream(config, request).collect { delta ->
+                emit(SummaryDelta(delta))
+            }
+        }.flowOn(Dispatchers.Default)
     }
 
     /** Plain local summary — the mode that always works. */
     private fun localSummary(content: ExtractedContent): String =
         TextRank.summarize(content.text, sentenceCount = 5)
+
+    /**
+     * Guarantee that something is emitted, exactly once.
+     *
+     * Wrapping rather than using `catch` + `onCompletion` because those two
+     * compose badly here: a partial stream followed by a failure would trip
+     * both and emit the local summary twice, leaving the sheet showing a
+     * truncated AI paragraph glued to a full TextRank one.
+     *
+     * Known honest edge case: if the gateway drops *mid*-stream after real
+     * text has already arrived, the user keeps whatever streamed and gets the
+     * local summary appended. Rare, and still informative — a truncated
+     * summary plus a complete one beats a dead sheet.
+     */
+    private fun ensureFallback(
+        upstream: Flow<SummaryDelta>,
+        fallback: String
+    ): Flow<SummaryDelta> = flow {
+        var producedAnything = false
+
+        try {
+            upstream.collect { delta ->
+                producedAnything = true
+                emit(delta)
+            }
+        } catch (t: Throwable) {
+            // Swallowed on purpose. A raw socket error must never reach the
+            // summary sheet — that is what the fallback is for.
+        }
+
+        if (!producedAnything && fallback.isNotBlank()) {
+            emit(SummaryDelta(fallback, offlineFallback = true))
+        }
+    }.flowOn(Dispatchers.Default)
 
     /**
      * Split on paragraph boundaries so a chunk never severs a sentence.
@@ -169,9 +254,12 @@ sealed interface SummaryOutcome {
     /** Page was unreadable — cookie wall, JS shell, paywall stub. */
     data object Unreadable : SummaryOutcome
 
-    /** TextRank summary, no network involved. */
+    /** TextRank summary, decided before any network attempt was made. */
     data class Offline(val text: String) : SummaryOutcome
 
-    /** Streamed AI summary. */
-    data class Streaming(val deltas: Flow<String>) : SummaryOutcome
+    /**
+     * Streamed summary. May carry [SummaryDelta.offlineFallback] on later
+     * emissions if the AI path failed partway through.
+     */
+    data class Streaming(val deltas: Flow<SummaryDelta>) : SummaryOutcome
 }

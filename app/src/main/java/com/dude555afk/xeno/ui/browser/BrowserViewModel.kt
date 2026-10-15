@@ -393,7 +393,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            when (val outcome = summarizer.summarize(content, settings.providerConfig, tone)) {
+            // [Summarizer.summarize] chunks long pages and runs TextRank, both
+            // of which are real work. On the main dispatcher that is a jank
+            // spike visible before a single token arrives.
+            val outcome = withContext(Dispatchers.Default) {
+                summarizer.summarize(content, settings.providerConfig, tone)
+            }
+
+            when (outcome) {
                 is SummaryOutcome.Unreadable -> _state.update {
                     it.copy(
                         summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
@@ -401,11 +408,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 is SummaryOutcome.Offline -> _state.update {
-                    it.copy(summaryText = outcome.text, summaryOffline = true)
+                    it.copy(
+                        summaryText = outcome.text,
+                        summaryOffline = true
+                    )
                 }
 
                 is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
-                    _state.update { it.copy(summaryText = it.summaryText + delta) }
+                    _state.update {
+                        it.copy(
+                            summaryText = it.summaryText + delta.text,
+                            // Sticks once the local fallback has been used.
+                            summaryOffline = it.summaryOffline || delta.offlineFallback
+                        )
+                    }
                 }
             }
         }
