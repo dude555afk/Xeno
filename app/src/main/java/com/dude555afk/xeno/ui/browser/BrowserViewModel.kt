@@ -3,8 +3,11 @@ package com.dude555afk.xeno.ui.browser
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.view.ViewGroup
 import android.webkit.WebView
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
@@ -24,6 +27,7 @@ import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.core.model.defaultSpace
+import com.dude555afk.xeno.core.model.toEntity
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
@@ -122,13 +126,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             if (db.spaceDao().count() == 0) {
-                val seed = defaultSpace()
-                db.spaceDao().insert(
-                    SpaceEntity(
-                        name = seed.name,
-                        accentArgb = seed.accent.toArgb()
-                    )
-                )
+                db.spaceDao().insert(defaultSpace().toEntity())
             }
             db.tabDao().deletePeekTabs()
         }
@@ -139,7 +137,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     Space(
                         id = it.id,
                         name = it.name,
-                        accent = androidx.compose.ui.graphics.Color(it.accentArgb),
+                        accent = Color(it.accentArgb),
                         position = it.position,
                         pinned = it.pinned
                     )
