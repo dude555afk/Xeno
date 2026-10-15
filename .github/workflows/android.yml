@@ -11,10 +11,14 @@ on:
 permissions:
   contents: write
 
+env:
+  ANDROID_COMPILE_SDK: "35"
+  ANDROID_BUILD_TOOLS: "35.0.0"
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -25,18 +29,42 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install platform + build-tools
+      # The ubuntu-latest image ships a partial Android SDK with cmdline-tools
+      # but NOT the platform/build-tools for compileSdk 35. android-actions/
+      # setup-android@v3 also failed on this runner (step 4 of run #45), so the
+      # SDK is installed directly from Google's zip instead of a third-party
+      # action. Two steps, both plain shell, nothing to break.
+      - name: Install Android SDK
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses || true
+          set -eux
+          SDK_DIR="${ANDROID_HOME:-$HOME/android-sdk}"
+          mkdir -p "$SDEL_DIR" "$SDK_DIR/cmdline-tools"
+
+          if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
+            curl -sSLo /tmp/cmdtools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
+            mv /tmp/cmdtools/cmdline-tools "$SDK_DIR/cmdline-tools/latest"
+          fi
+
+          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platform-tools" \
+            "platforms;android-${ANDROID_COMPILE_SDK}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}"
+
+          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
+      # Room writes its schema JSON here. Without the directory Gradle warns on
+      # every build and the schema.json export silently lands nowhere.
+      - name: Create Room schema directory
+        run: mkdir -p app/schemas
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
