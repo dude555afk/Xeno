@@ -30,3 +30,4 @@ data class ExtractedContent(
             wordCount = 0
         )
     }
+}
