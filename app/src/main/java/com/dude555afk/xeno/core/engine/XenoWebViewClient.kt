@@ -1,7 +1,6 @@
 package com.dude555afk.xeno.core.engine
 
 import android.graphics.Bitmap
-import android.os.Message
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -72,10 +71,6 @@ class XenoWebViewClient(
         listener.onPageFinished(url.orEmpty(), view?.title.orEmpty())
     }
 
-    override fun onProgressChanged(view: WebView?, newProgress: Int) {
-        listener.onPageProgress(view?.url.orEmpty(), newProgress)
-    }
-
     override fun shouldInterceptRequest(
         view: WebView?,
         request: WebResourceRequest
@@ -102,28 +97,6 @@ class XenoWebViewClient(
             return listener.onExternalNavigation(url)
         }
 
-        return false
-    }
-
-    /**
-     * `window.open` and `target=_blank` land here once
-     * `setSupportMultipleWindows(true)`.
-     *
-     * We do not hand back a second WebView — that would break the session cap.
-     * The popup is instead sent to the OS as a plain VIEW intent, which is the
-     * same outcome as a new tab from the user's point of view, minus the RAM.
-     */
-    override fun onCreateWindow(
-        view: WebView?,
-        isDialog: Boolean,
-        isUserGesture: Boolean,
-        resultMsg: Message?
-    ): Boolean {
-        if (!isUserGesture) return false
-        val url = view?.hitTestResult?.extra
-        if (!url.isNullOrBlank() && url.startsWith("http")) {
-            listener.onExternalNavigation(url)
-        }
         return false
     }
 
