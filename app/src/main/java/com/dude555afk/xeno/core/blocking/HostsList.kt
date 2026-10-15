@@ -1,67 +1,12 @@
 package com.dude555afk.xeno.core.blocking
 
 /**
- * Where the filter lists come from.
- *
- * v1 ships a small bundled host list ([HostsList]) so blocking works on the very
- * first launch with zero setup, and refreshes the real uBO lists from the
- * network in the background afterwards. `FilterListEngine` accepts both
- * formats, so the two are literally mixed into one rule set.
- *
- * The full lists can't be bundled — EasyList is ~1 MB of plain text and
- * GitHub's per-file limit makes that awkward — so they are fetched and cached
- * locally on first run instead.
- */
-object FilterListSources {
-
-    data class RemoteList(
-        val id: String,
-        val name: String,
-        val url: String,
-        val enabledByDefault: Boolean = true
-    )
-
-    /**
-     * The real lists, fetched at runtime and cached. Order is per-list
-     * confidence; EasyPrivacy has historically caught more junk than EasyList
-     * on mobile.
-     */
-    val remote = listOf(
-        RemoteList(
-            id = "easyprivacy",
-            name = "EasyPrivacy",
-            url = "https://easylist.to/easylist/easyprivacy.txt"
-        ),
-        RemoteList(
-            id = "easylist",
-            name = "EasyList",
-            url = "https://easylist.to/easylist/easylist.txt"
-        ),
-        RemoteList(
-            id = "ubo-badware",
-            name = "uBO badware",
-            url = "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt"
-        ),
-        RemoteList(
-            id = "ubo-privacy",
-            name = "uBO privacy",
-            url = "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt"
-        ),
-        RemoteList(
-            id = "ubo-unbreak",
-            name = "uBO unbreak",
-            url = "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/unbreak.txt"
-        )
-    )
-}
-
-/**
  * A compact bundled host list in Adblock syntax.
  *
  * Roughly 120 hosts covering the tracking and ad-serving infrastructure that
  * shows up on almost every site. It is deliberately tiny — a real first-run
  * experience, not a claim that these lists replace EasyList. The remote lists
- * above are what actually make blocking strong.
+ * in [FilterListSources] are what actually make blocking strong.
  */
 object HostsList {
 
