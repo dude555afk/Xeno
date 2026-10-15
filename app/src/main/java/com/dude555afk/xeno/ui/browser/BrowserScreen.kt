@@ -1,12 +1,25 @@
 package com.dude555afk.xeno.ui.browser
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -18,13 +31,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
@@ -92,8 +105,8 @@ fun BrowserScreen(
             loadProgress = state.load.progress,
             loading = state.load.loading,
             accent = accent,
-            canGoBack = true,
-            query = state.query,
+            canGoBack = state.canGoBack,
+            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
             onOpenPalette = viewModel::openPalette,
             onSummarize = { viewModel.summarizeCurrentPage() },
             onBack = viewModel::goBack,
@@ -105,7 +118,7 @@ fun BrowserScreen(
             query = state.query,
             onQueryChange = viewModel::onQueryChange,
             tabHints = state.tabs.filter { it.hasContent },
-            historyHints = emptyList(),
+            historyHints = state.historyHints,
             loading = state.answerStreaming,
             isQuestion = state.isQuestion,
             accent = accent,
@@ -148,8 +161,7 @@ fun BrowserScreen(
             offline = state.summaryOffline,
             error = state.summaryError,
             accent = accent,
-            onToneChange = viewModel::setSummaryTone,
-            onCopy = { },
+            onCopy = { viewModel.copySummary() },
             onDismiss = viewModel::dismissSummary
         )
     }
@@ -157,6 +169,10 @@ fun BrowserScreen(
 
 /**
  * The floating bar — back, address field, summarize. A pill, like everything.
+ *
+ * The address field shows the live page URL, not the palette's in-progress
+ * query. Showing `state.query` here meant the bar kept whatever the user last
+ * typed long after they had dismissed the palette and moved on.
  */
 @Composable
 private fun FloatingBar(
@@ -164,7 +180,7 @@ private fun FloatingBar(
     loading: Boolean,
     accent: Color,
     canGoBack: Boolean,
-    query: String,
+    displayUrl: String,
     onOpenPalette: () -> Unit,
     onSummarize: () -> Unit,
     onBack: () -> Unit,
@@ -183,6 +199,9 @@ private fun FloatingBar(
                         .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Only shown when there is somewhere to go back to. A
+                    // permanently-visible back arrow that does nothing is worse
+                    // than no arrow at all.
                     if (canGoBack) {
                         IconButton(onClick = onBack) {
                             Icon(
@@ -199,7 +218,8 @@ private fun FloatingBar(
                             .clip(PillShape)
                             .clickable(onClick = onOpenPalette)
                             .padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceM),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
@@ -209,11 +229,12 @@ private fun FloatingBar(
                         )
                         Spacer(Modifier.width(Dimens.spaceS))
                         Text(
-                            text = query.ifBlank { "Search or ask anything" },
-                            color = if (query.isBlank()) Color.White.copy(alpha = 0.4f)
+                            text = displayUrl.ifBlank { "Search or ask anything" },
+                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.4f)
                             else Color.White.copy(alpha = 0.9f),
                             style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
