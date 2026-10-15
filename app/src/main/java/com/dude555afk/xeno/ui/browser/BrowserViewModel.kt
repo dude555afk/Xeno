@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
 import com.dude555afk.xeno.core.blocking.FilterListEngine
 import com.dude555afk.xeno.core.blocking.HostsList
+import com.dude555afk.xeno.core.blocking.ResourceType
 import com.dude555afk.xeno.core.engine.SessionListener
 import com.dude555afk.xeno.core.engine.SessionPool
 import com.dude555afk.xeno.core.engine.XenoAssetLoader
@@ -15,21 +16,20 @@ import com.dude555afk.xeno.core.engine.XenoWebViewClient
 import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.SearchEngine
-import com.dude555afk.xeno.core.blocking.ResourceType
-import com.dude555afk.xeno.core.model.Space
-import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.PageLoadState
-import com.dude555afk.xeno.core.model.defaultSpace
+import com.dude555afk.xeno.core.model.Space
+import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
+import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
 import com.dude555afk.xeno.core.storage.SpaceEntity
 import com.dude555afk.xeno.core.storage.TabEntity
-import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.XenoDatabase
 import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.core.summarize.Summarizer
 import com.dude555afk.xeno.core.summarize.SummaryOutcome
+import com.dude555afk.xeno.XenoApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,11 +73,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val db = XenoDatabase.get(app)
     private val settings = SettingsStore(app)
 
-    private val filters = FilterListEngine()
+    /**
+     * Reuse the filter engine the Application built rather than making a second
+     * one. Parsing the bundled list twice because an Activity got recreated is
+     * the kind of tax this app exists to avoid.
+     */
+    private val filters: FilterListEngine =
+        (app as? XenoApplication)?.filters ?: FilterListEngine().also { engine ->
+            viewModelScope.launch(Dispatchers.Default) { engine.load(HostsList.rules) }
+        }
+
     private val assetLoader = XenoAssetLoader.create(app)
 
     private val pool = SessionPool(app)
-    private val injector = ReadabilityInjector()
+    private val injector = ReadabilityInjector(app)
     private val ai = AiClient()
     private val summarizer = Summarizer(ai)
     private val fetcher = PageFetcher(app, injector)
@@ -94,13 +103,18 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
 
+    /** The tab the WebView session is currently showing. */
+    private var loadedTabId: Long? = null
+
     init {
-        // Bundled host list first so blocking works before any network call.
-        viewModelScope.launch(Dispatchers.Default) { filters.load(HostsList.rules) }
+        // The bundled list is already loading in XenoApplication; refresh the
+        // real uBO lists in the background afterwards. Best-effort — on failure
+        // the bundled list still covers the common ad infrastructure.
+        refreshFilterLists()
 
         viewModelScope.launch {
             if (db.spaceDao().count() == 0) {
-                val seed = defaultSpace()
+                val seed = com.dude555afk.xeno.core.model.defaultSpace()
                 db.spaceDao().insert(
                     SpaceEntity(
                         name = seed.name,
@@ -162,6 +176,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: Tab) {
         _state.value = _state.value.copy(activeTab = tab, load = PageLoadState(url = tab.url))
+        syncSessionToTab(tab)
     }
 
     fun newTab() {
@@ -177,6 +192,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
             pool.destroy("tab-${tab.id}")
+            if (loadedTabId == tab.id) loadedTabId = null
 
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             when {
@@ -246,7 +262,6 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     answerError = e.message
                 )
             }
-            _state.value = _state.value.copy(answerStreaming = false)
         }
     }
 
@@ -255,7 +270,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(answer = null, answerStreaming = false)
     }
 
-    /** Navigate, promoting a bare search term to a search URL. */
+    /**
+     * Navigate, promoting a bare search term to a search URL.
+     *
+     * Writes the tab to the database *and* pushes the URL into the live session
+     * — the two have to move together or the user sees a URL in the bar that
+     * the WebView below it is not showing.
+     */
     fun navigate(raw: String) {
         val q = raw.trim()
         if (q.isEmpty()) return
@@ -266,14 +287,30 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
         }
 
-        viewModelScope.launch {
-            val tab = _state.value.activeTab ?: return@launch
-            db.tabDao().update(
-                TabEntity(id = tab.id, spaceId = tab.spaceId, url = url, position = tab.position)
-            )
-            selectTab(tab.copy(url = url))
-        }
         closePalette()
+
+        val tab = _state.value.activeTab ?: newBlankTabReturning(url)
+
+        viewModelScope.launch {
+            val updated = db.tabDao().let {
+                it.update(
+                    TabEntity(id = tab.id, spaceId = tab.spaceId, url = url, position = tab.position)
+                )
+                tab.copy(url = url)
+            }
+            selectTab(updated)
+            pool.peek(SESSION_KEY)?.let { view ->
+                if (view.url != url) view.loadUrl(url)
+            }
+        }
+    }
+
+    /** Create an empty tab synchronously so navigate() has something to write to. */
+    private fun newBlankTabReturning(url: String): Tab {
+        val spaceId = _state.value.activeSpace?.id ?: 1L
+        val tab = Tab(id = 0L, spaceId = spaceId, url = url)
+        _state.value = _state.value.copy(activeTab = tab)
+        return tab
     }
 
     // MARK: summarizing
@@ -292,8 +329,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         summaryJob = viewModelScope.launch {
+            // Prefer the live session: it already has the page loaded and warm,
+            // so this is nearly instant and costs no extra engine.
             val existing = pool.peek(SESSION_KEY)
-            val content = if (existing != null) {
+            val content = if (existing != null && existing.url == tab.url) {
                 injector.extract(existing, tab.url)
             } else {
                 val scratch = WebView(getApplication())
@@ -340,12 +379,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun attachHost(host: ViewGroup) {
         val view = pool.acquire(SESSION_KEY, host)
-
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
             blocker = { request ->
-                if (!settings.blockingEnabled) return@XenoWebViewClient false
-                runCatching {
+                if (!settings.blockingEnabled) false else runCatching {
                     filters.shouldBlock(
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
@@ -354,14 +391,43 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }.getOrDefault(false)
             },
-            assetLoader = assetLoader
+            assetLoader = assetLoader,
+            cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
         )
 
         val activeUrl = _state.value.activeTab?.url
-        if (!activeUrl.isNullOrBlank() && view.url != activeUrl) view.loadUrl(activeUrl)
+        if (!activeUrl.isNullOrBlank() && view.url != activeUrl) {
+            view.loadUrl(activeUrl)
+            loadedTabId = _state.value.activeTab?.id
+        }
     }
 
     fun detachHost() = pool.park(SESSION_KEY)
+
+    /**
+     * Point the live session at [tab] if it is not already showing it.
+     *
+     * Without this, selecting a tab from the stack updates the address bar and
+     * leaves the WebView showing the previous page — the single most confusing
+     * state a browser can be in.
+     */
+    private fun syncSessionToTab(tab: Tab) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        val target = if (tab.url.isBlank()) null else tab.url
+
+        if (target == null) {
+            if (loadedTabId != tab.id) {
+                view.loadUrl("about:blank")
+                loadedTabId = tab.id
+            }
+            return
+        }
+
+        if (view.url != target || loadedTabId != tab.id) {
+            view.loadUrl(target)
+            loadedTabId = tab.id
+        }
+    }
 
     private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
@@ -377,6 +443,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         override fun onPageFinished(url: String, title: String) {
+            if (url.isBlank() || url == "about:blank") return
+
             viewModelScope.launch {
                 val existing = db.historyDao().byUrl(url)
                 if (existing == null) {
@@ -385,6 +453,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     db.historyDao().bump(url, title, System.currentTimeMillis())
                 }
             }
+
+            // Keep the tab's stored title current, so the tab stack is not full
+            // of URLs where titles should be.
+            val tabId = loadedTabId ?: _state.value.activeTab?.id
+            if (tabId != null && title.isNotBlank()) {
+                viewModelScope.launch {
+                    db.tabDao().byId(tabId)?.let { entity ->
+                        if (entity.title != title) {
+                            db.tabDao().update(entity.copy(title = title))
+                        }
+                    }
+                }
+            }
+
             _state.value = _state.value.copy(
                 load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
             )
@@ -406,8 +488,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
     }
 
+    /** True when the active session can go back — drives the bar's back button. */
+    fun canGoBack(): Boolean = pool.peek(SESSION_KEY)?.canGoBack() == true
+
     /**
-     * Pulls the real uBO lists from the network and merges them in.
+     * Pull the real uBO lists from the network and merge them in.
      *
      * Best-effort: on failure we keep the bundled host list, which is why the
      * first-run experience never depends on the network at all.
