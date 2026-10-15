@@ -70,26 +70,26 @@ jobs:
         run: |
           set -o pipefail
           gradle assembleDebug --no-daemon --stacktrace --info > build-output.log 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          echo "EXIT_CODE=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Publish build log on failure
+      - name: Publish build log
         if: always()
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f build-output.log
-          git diff --cached --quiet || git commit -m "ci: build log (exit=${OUTCOME:-unknown})"
+          git diff --cached --quiet || git commit -m "ci: build log (exit=${{ steps.assemble.outputs.EXIT_CODE }})"
           git push origin HEAD:ci-logs || echo "log push failed; log remains local to the run"
 
       - name: Fail the job if the build failed
-        if: steps.assemble.outputs.exit_code != '0'
+        if: steps.assemble.outputs.EXIT_CODE != '0'
         run: |
-          echo "::error::gradle assembleDebug exited with code ${EXIT_CODE}"
+          echo "::error::gradle assembleDebug exited with code ${{ steps.assemble.outputs.EXIT_CODE }}"
           tail -n 200 build-output.log
           exit 1
 
       - name: Upload debug APK
-        if: steps.assemble.outputs.exit_code == '0'
+        if: steps.assemble.outputs.EXIT_CODE == '0'
         uses: actions/upload-artifact@v4
         with:
           name: xeno-debug
