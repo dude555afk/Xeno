@@ -1,12 +1,6 @@
 package com.dude555afk.xeno.ui.browser
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.view.ViewGroup
-import android.webkit.WebView
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -161,6 +154,7 @@ fun BrowserScreen(
             offline = state.summaryOffline,
             error = state.summaryError,
             accent = accent,
+            onToneChange = viewModel::setSummaryTone,
             onCopy = { viewModel.copySummary() },
             onDismiss = viewModel::dismissSummary
         )
@@ -197,7 +191,8 @@ private fun FloatingBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
                 ) {
                     // Only shown when there is somewhere to go back to. A
                     // permanently-visible back arrow that does nothing is worse
