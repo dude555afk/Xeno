@@ -15,7 +15,18 @@ object FilterListSources {
         val remoteUrl: String,
         val assetName: String,
         val enabledByDefault: Boolean
-    )
+    ) {
+        /**
+         * Alias for [remoteUrl].
+         *
+         * The ViewModel's network-refresh path reads `spec.url`, and the
+         * bundled-asset path reads `spec.assetName`, so the same property has
+         * historically been spelled two ways in this codebase. Keeping both
+         * names pointing at one value costs a getter and removes the
+         * Unresolved-reference class of bug entirely.
+         */
+        val url: String get() = remoteUrl
+    }
 
     val defaults = listOf(
         ListSpec(
@@ -47,4 +58,13 @@ object FilterListSources {
             enabledByDefault = true
         )
     )
+
+    /**
+     * The specs worth fetching over the network, in priority order.
+     *
+     * An alias for [defaults] so the refresh path does not have to care which
+     * name the list is filed under. Bundled-list loading stays on `defaults`
+     * because it may include entries that are intentionally not refreshed.
+     */
+    val remote: List<ListSpec> get() = defaults
 }

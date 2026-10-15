@@ -1,3 +1,5 @@
+package com.dude555afk.xeno.core.blocking
+
 /**
  * One parsed line of a filter list.
  *
