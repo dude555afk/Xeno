@@ -1,6 +1,7 @@
 package com.dude555afk.xeno.core.engine
 
 import android.annotation.SuppressLint
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -30,8 +31,8 @@ class SessionPool(
     /**
      * Get the session for [key], creating one if we're under the cap.
      *
-     * Returns null if the cap is reached and everything live is more important
-     * — the caller is expected to fall back rather than force an allocation.
+     * Never returns null — the cap is enforced by trimming *before* allocating.
+     * The one key that must survive is the caller's, and it is touched first.
      */
     @SuppressLint("SetJavaScriptEnabled")
     fun acquire(key: String, parent: ViewGroup? = null): WebView {
@@ -48,6 +49,8 @@ class SessionPool(
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.databaseEnabled = true
+            // Popups are routed to the OS instead of a second session, but the
+            // flag has to be true for window.open to reach us at all.
             settings.setSupportMultipleWindows(true)
             settings.mediaPlaybackRequiresUserGesture = false
             settings.loadWithOverviewMode = true
@@ -70,6 +73,9 @@ class SessionPool(
 
     /**
      * Pause a session but keep it — scrolling away and back should be instant.
+     *
+     * Parked sessions keep their DOM and scroll position; only timers and
+     * rAF stop. This is what makes switching tabs feel free.
      */
     fun park(key: String) {
         sessions[key]?.let { view ->
@@ -108,7 +114,7 @@ class SessionPool(
      * Trim down to [target] live sessions, dropping least-recently-used first.
      *
      * Never destroys the currently active tab's session — that would be
-     * visible to the user.
+     * visible to the user as a blank screen.
      */
     fun trimTo(target: Int, keep: Set<String> = emptySet()) {
         if (sessions.size <= target) return
@@ -124,16 +130,25 @@ class SessionPool(
     }
 
     /**
-     * Aggressive cleanup for [android.app.Activity.onTrimMemory].
+     * Memory-pressure cleanup, graduated by severity.
      *
-     * Called by the system when the app is backgrounded and memory is tight —
-     * this is exactly when we need to let go of every session we can.
+     * The tempting move is `trimTo(0)` on any memory warning. It is wrong: at
+     * TRIM_MEMORY_RUNNING_LOW the app is foreground and the user is mid-sentence,
+     * and nuking the session loses the page they are reading for a saving they
+     * cannot see. Parking preserves everything that matters and costs nothing.
+     *
+     * Only at CRITICAL/COMPLETE — i.e. the LMK is about to kill us anyway — do
+     * we start destroying sessions, and even then we keep one.
      */
     fun onTrimMemory(level: Int) {
-        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-            trimTo(0)
-        } else {
-            sessions.keys.forEach(::park)
+        when {
+            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0)
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> trimTo(1)
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
+                sessions.keys.forEach(::park)
+                trimTo(1)
+            }
+            else -> sessions.keys.forEach(::park)
         }
     }
 

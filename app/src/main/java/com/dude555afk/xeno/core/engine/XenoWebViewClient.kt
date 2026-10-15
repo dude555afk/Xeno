@@ -1,9 +1,12 @@
 package com.dude555afk.xeno.core.engine
 
 import android.graphics.Bitmap
+import android.os.Message
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import java.io.ByteArrayInputStream
 
 /**
  * Callbacks from a browsing session, decoupled from the WebView itself so the
@@ -23,20 +26,46 @@ interface SessionListener {
  * Blocking happens in [shouldInterceptRequest] rather than by mutating the page
  * afterwards — the request never leaves the process, which is both faster and
  * the only approach that reliably kills ad iframes.
+ *
+ * @param cosmeticSelectors selectors to strip from whatever page loads next.
+ *   Passed per load rather than read from a field so the caller controls the
+ *   timing; cosmetic rules depend on the document URL, which only exists once
+ *   a navigation starts.
  */
 class XenoWebViewClient(
     private val listener: SessionListener,
     /** Return true to block the request outright. */
     private val blocker: (WebResourceRequest) -> Boolean = { false },
-    private val assetLoader: WebViewAssetLoader
+    private val assetLoader: androidx.webkit.WebViewAssetLoader,
+    private val cosmeticSelectors: () -> List<String> = { emptyList() }
 ) : WebViewClient() {
 
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-        listener.onPageStarted(url.orEmpty())
+        val target = url.orEmpty()
+        listener.onPageStarted(target)
+
+        // Cosmetic stripping has to happen inside the page, before its own
+        // scripts layout the ad containers. onPageStarted is the earliest
+        // hook we get, and evaluateJavascript here runs ahead of most
+        // first-party JS.
+        if (view != null) {
+            val script = XenoInjector.script(
+                documentUrl = target,
+                cosmeticSelectors = cosmeticSelectors(),
+                redirectPopups = true
+            )
+            if (script != null) {
+                runCatching { view.evaluateJavascript(script, null) }
+            }
+        }
     }
 
     override fun onPageCommitVisible(view: WebView?, url: String?) {
-        view?.title?.let { listener.onPageFinished(url.orEmpty(), it) }
+        // Reported separately from onPageFinished because SPAs fire
+        // onPageFinished before anything renders, and the title is the one
+        // thing that IS reliable at commit time.
+        val title = view?.title.orEmpty()
+        if (title.isNotBlank()) listener.onPageProgress(url.orEmpty(), 100)
     }
 
     override fun onPageFinished(view: WebView?, url: String?) {
@@ -50,11 +79,11 @@ class XenoWebViewClient(
     override fun shouldInterceptRequest(
         view: WebView?,
         request: WebResourceRequest
-    ): android.webkit.WebResourceResponse? {
-        // Our own injector script always goes through, whatever the page tries.
+    ): WebResourceResponse? {
+        // Our own injected assets always go through, whatever the page tries.
         if (request.url.host == XenoAssetLoader.DOMAIN) return null
 
-        if (blocker(request)) return EMPTY_RESPONSE
+        if (blocker(request)) return emptyResponse()
 
         return assetLoader.shouldInterceptRequest(request.url)
     }
@@ -66,29 +95,56 @@ class XenoWebViewClient(
         val url = request.url.toString()
         val scheme = request.url.scheme
 
-        // Non-http schemes go to the OS, never into the WebView.
+        // Non-http schemes go to the OS, never into the WebView. Returning
+        // true means "handled"; http/https falls through to false, which lets
+        // the WebView navigate normally.
         if (scheme != "http" && scheme != "https" && scheme != "about" && scheme != "data") {
             return listener.onExternalNavigation(url)
         }
 
-        // A _blank target is a popup — route it to a new tab instead of
-        // silently swallowing it.
-        if (request.isRedirect || request.hasGesture()) return false
-
         return false
     }
 
-    private companion object {
-        /**
-         * A transparent, empty, immediately-complete response. Better than a
-         * 403 — the page's own JS sees a successful load and moves on.
-         */
-        val EMPTY_RESPONSE = android.webkit.WebResourceResponse(
+    /**
+     * `window.open` and `target=_blank` land here once
+     * `setSupportMultipleWindows(true)`.
+     *
+     * We do not hand back a second WebView — that would break the session cap.
+     * The popup is instead sent to the OS as a plain VIEW intent, which is the
+     * same outcome as a new tab from the user's point of view, minus the RAM.
+     */
+    override fun onCreateWindow(
+        view: WebView?,
+        isDialog: Boolean,
+        isUserGesture: Boolean,
+        resultMsg: Message?
+    ): Boolean {
+        if (!isUserGesture) return false
+        val url = view?.hitTestResult?.extra
+        if (!url.isNullOrBlank() && url.startsWith("http")) {
+            listener.onExternalNavigation(url)
+        }
+        return false
+    }
+
+    /**
+     * A transparent, empty, immediately-complete response.
+     *
+     * Built fresh per call, never shared: a [WebResourceResponse] wraps a
+     * one-shot InputStream, so reusing a single instance hands the first
+     * blocked request an empty body and every later one a closed stream —
+     * which shows up in the page console as a load error and can trip error
+     * handling that a 200 never would.
+     *
+     * Better than a 403 in any case — the page's own JS sees a successful load
+     * and moves on instead of retrying.
+     */
+    private fun emptyResponse(): WebResourceResponse =
+        WebResourceResponse(
             "text/plain",
             "utf-8",
-            java.io.ByteArrayInputStream(ByteArray(0))
+            ByteArrayInputStream(ByteArray(0))
         ).apply {
             setStatusCodeAndReasonPhrase(200, "OK")
         }
-    }
 }
