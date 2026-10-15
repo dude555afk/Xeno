@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * This is the piece that lets Xeno ship real blocking without the 190 MB
  * GeckoView + real extension tradeoff. It parses EasyList / EasyPrivacy / the
- * uBO-specific lists and matches requests in [shouldInterceptRequest].
+ * uBO-specific lists and matches requests in `shouldInterceptRequest`.
  *
  * What's deliberately out of scope for v1, and why:
  *
@@ -24,13 +24,28 @@ class FilterListEngine {
     private val networkRules = mutableListOf<FilterRule.Network>()
     private val cosmeticRules = mutableListOf<FilterRule.Cosmetic>()
 
+    /**
+     * Patterns indexed by the host they are anchored to.
+     *
+     * The indexed forms are exactly `||host^` and `||host^/path`, which is what
+     * nearly every rule in EasyList and EasyPrivacy starts with. Everything
+     * else — plain substrings, `|`-anchored, or an unparseable remainder —
+     * lives in [unindexed] and is scanned on every request.
+     *
+     * Correctness does not depend on this index: every indexed rule's regex is
+     * valid for the whole URL, so an indexed rule can never miss. The index
+     * only decides how many regexes we are willing to run.
+     */
+    private val indexed = ConcurrentHashMap<String, MutableList<FilterRule.Network>>()
+
+    /** Rules that are not host-anchored. Scanned on every request. */
+    private val unindexed = mutableListOf<FilterRule.Network>()
+
     /** Global (`##`) cosmetic selectors, keyed for fast lookup. */
     private val globalCosmetic = mutableListOf<String>()
 
     /** Domain-scoped cosmetic selectors. */
     private val domainCosmetic = ConcurrentHashMap<String, MutableList<String>>()
-
-    private val hostIndex = ConcurrentHashMap<String, MutableList<FilterRule.Network>>()
 
     @Volatile
     var ruleCount: Int = 0
@@ -40,6 +55,9 @@ class FilterListEngine {
      * Load a filter list in Adblock-Plus / uBlock format.
      *
      * Cheap enough to call repeatedly; rules accumulate as new lists load.
+     * Not thread-safe against concurrent [load] calls — callers serialise by
+     * loading on a single dispatcher, which is what
+     * [com.dude555afk.xeno.XenoApplication] does.
      */
     fun load(listText: String) {
         listText.lineSequence().forEach { raw ->
@@ -47,25 +65,15 @@ class FilterListEngine {
             if (line.isEmpty()) return@forEach
             if (line.startsWith('!') || line.startsWith('[')) return@forEach
 
-            // Cosmetic rule: domain##selector   /   ##selector
-            val sepIndex = line.indexOf("##")
-            if (sepIndex >= 0) {
-                val (domainsPart, selector) = line.splitAt(sepIndex)
-                val isException = domainsPart == "#@#"
-                if (selector.isBlank()) return@forEach
-
-                val domains = domainsPart.split(',')
-                    .filter { it.isNotBlank() }
-                    .map { it.lowercase().removePrefix("www.") }
-                    .toSet()
-
-                val rule = FilterRule.Cosmetic(domains, selector.split(',').filter { it.isNotBlank() }, isException)
-                cosmeticRules += rule
-
-                if (domains.isEmpty()) {
-                    if (!isException) globalCosmetic += selector
-                } else if (!isException) {
-                    domains.forEach { d -> domainCosmetic.getOrPut(d) { mutableListOf() } += selector }
+            // Cosmetic rule: `domain##selector`, `##selector`, or the
+            // `#@#` exception form. The separator is `##` or `#@#`, and
+            // `line.indexOf("##")` alone misses `#@#` because of the `@`.
+            val cosmetic = parseCosmetic(line)
+            if (cosmetic != null) {
+                cosmeticRules += cosmetic
+                if (cosmetic.domains.isEmpty()) globalCosmetic += cosmetic.selectors
+                else cosmetic.domains.forEach { d ->
+                    domainCosmetic.getOrPut(d) { mutableListOf() }.addAll(cosmetic.selectors)
                 }
                 return@forEach
             }
@@ -73,7 +81,8 @@ class FilterListEngine {
             val isException = line.startsWith("@@")
             val body = if (isException) line.removePrefix("@@") else line
 
-            // Split off $options.
+            // Split off $options. A leading `$` cannot be options — that is a
+            // match-any pattern like `,$image` used as a bare pattern.
             val dollar = body.lastIndexOf('$')
             val pattern: String
             val options: RuleOptions
@@ -85,80 +94,111 @@ class FilterListEngine {
                 options = RuleOptions.Empty
             }
 
-            try {
-                val rule = FilterRule.Network(
-                    pattern = pattern,
-                    regex = compile(pattern, options.matchCase),
-                    isException = isException,
-                    options = options
-                )
-                networkRules += rule
+            val regex = runCatching { FilterListEngine.compile(pattern, options.matchCase) }
+                .getOrElse { return@forEach }
 
-                // Cheap bucket on the host when the rule is host-anchored.
-                val host = pattern.removePrefix("||").substringBefore('/').substringBefore('^')
-                if (host.isNotBlank() && !host.contains('*')) {
-                    hostIndex.getOrPut(host.lowercase()) { mutableListOf() } += rule
-                }
-            } catch (_: Exception) {
- // Unparseable line — skip it. Never let one bad rule kill the list.
+            val rule = FilterRule.Network(
+                pattern = pattern,
+                regex = regex,
+                isException = isException,
+                options = options,
+                literal = if (pattern.isNotEmpty() && !pattern.any { it in "*^|" }) pattern else null
+            )
+
+            networkRules += rule
+
+            val host = indexedHost(pattern)
+            if (host != null) {
+                indexed.getOrPut(host) { mutableListOf() } += rule
+            } else {
+                unindexed += rule
             }
         }
         ruleCount = networkRules.size + cosmeticRules.size
     }
 
-    /** Should this request be blocked? */
+    /**
+     * Return the host an `||`-anchored pattern should be filed under, or null
+     * if it does not fit the indexed shape.
+     */
+    private fun indexedHost(pattern: String): String? {
+        if (!pattern.startsWith("||")) return null
+
+        val slash = pattern.indexOf('/', 2)
+        val head = if (slash < 0) pattern.substring(2) else pattern.substring(2, slash)
+
+        // Anchors are `||host^` or `||host^/path`. Anything with a wildcard in
+        // the host is skipped — it can match hosts that are not suffixes of
+        // itself, so filing it under its literal host would be wrong.
+        if (head.isEmpty() || head.contains('*') || head.any { it in "?|" }) return null
+        if (slash >= 0 && slash + 1 < pattern.length && pattern[slash + 1] != '^') return null
+
+        return head.removePrefix("*").lowercase().removePrefix("www.")
+    }
+
+    /**
+     * Should this request be blocked?
+     *
+     * Precedence follows uBO: an `important` block beats everything, then any
+     * matching exception allows the request, then any matching block blocks
+     * it. Important is rare but load-bearing — it is how a list says "always
+     * hide this, even if another list re-allowed it".
+     */
     fun shouldBlock(
         url: String,
         documentUrl: String,
         type: ResourceType,
         thirdParty: Boolean
     ): Boolean {
-        val urlLower = url.lowercase()
-        val docHost = hostOf(documentUrl)
         val urlHost = hostOf(url)
+        val docHost = hostOf(documentUrl)
 
-        // Exceptions always win first — that is the whole point of `@@`.
-        if (evaluate(urlLower, docHost, urlHost, type, thirdParty, exceptionsOnly = true)) return false
+        val candidates = collect(urlHost)
 
-        return evaluate(urlLower, docHost, urlHost, type, thirdParty, exceptionsOnly = false)
+        var sawBlock = false
+        var sawAllow = false
+
+        for (rule in candidates) {
+            if (!rule.regex.containsMatchIn(url)) continue
+            if (rule.literal != null && rule.literal != "" && !url.contains(rule.literal)) continue
+            if (!matchesOptions(rule.options, docHost, urlHost, type, thirdParty)) continue
+
+            if (rule.options.important) return true
+
+            if (rule.isException) sawAllow = true
+            else sawBlock = true
+
+            if (sawBlock && sawAllow) break
+        }
+        return sawBlock && !sawAllow
     }
 
-    private fun evaluate(
-        url: String,
-        docHost: String,
-        urlHost: String,
-        type: ResourceType,
-        thirdParty: Boolean,
-        exceptionsOnly: Boolean
-    ): Boolean {
-        // Host-bucketed rules first — most rules are host-anchored and this
-        // keeps the hot path off the full scan.
-        val candidates = LinkedHashSet<FilterRule.Network>()
-        hostIndex.keys.forEach { host ->
-            if (urlHost == host || urlHost.endsWith(".$host") || host.endsWith(".$urlHost")) {
-                hostIndex[host]?.let(candidates::addAll)
-            }
+    /**
+     * Every rule that could possibly match this host: the host itself, then
+     * every suffix, then the catch-all.
+     *
+     * Walking suffixes rather than scanning the index keys is the whole trick.
+     * A page request `https://a.b.example.com/x` checks the buckets for
+     * `a.b.example.com`, `b.example.com`, `example.com` and `com` — four map
+     * lookups instead of one iteration over a hundred thousand keys.
+     */
+    private fun collect(host: String): Sequence<FilterRule.Network> = sequence {
+        if (host.isEmpty()) {
+            unindexed.forEach { yield(it) }
+            indexed[""]?.forEach { yield(it) }
+            return@sequence
         }
 
-        for (rule in networkRules) {
-            if (rule.isException != exceptionsOnly) continue
-            candidates += rule
-
-            if (candidates.size > MAX_CANDIDATES) break
+        var current = host
+        while (true) {
+            indexed[current]?.forEach { yield(it) }
+            val dot = current.indexOf('.')
+            if (dot < 0) break
+            current = current.substring(dot + 1)
         }
 
-        var bestMatch = false
-        for (rule in candidates) {
-            if (!matchesOptions(rule.options, docHost, urlHost, type, thirdParty)) continue
-            if (!rule.regex.containsMatchIn(url)) continue
-            bestMatch = true
-            break
-        }
-
-        // A plain block wins over an exception unless the exception said so.
-        if (!exceptionsOnly && bestMatch) return true
-        if (exceptionsOnly && bestMatch) return true
-        return false
+        // Patterns whose host was not a plain literal were never indexed.
+        unindexed.forEach { yield(it) }
     }
 
     private fun matchesOptions(
@@ -188,8 +228,8 @@ class FilterListEngine {
         host == rule || host.endsWith(".$rule")
 
     /**
-     * Cosmetic selectors that apply to [documentUrl], ready to be injected as
-     * `el.remove()` calls.
+     * Cosmetic selectors that apply to [documentUrl], minus the `#@#`
+     * exceptions that re-allow any of them on that document.
      */
     fun cosmeticFor(documentUrl: String): List<String> {
         val host = hostOf(documentUrl).removePrefix("www.")
@@ -204,7 +244,8 @@ class FilterListEngine {
         cosmeticRules.clear()
         globalCosmetic.clear()
         domainCosmetic.clear()
-        hostIndex.clear()
+        indexed.clear()
+        unindexed.clear()
         ruleCount = 0
     }
 
@@ -213,12 +254,34 @@ class FilterListEngine {
             java.net.URI(url).host?.lowercase()?.removePrefix("www.") ?: ""
         }.getOrDefault("")
 
-    private fun String.splitAt(index: Int): Pair<String, String> =
-        substring(0, index) to substring(index + 2)
+    private fun parseCosmetic(line: String): FilterRule.Cosmetic? {
+        val hash = line.indexOf('#')
+            .takeIf { it >= 0 }
+            ?: return null
+
+        val domainsPart = line.substring(0, hash)
+        val rest = line.substring(hash)
+
+        val isException =
+            rest.startsWith("#@#") || rest.startsWith("##^") || rest.startsWith("##+js")
+        val selector = rest
+            .removePrefix("#@#")
+            .removePrefix("##")
+            .removePrefix("^")
+            .removePrefix("+js")
+
+        if (selector.isBlank()) return null
+
+        val domains = domainsPart.split(',')
+            .filter { it.isNotBlank() }
+            .map { it.lowercase().removePrefix("www.") }
+            .toSet()
+
+        val selectors = selector.split(',').filter { it.isNotBlank() }
+        return FilterRule.Cosmetic(domains, selectors, isException)
+    }
 
     companion object {
-        private const val MAX_CANDIDATES = 40_000
-
         /**
          * Translate an Adblock pattern into a Kotlin [Regex].
          *
@@ -228,7 +291,10 @@ class FilterListEngine {
         fun compile(pattern: String, matchCase: Boolean): Regex {
             // `/regex/` literal — supported because some lists lean on it hard.
             if (pattern.length > 2 && pattern.startsWith('/') && pattern.endsWith('/')) {
-                return Regex(pattern.substring(1, pattern.length - 1), if (matchCase) emptySet() else setOf(RegexOption.IGNORE_CASE))
+                return Regex(
+                    pattern.substring(1, pattern.length - 1),
+                    if (matchCase) emptySet() else setOf(RegexOption.IGNORE_CASE)
+                )
             }
 
             val sb = StringBuilder()
