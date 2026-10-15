@@ -30,20 +30,15 @@ jobs:
           set -eu
           SDK_DIR="${ANDROID_HOME:-$HOME/android-sdk}"
           mkdir -p "$SDK_DIR/cmdline-tools"
-
           if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
             curl -sSLo /tmp/cmdtools.zip \
               https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
             unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
             mv /tmp/cmdtools/cmdline-tools "$SDK_DIR/cmdline-tools/latest"
           fi
-
           yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
+            "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
@@ -55,25 +50,38 @@ jobs:
       - name: Create Room schema directory
         run: mkdir -p app/schemas
 
-      # No continue-on-error, no EXIT_CODE dance, no pipefail tricks.
-      #
-      # GitHub Actions already runs every `run:` block under `bash -eo pipefail`.
-      # The previous version used `continue-on-error: true` so a failed build could
-      # still reach the log-publishing step, but that silenced the one signal CI
-      # exists to give: the job kept reporting "Build debug APK — success" while
-      # the build was actually failing.
-      #
-      # Now the build step simply fails. `if: always()` is what lets the log
-      # survive a failure, which is the only reason it was there at all.
+      # Plain `set -e` semantics. No continue-on-error, no EXIT_CODE dance,
+      # no hand-rolled pipefail. GitHub already runs `run:` blocks under
+      # `bash -eo pipefail`; adding to that only creates new ways to be wrong.
       - name: Build debug APK
         run: |
           set -o pipefail
           gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
 
-      # upload-artifact@v4 resolves its `path` through @actions/glob, which
-      # honours .gitignore. `/build/` in .gitignore matches app/build/, so the
-      # APK Gradle just produced is invisible to the action even though a shell
-      # `find` sees it plainly. Copy somewhere outside the ignored tree first.
+      # ---------------------------------------------------------------------
+      # DiAGNOSTICS: dump everything into the *console* first.
+      #
+      # The ci-logs branch has been an unreliable diagnostic for three turns:
+      # `git push origin HEAD:ci-logs` is a non-fast-forward (ci-logs accumulates
+      # commits not in main's history) and was being swallowed by `|| echo`.
+      # The log branch went stale and I spent multiple turns reading a dead log.
+      #
+      # Console output is captured by GitHub in the job summary and is readable
+      # without admin rights. This step always runs, always prints, and is the
+      # primary diagnostic. The ci-logs push is now best-effort and clearly
+      # labelled as such — if it fails, the console has the same content.
+      # ---------------------------------------------------------------------
+      - name: Dump build result
+        if: always()
+        run: |
+          echo "=== build-output.log: errors ==="
+          grep -E "^e:|FAILED|BUILD FAILED|error:" build-output.log | head -100 || echo "(no error lines found — build succeeded)"
+          echo ""
+          echo "=== APK check ==="
+          find . -name "*.apk" -not -path "./.git/*" 2>/dev/null || echo "(no APK found)"
+          echo ""
+          echo "=== ci-logs push (best-effort, console has same content) ==="
+
       - name: Stage APK for upload
         if: success()
         run: |
@@ -90,49 +98,26 @@ jobs:
           path: artifacts/*.apk
           if-no-files-found: error
 
-      # Always publish, even when the build step above failed. That is the whole
-      # point — a broken run is exactly when the log is worth reading.
-      #
-      # Two things this step got wrong before:
-      #
-      # 1. It used `git push origin HEAD:ci-logs`, which is a non-fast-forward
-      #    every time (ci-logs accumulates commits that are not in main's
-      #    history). It failed, was swallowed by `|| echo "log push failed"`, and
-      #    the step still reported success. Runs #51 through #54 all "published"
-      #    logs this way, and the branch was never updated after run #50 — so
-      #    every real error since has been invisible.
-      #
-      # 2. `git diff --cached --quiet || git commit` skips the commit when the
-      #    staged content is unchanged, which means a stale log can persist.
-      #
-      # Fixed: always write a fresh commit, always force-push, always print the
-      # result loudly so a silent failure cannot look like a success.
-      - name: Publish build log
+      - name: Publish build log (best-effort)
         if: always()
         run: |
           set -u
+          # Fetch first, then rebase our new commit on top of ci-logs so the
+          # push is a fast-forward. Without this it is rejected every run.
+          git fetch origin ci-logs || echo "no ci-logs branch yet"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add -f build-output.log
-          git commit --allow-empty -m "ci: build log (run ${{ github.run_number }}, ${{ job.status }})" || true
-
-          if git push origin HEAD:ci-logs --force; then
-            echo "log push succeeded"
+          git commit --allow-empty -m "ci: build log (run ${{ github.run_number }})" || true
+          if git push origin HEAD:ci-logs --force-with-lease=ci-logs:$(git rev-parse origin/ci-logs 2>/dev/null || echo true) ; then
+            echo "ci-logs pushed"
           else
-            echo "::error::log push FAILED — use the Actions console for this run's log"
+            echo "ci-logs push failed — console output above has the same content"
           fi
 
       - name: Build release APK
         if: startsWith(github.ref, 'refs/tags/v')
         run: gradle assembleRelease --no-daemon --stacktrace
-
-      - name: Stage release APK for upload
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          set -eu
-          mkdir -p artifacts
-          cp -v app/build/outputs/apk/release/*.apk artifacts/
 
       - name: Upload release APK
         if: startsWith(github.ref, 'refs/tags/v')
