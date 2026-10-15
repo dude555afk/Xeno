@@ -58,11 +58,10 @@ jobs:
       # No continue-on-error, no EXIT_CODE dance, no pipefail tricks.
       #
       # GitHub Actions already runs every `run:` block under `bash -eo pipefail`.
-      # Anything added on top of that only creates new ways to be wrong. The
-      # previous version used `continue-on-error: true` so a failed build could
+      # The previous version used `continue-on-error: true` so a failed build could
       # still reach the log-publishing step, but that silenced the one signal CI
       # exists to give: the job kept reporting "Build debug APK — success" while
-      # the APK silently did not exist, and the staging step failed on a cp.
+      # the build was actually failing.
       #
       # Now the build step simply fails. `if: always()` is what lets the log
       # survive a failure, which is the only reason it was there at all.
@@ -93,15 +92,36 @@ jobs:
 
       # Always publish, even when the build step above failed. That is the whole
       # point — a broken run is exactly when the log is worth reading.
+      #
+      # Two things this step got wrong before:
+      #
+      # 1. It used `git push origin HEAD:ci-logs`, which is a non-fast-forward
+      #    every time (ci-logs accumulates commits that are not in main's
+      #    history). It failed, was swallowed by `|| echo "log push failed"`, and
+      #    the step still reported success. Runs #51 through #54 all "published"
+      #    logs this way, and the branch was never updated after run #50 — so
+      #    every real error since has been invisible.
+      #
+      # 2. `git diff --cached --quiet || git commit` skips the commit when the
+      #    staged content is unchanged, which means a stale log can persist.
+      #
+      # Fixed: always write a fresh commit, always force-push, always print the
+      # result loudly so a silent failure cannot look like a success.
       - name: Publish build log
         if: always()
         run: |
           set -u
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add -f build-output.log
-          git diff --cached --quiet || git commit -m "ci: build log"
-          git push origin HEAD:ci-logs || echo "log push failed"
+          git commit --allow-empty -m "ci: build log (run ${{ github.run_number }}, ${{ job.status }})" || true
+
+          if git push origin HEAD:ci-logs --force; then
+            echo "log push succeeded"
+          else
+            echo "::error::log push FAILED — use the Actions console for this run's log"
+          fi
 
       - name: Build release APK
         if: startsWith(github.ref, 'refs/tags/v')
