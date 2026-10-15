@@ -2,8 +2,8 @@ package com.dude555afk.xeno.ui.summary
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +65,7 @@ fun SummarySheet(
     offline: Boolean,
     error: String?,
     accent: Color,
+    onToneChange: (Prompts.Tone) -> Unit,
     onCopy: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -151,7 +154,7 @@ fun SummarySheet(
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(14.dp)
                                         )
-                                        Spacer(Modifier.width(Dimens.spaceXs))
+                                        Spacer(Modifier.width(4.dp))
                                         Text(
                                             text = "Copy",
                                             style = MaterialTheme.typography.labelMedium,
@@ -159,10 +162,10 @@ fun SummarySheet(
                                         )
                                     }
                                 }
+                                Spacer(Modifier.width(Dimens.spaceS))
                             }
 
                             if (offline) {
-                                Spacer(Modifier.width(Dimens.spaceS))
                                 Text(
                                     text = "offline",
                                     style = MaterialTheme.typography.labelSmall,
@@ -184,8 +187,7 @@ fun SummarySheet(
                         // Tone chips — same text, four different prompts.
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement
-                                .spacedBy(Dimens.spaceS)
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.spaceS)
                         ) {
                             Prompts.Tone.entries.forEach { option ->
                                 val selected = option == tone
