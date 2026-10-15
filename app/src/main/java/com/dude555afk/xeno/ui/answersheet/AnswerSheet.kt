@@ -8,21 +8,42 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.AnswerResult
@@ -30,7 +51,6 @@ import com.dude555afk.xeno.core.model.AnswerSource
 import com.dude555afk.xeno.ui.render.AnswerText
 import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.XenoMotion
-import androidx.compose.foundation.BorderStroke
 
 /**
  * The answer sheet — flagship surface.
@@ -43,34 +63,18 @@ import androidx.compose.foundation.BorderStroke
 fun AnswerSheet(
     result: AnswerResult?,
     streaming: Boolean,
-    accent: androidx.compose.ui.graphics.Color,
+    accent: Color,
     onOpenSource: (AnswerSource) -> Unit,
     onDismiss: () -> Unit
 ) {
     val parsed = remember(result?.markdown) { AnswerText.parse(result?.markdown.orEmpty()) }
     val listState = rememberLazyListState()
-    val caretVisible = remember { mutableStateOf(true) }
 
-    // Blinking caret — the single most effective "this is alive" signal.
-    LaunchedEffect(streaming) {
-        if (streaming) {
-            val transition = rememberInfiniteTransition(label = "caret")
-            transition.animateFloat(
-                initialValue = 1f,
-                targetValue = 0f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(530),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "caretAlpha"
-            )
-        }
-    }
-
-    // Keep the new text in view as it streams.
+    // Keep the newest text in view as it streams. Keyed on length rather than
+    // content so a token arriving mid-animation does not cancel the scroll.
     LaunchedEffect(result?.markdown?.length) {
- val count = (result?.sources?.size ?: 0) + parsed.blocks.size + 1
-        if (count > 0) listState.animateScrollToItem(count - 1)
+        val count = (result?.sources?.size ?: 0) + parsed.blocks.size + 1
+        if (count > 0) runCatching { listState.animateScrollToItem(count - 1) }
     }
 
     AnimatedVisibility(
@@ -81,25 +85,25 @@ fun AnswerSheet(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
+                .background(Color.Black.copy(alpha = 0.6f))
                 .clickable(
                     indication = null,
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
             contentAlignment = Alignment.BottomCenter
         ) {
             Surface(
                 shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = androidx.compose.ui.graphics.Color(0xFF0A0A0A),
+                color = Color(0xFF0A0A0A),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
                     .clickable(
                         indication = null,
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        interactionSource = remember { MutableInteractionSource() }
                     ) { /* keep sheet open */ }
             ) {
                 Column(Modifier.fillMaxSize()) {
@@ -110,7 +114,7 @@ fun AnswerSheet(
                             .padding(vertical = Dimens.spaceM)
                             .size(width = 36.dp, height = 4.dp)
                             .background(
-                                androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
+                                Color.White.copy(alpha = 0.2f),
                                 RoundedCornerShape(percent = 50)
                             )
                     )
@@ -154,7 +158,8 @@ fun AnswerSheet(
                             }
                             item {
                                 LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(Dimens.spaceM),
+                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement
+                                        .spacedBy(Dimens.spaceM),
                                     contentPadding = PaddingValues(vertical = 2.dp)
                                 ) {
                                     items(result.sources) { source ->
@@ -208,8 +213,8 @@ fun AnswerSheet(
                             }
                         }
 
-                        if (streaming && (result?.markdown.isNullOrEmpty())) {
-                            item { StreamingSkeleton(accent) }
+                        if (streaming && result?.markdown.isNullOrEmpty()) {
+                            item { StreamingSkeleton() }
                         }
                     }
                 }
@@ -222,13 +227,13 @@ fun AnswerSheet(
 @Composable
 private fun SourceCard(
     source: AnswerSource,
-    accent: androidx.compose.ui.graphics.Color,
+    accent: Color,
     onOpen: (AnswerSource) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.06f),
-        border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.08f)),
+        color = Color.White.copy(alpha = 0.06f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
         modifier = Modifier
             .width(240.dp)
             .clickable { onOpen(source) }
@@ -299,7 +304,7 @@ private fun SourceCard(
  * way" instead of "the app is thinking".
  */
 @Composable
-private fun StreamingSkeleton(accent: androidx.compose.ui.graphics.Color) {
+private fun StreamingSkeleton() {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.15f,
@@ -315,7 +320,7 @@ private fun StreamingSkeleton(accent: androidx.compose.ui.graphics.Color) {
                     .fillMaxWidth(if (i == 2) 0.6f else 0.95f)
                     .height(14.dp)
                     .background(
-                        androidx.compose.ui.graphics.Color.White.copy(alpha = alpha),
+                        Color.White.copy(alpha = alpha),
                         RoundedCornerShape(7.dp)
                     )
             )
