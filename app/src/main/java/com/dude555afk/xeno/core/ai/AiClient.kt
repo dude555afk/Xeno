@@ -119,7 +119,10 @@ class AiClient(
                         json.decodeFromString(StreamChunk.serializer(), data)
                     }.getOrNull()
 
-                    val text = chunk.text
+                    // `chunk` is StreamChunk? — the safe call is required.
+                    // This was the entire compile error: `chunk.text` on a
+                    // nullable receiver.
+                    val text = chunk?.text.orEmpty()
                     if (text.isNotEmpty()) buffer.append(text)
                 }
 
