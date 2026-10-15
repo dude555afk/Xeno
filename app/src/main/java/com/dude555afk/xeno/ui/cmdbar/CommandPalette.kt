@@ -5,22 +5,47 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Tab
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -60,8 +85,11 @@ fun CommandPalette(
         visible = visible,
         enter = fadeIn(XenoMotion.backdropFade()) +
             scaleIn(initialScale = 0.92f, animationSpec = XenoMotion.overlaySpring()),
-        exit = fadeOut(tween(200)) +
-            scaleOut(targetScale = 0.95f, animationSpec = tween(200))
+        exit = fadeOut(androidx.compose.animation.core.tween(200)) +
+            scaleOut(
+                targetScale = 0.95f,
+                animationSpec = androidx.compose.animation.core.tween(200)
+            )
     ) {
         Box(
             modifier = Modifier
@@ -69,7 +97,7 @@ fun CommandPalette(
                 .background(Color.Black.copy(alpha = 0.72f))
                 .clickable(
                     indication = null,
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
             contentAlignment = Alignment.BottomCenter
         ) {
@@ -79,14 +107,14 @@ fun CommandPalette(
                     .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceXl)
                     .clickable(
                         indication = null,
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        interactionSource = remember { MutableInteractionSource() }
                     ) { /* swallow so the backdrop isn't dismissed */ }
             ) {
                 // The bar itself — a pill, docked at the bottom.
                 Surface(
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
+                    shape = RoundedCornerShape(percent = 50),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+                    border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
                     shadowElevation = 0.dp
                 ) {
                     Row(
@@ -110,7 +138,7 @@ fun CommandPalette(
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
-                            cursorBrush = androidx.compose.ui.graphics.SolidColor(accent),
+                            cursorBrush = SolidColor(accent),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
                                 onGo = { keyboard?.hide(); onNavigate(query.trim()) },
@@ -130,6 +158,9 @@ fun CommandPalette(
 
                         if (query.isNotBlank()) {
                             // The dual mode — this button is the whole trick.
+                            // The label reflects what the heuristic thinks, so
+                            // the user knows which one the keyboard Go key is
+                            // about to do. Both paths stay reachable regardless.
                             TextButton(
                                 onClick = { keyboard?.hide(); onAsk(query.trim()) },
                                 shape = PillShape,
@@ -139,7 +170,7 @@ fun CommandPalette(
                                 )
                             ) {
                                 Text(
-                                    text = if (isQuestion) "Ask" else "Ask",
+                                    text = if (isQuestion) "Ask" else "Ask anyway",
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
@@ -156,7 +187,7 @@ fun CommandPalette(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         tonalElevation = 0.dp,
                         shadowElevation = 0.dp,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         LazyColumn(
                             modifier = Modifier.heightIn(max = 320.dp),
@@ -167,17 +198,15 @@ fun CommandPalette(
                                     icon = Icons.Rounded.Tab,
                                     title = tab.displayTitle,
                                     subtitle = tab.url,
-                                    accent = accent,
                                     onClick = { onOpenTab(tab) }
                                 )
                             }
                             items(historyHints, key = { "hist-${it.url}" }) { hit ->
                                 SuggestionRow(
                                     icon = Icons.Rounded.History,
-                                    title = hit.title,
+                                    title = hit.title.ifBlank { hit.url },
                                     subtitle = hit.url,
-                                    accent = accent,
-                                    onClick = { onNavigate(it) }
+                                    onClick = { onNavigate(hit.url) }
                                 )
                             }
                         }
@@ -198,10 +227,9 @@ fun CommandPalette(
 
 @Composable
 private fun SuggestionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     subtitle: String,
-    accent: Color,
     onClick: () -> Unit
 ) {
     Row(
