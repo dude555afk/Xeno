@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Monochrome layer, for Android 13+ themed icons.
+
+  Themed launchers take the alpha channel of this drawable and tint it with
+  the user's wallpaper-derived palette, ignoring its colours entirely. It
+  therefore has to be a single flat silhouette — pointing this layer at
+  ic_launcher_foreground, which is what both mipmap files used to do, gives a
+  three-colour gradient tinted to one flat colour, which looks like a printing
+  error.
+
+  Same geometry as the foreground, minus the gradients. Colour is irrelevant
+  here; opaque black is just conventional.
+-->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M34,80 L34,46 A20,20 0 0 1 74,46 L74,80"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeColor="FF000000" />
+
+    <path
+        android:pathData="M54,47 Q56.6,55.4 65,58 Q56.6,60.6 54,69 Q51.4,60.6 43,58 Q51.4,55.4 54,47 Z"
+        android:fillColor="FF000000" />
+</vector>
