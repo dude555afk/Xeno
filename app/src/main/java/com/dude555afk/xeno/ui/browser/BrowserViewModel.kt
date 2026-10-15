@@ -20,6 +20,7 @@ import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.PageLoadState
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.Tab
+import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
@@ -35,6 +36,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -114,7 +116,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             if (db.spaceDao().count() == 0) {
-                val seed = com.dude555afk.xeno.core.model.defaultSpace()
+                val seed = defaultSpace()
                 db.spaceDao().insert(
                     SpaceEntity(
                         name = seed.name,
@@ -136,14 +138,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         pinned = it.pinned
                     )
                 }
-                _state.value = _state.value.copy(spaces = spaces)
+                _state.update { it.copy(spaces = spaces) }
                 if (_state.value.activeSpace == null && spaces.isNotEmpty()) {
                     selectSpace(spaces.first())
                 }
             }
         }
 
-        // Tabs for whichever space is active.
+        // Tabs for whichever space is active. The collector resolves the active
+        // tab by id against the fresh list rather than only defaulting when it
+        // is null, so a row the session rewrote (title, or a navigate in
+        // another path) is reflected here instead of being overwritten back.
         viewModelScope.launch {
             _state.collect { snapshot ->
                 val space = snapshot.activeSpace ?: return@collect
@@ -158,10 +163,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                             position = it.position
                         )
                     }
-                    _state.value = _state.value.copy(tabs = tabs)
-                    if (_state.value.activeTab == null && tabs.isNotEmpty()) {
-                        selectTab(tabs.first())
+                    _state.update { current ->
+                        val active = current.activeTab
+                            ?.let { old -> tabs.firstOrNull { it.id == old.id } }
+                            ?: tabs.firstOrNull()
+                        current.copy(tabs = tabs, activeTab = active)
                     }
+                    _state.value.activeTab?.let(::syncSessionToTab)
                 }
             }
         }
@@ -171,11 +179,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectSpace(space: Space) {
         settings.activeSpaceId = space.id
-        _state.value = _state.value.copy(activeSpace = space)
+        _state.update { it.copy(activeSpace = space) }
     }
 
     fun selectTab(tab: Tab) {
-        _state.value = _state.value.copy(activeTab = tab, load = PageLoadState(url = tab.url))
+        _state.update { it.copy(activeTab = tab, load = PageLoadState(url = tab.url)) }
         syncSessionToTab(tab)
     }
 
@@ -184,7 +192,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val spaceId = _state.value.activeSpace?.id ?: 1L
             val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
             selectTab(Tab(id = id, spaceId = spaceId))
-            _state.value = _state.value.copy(tabStackVisible = false, paletteVisible = true)
+            _state.update { it.copy(tabStackVisible = false, paletteVisible = true) }
         }
     }
 
@@ -203,7 +211,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleTabStack() {
-        _state.value = _state.value.copy(tabStackVisible = !_state.value.tabStackVisible)
+        _state.update { it.copy(tabStackVisible = !it.tabStackVisible) }
     }
 
     /** Called from the Activity. See [SessionPool.onTrimMemory]. */
@@ -212,15 +220,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: palette
 
     fun openPalette() {
-        _state.value = _state.value.copy(paletteVisible = true)
+        _state.update { it.copy(paletteVisible = true) }
     }
 
     fun closePalette() {
-        _state.value = _state.value.copy(paletteVisible = false)
+        _state.update { it.copy(paletteVisible = false) }
     }
 
     fun onQueryChange(q: String) {
-        _state.value = _state.value.copy(query = q, isQuestion = engine.isQuestion(q))
+        _state.update { it.copy(query = q, isQuestion = engine.isQuestion(q)) }
     }
 
     /**
@@ -239,35 +247,42 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         closePalette()
         answerJob?.cancel()
 
-        _state.value = _state.value.copy(
-            answer = AnswerResult(query, emptyList()),
-            answerStreaming = true,
-            answerError = null
-        )
+        _state.update {
+            it.copy(
+                answer = AnswerResult(query, emptyList()),
+                answerStreaming = true,
+                answerError = null
+            )
+        }
 
         answerJob = viewModelScope.launch {
             try {
                 engine.answer(query, settings.providerConfig).collect { result ->
-                    _state.value = _state.value.copy(
-                        answer = result,
-                        answerStreaming = result.markdown.isBlank()
-                    )
+                    _state.update {
+                        it.copy(
+                            answer = result,
+                            answerStreaming = result.markdown.isBlank()
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    answer = (_state.value.answer ?: AnswerResult(query, emptyList())).copy(
-                        markdown = AnswerEngine.UNREADABLE
-                    ),
-                    answerStreaming = false,
-                    answerError = e.message
-                )
+                _state.update {
+                    it.copy(
+                        answer = (it.answer ?: AnswerResult(query, emptyList())).copy(
+                            markdown = AnswerEngine.UNREADABLE
+                        ),
+                        answerStreaming = false,
+                        answerError = e.message
+                    )
+                }
             }
+            _state.update { it.copy(answerStreaming = false) }
         }
     }
 
     fun dismissAnswer() {
         answerJob?.cancel()
-        _state.value = _state.value.copy(answer = null, answerStreaming = false)
+        _state.update { it.copy(answer = null, answerStreaming = false) }
     }
 
     /**
@@ -276,6 +291,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * Writes the tab to the database *and* pushes the URL into the live session
      * — the two have to move together or the user sees a URL in the bar that
      * the WebView below it is not showing.
+     *
+     * When there is no active tab (first run, or every tab closed) this creates
+     * the row first and uses the id the database returns. The previous version
+     * fabricated a Tab with `id = 0L` and called `update()`, which matched
+     * nothing, so a cold-start navigate updated no row and loaded no page.
      */
     fun navigate(raw: String) {
         val q = raw.trim()
@@ -289,28 +309,26 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         closePalette()
 
-        val tab = _state.value.activeTab ?: newBlankTabReturning(url)
-
         viewModelScope.launch {
-            val updated = db.tabDao().let {
-                it.update(
-                    TabEntity(id = tab.id, spaceId = tab.spaceId, url = url, position = tab.position)
-                )
-                tab.copy(url = url)
-            }
-            selectTab(updated)
-            pool.peek(SESSION_KEY)?.let { view ->
-                if (view.url != url) view.loadUrl(url)
-            }
-        }
-    }
+            val current = _state.value.activeTab
+            val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
 
-    /** Create an empty tab synchronously so navigate() has something to write to. */
-    private fun newBlankTabReturning(url: String): Tab {
-        val spaceId = _state.value.activeSpace?.id ?: 1L
-        val tab = Tab(id = 0L, spaceId = spaceId, url = url)
-        _state.value = _state.value.copy(activeTab = tab)
-        return tab
+            val id = if (current != null && current.id != 0L) {
+                db.tabDao().update(
+                    TabEntity(
+                        id = current.id,
+                        spaceId = spaceId,
+                        url = url,
+                        position = current.position
+                    )
+                )
+                current.id
+            } else {
+                db.tabDao().insert(TabEntity(spaceId = spaceId, url = url))
+            }
+
+            selectTab(Tab(id = id, spaceId = spaceId, url = url))
+        }
     }
 
     // MARK: summarizing
@@ -320,17 +338,21 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (!tab.hasContent) return
 
         summaryJob?.cancel()
-        _state.value = _state.value.copy(
-            summaryVisible = true,
-            summaryText = "",
-            summaryOffline = false,
-            summaryError = null,
-            summaryTone = tone
-        )
+        _state.update {
+            it.copy(
+                summaryVisible = true,
+                summaryText = "",
+                summaryOffline = false,
+                summaryError = null,
+                summaryTone = tone
+            )
+        }
 
         summaryJob = viewModelScope.launch {
             // Prefer the live session: it already has the page loaded and warm,
-            // so this is nearly instant and costs no extra engine.
+            // so this is nearly instant and costs no extra engine. A page that
+            // navigated on since is re-extracted from a scratch WebView rather
+            // than silently summarising the wrong thing.
             val existing = pool.peek(SESSION_KEY)
             val content = if (existing != null && existing.url == tab.url) {
                 injector.extract(existing, tab.url)
@@ -344,19 +366,18 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             when (val outcome = summarizer.summarize(content, settings.providerConfig, tone)) {
-                is SummaryOutcome.Unreadable -> _state.value = _state.value.copy(
-                    summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
-                )
+                is SummaryOutcome.Unreadable -> _state.update {
+                    it.copy(
+                        summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
+                    )
+                }
 
-                is SummaryOutcome.Offline -> _state.value = _state.value.copy(
-                    summaryText = outcome.text,
-                    summaryOffline = true
-                )
+                is SummaryOutcome.Offline -> _state.update {
+                    it.copy(summaryText = outcome.text, summaryOffline = true)
+                }
 
                 is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
-                    _state.value = _state.value.copy(
-                        summaryText = _state.value.summaryText + delta
-                    )
+                    _state.update { it.copy(summaryText = it.summaryText + delta) }
                 }
             }
         }
@@ -366,7 +387,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissSummary() {
         summaryJob?.cancel()
-        _state.value = _state.value.copy(summaryVisible = false)
+        _state.update { it.copy(summaryVisible = false) }
     }
 
     // MARK: WebView plumbing
@@ -413,33 +434,31 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun syncSessionToTab(tab: Tab) {
         val view = pool.peek(SESSION_KEY) ?: return
-        val target = if (tab.url.isBlank()) null else tab.url
 
-        if (target == null) {
-            if (loadedTabId != tab.id) {
-                view.loadUrl("about:blank")
+        when {
+            tab.url.isBlank() -> {
+                if (loadedTabId != tab.id) {
+                    view.loadUrl("about:blank")
+                    loadedTabId = tab.id
+                }
+            }
+
+            view.url != tab.url || loadedTabId != tab.id -> {
+                view.loadUrl(tab.url)
                 loadedTabId = tab.id
             }
-            return
-        }
-
-        if (view.url != target || loadedTabId != tab.id) {
-            view.loadUrl(target)
-            loadedTabId = tab.id
         }
     }
 
     private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
-            _state.value = _state.value.copy(
-                load = _state.value.load.copy(loading = true, progress = 0.05f, url = url)
-            )
+            _state.update {
+                it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
+            }
         }
 
         override fun onPageProgress(url: String, progress: Int) {
-            _state.value = _state.value.copy(
-                load = _state.value.load.copy(progress = progress / 100f)
-            )
+            _state.update { it.copy(load = it.load.copy(progress = progress / 100f)) }
         }
 
         override fun onPageFinished(url: String, title: String) {
@@ -467,9 +486,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            _state.value = _state.value.copy(
-                load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
-            )
+            _state.update {
+                it.copy(
+                    load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
+                )
+            }
         }
 
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
