@@ -1,6 +1,8 @@
 package com.dude555afk.xeno.ui.browser
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.lifecycle.AndroidViewModel
@@ -18,6 +20,7 @@ import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.SearchEngine
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.PageLoadState
+import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.core.model.defaultSpace
@@ -47,9 +50,11 @@ data class BrowserUiState(
     val tabs: List<Tab> = emptyList(),
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
+    val canGoBack: Boolean = false,
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
+    val historyHints: List<SearchHit> = emptyList(),
     val tabStackVisible: Boolean = false,
     val answer: AnswerResult? = null,
     val answerStreaming: Boolean = false,
@@ -104,6 +109,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
+    private var hintsJob: Job? = null
 
     /** The tab the WebView session is currently showing. */
     private var loadedTabId: Long? = null
@@ -170,6 +176,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         current.copy(tabs = tabs, activeTab = active)
                     }
                     _state.value.activeTab?.let(::syncSessionToTab)
+                    refreshBackState()
                 }
             }
         }
@@ -229,6 +236,29 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onQueryChange(q: String) {
         _state.update { it.copy(query = q, isQuestion = engine.isQuestion(q)) }
+        refreshHistoryHints(q)
+    }
+
+    /**
+     * History suggestions for the palette.
+     *
+     * Debounced because the query changes on every keystroke and a DB round
+     * trip per keypress is the kind of thing that makes a text field feel
+     * broken. The job is cancelled on each change rather than sleeping a fixed
+     * interval, so the last keystroke always lands.
+     */
+    private fun refreshHistoryHints(q: String) {
+        hintsJob?.cancel()
+        hintsJob = viewModelScope.launch {
+            if (q.isBlank()) {
+                _state.update { it.copy(historyHints = emptyList()) }
+                return@launch
+            }
+            val hits = withContext(Dispatchers.IO) {
+                runCatching { db.historyDao().search(q, limit = 8) }.getOrDefault(emptyList())
+            }
+            _state.update { it.copy(historyHints = hits.map { h -> SearchHit(h.url, h.title) }) }
+        }
     }
 
     /**
@@ -390,6 +420,24 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(summaryVisible = false) }
     }
 
+    /**
+     * Put the streamed summary on the clipboard.
+     *
+     * No-op on an empty summary rather than copying a zero-length string, which
+     * Android records as "something was copied" and then paste yields nothing.
+     */
+    fun copySummary() {
+        val text = _state.value.summaryText
+        if (text.isBlank()) return
+
+        val manager = getApplication<Application>()
+            .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+
+        manager.setPrimaryClip(
+            ClipData.newPlainText("Xeno summary", text)
+        )
+    }
+
     // MARK: WebView plumbing
 
     /**
@@ -421,6 +469,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             view.loadUrl(activeUrl)
             loadedTabId = _state.value.activeTab?.id
         }
+        refreshBackState()
     }
 
     fun detachHost() = pool.park(SESSION_KEY)
@@ -450,11 +499,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Mirror the session's history depth into state so the bar can show it. */
+    private fun refreshBackState() {
+        val back = pool.peek(SESSION_KEY)?.canGoBack() == true
+        if (_state.value.canGoBack != back) {
+            _state.update { it.copy(canGoBack = back) }
+        }
+    }
+
     private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
             _state.update {
                 it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
             }
+            refreshBackState()
         }
 
         override fun onPageProgress(url: String, progress: Int) {
@@ -491,6 +549,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
                 )
             }
+            refreshBackState()
         }
 
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
@@ -508,9 +567,6 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun goBack() {
         pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
     }
-
-    /** True when the active session can go back — drives the bar's back button. */
-    fun canGoBack(): Boolean = pool.peek(SESSION_KEY)?.canGoBack() == true
 
     /**
      * Pull the real uBO lists from the network and merge them in.
