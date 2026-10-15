@@ -13,26 +13,29 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.coroutines.resume
 
 /**
  * Runs the Readability extractor inside a real page and hands back clean text.
  *
- * Two details that matter more than they look:
+ * Three details that matter more than they look:
  *
  * 1. **`onPageFinished` is not enough.** SPAs fire it before any content is
  *    rendered, so after load completes we poll a JS readiness probe and keep
  *    going until the DOM text length stops changing.
  * 2. **The extractor works on a clone.** It never mutates the live page, so
  *    this is safe to point at the visible tab as well as an offscreen one.
+ * 3. **`wordCount` arrives as a JSON number, not a string.** The original
+ *    parser read it with a string-only accessor, so it silently became 0,
+ *    which made [ExtractedContent.isJunk] true for *every* page in the app.
+ *    See [parse] for why that one line broke both flagship features.
  *
- * The third detail, which the first version got badly wrong: the injector
- * owns a [androidx.webkit.WebViewAssetLoader] and installs it itself. Before
- * that, offscreen WebViews used in the answer engine had no asset loader, so
- * `readability.js` resolved to a 404 and every extracted page came back as
- * junk. The bug was invisible on the visible tab (which did have a loader) and
- * fatal everywhere else.
+ * The injector owns a [androidx.webkit.WebViewAssetLoader] and installs it
+ * itself. Without that, offscreen WebViews used by the answer engine have no
+ * asset loader, so `readability.js` resolves to a 404 and every extracted page
+ * comes back junk — invisible on the visible tab, fatal everywhere else.
  */
 class ReadabilityInjector(
     private val context: Context,
@@ -165,15 +168,35 @@ class ReadabilityInjector(
             }
         }
 
+    /**
+     * Parse the JS object handed back by `__xenoReadability.extract()`.
+     *
+     * `evaluateJavascript` returns a JS *expression*, which for an object is
+     * the JSON text wrapped in quotes. So the raw value is unwrapped once with
+     * [JsonPrimitive.content] to get the JSON string, then parsed again as the
+     * object. Skipping the first unwrap is the classic mistake here — it yields
+     * a JsonPrimitive instead of a JsonObject and every field reads as absent.
+     *
+     * Numbers are read through [num] rather than [str] because the extractor
+     * emits `wordCount` as a JSON number. `takeIf { it.isString }` skips it,
+     * `toIntOrNull` then returns null, and the field silently became 0 — which
+     * made [ExtractedContent.isJunk] true for every page, so the summarizer
+     * always said "couldn't be read" and the answer engine always reported zero
+     * readable sources. Neither symptom points at this line.
+     */
     private fun parse(raw: String?, fallbackUrl: String): ExtractedContent {
         if (raw.isNullOrBlank() || raw == "null") return ExtractedContent.junk(fallbackUrl)
         return runCatching {
-            // evaluateJavascript hands back a JS string literal, so unwrap once.
             val literal = json.parseToJsonElement(raw).jsonPrimitive.content
             val obj = json.parseToJsonElement(literal) as? JsonObject
                 ?: return ExtractedContent.junk(fallbackUrl)
 
-            fun str(key: String) = obj[key]?.jsonPrimitive?.takeIf { it.isString }?.content.orEmpty()
+            fun str(key: String) =
+                obj[key]?.jsonPrimitive?.takeIf { it.isString }?.content.orEmpty()
+
+            // Works whether the JS side sent a number or a numeric string —
+            // JsonPrimitive.content is the textual form either way.
+            fun num(key: String) = obj[key]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
 
             ExtractedContent(
                 url = str("url").ifBlank { fallbackUrl },
@@ -181,7 +204,7 @@ class ReadabilityInjector(
                 byline = str("byline").ifBlank { null },
                 text = str("text"),
                 excerpt = str("excerpt"),
-                wordCount = str("wordCount").toIntOrNull() ?: 0
+                wordCount = num("wordCount")
             )
         }.getOrElse { ExtractedContent.junk(fallbackUrl) }
     }
