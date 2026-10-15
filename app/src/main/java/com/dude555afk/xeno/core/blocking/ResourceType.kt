@@ -3,8 +3,7 @@ package com.dude555afk.xeno.core.blocking
 import android.webkit.WebResourceRequest
 
 /**
- * Resource categories used by filter-list rule options (`$script`, `$image`,
- * `$third-party`, …).
+ * Resource categories used by filter-list rule options (`$script`, `$image`,\n * `$third-party`, …).
  *
  * WebView's `shouldInterceptRequest` gives us a URL and, on API 21+, a way to
  * sniff the Accept header — that's the best we can do, and for the vast
@@ -52,10 +51,7 @@ enum class ResourceType {
                 "iframe", "frame", "embed", "object" -> return SUBDOCUMENT
                 "audio", "video", "track" -> return MEDIA
                 "document" -> return DOCUMENT
-                "empty" -> when (mode) {
-                    "cors", "same-origin", "navigate", "websocket" -> return XHR
-                    "no-cors" -> return XHR
-                }
+                "empty" -> if (mode != "no-cors") return XHR
             }
 
             val accept = headers["Accept"] ?: headers["accept"] ?: ""
@@ -64,13 +60,11 @@ enum class ResourceType {
                 accept.contains("text/html", true) -> DOCUMENT
                 accept.contains("image/", true) -> IMAGE
                 accept.contains("font/", true) -> FONT
-                accept.contains("javascript", true) -> JAVASCRIPT_TYPE
+                accept.contains("javascript", true) -> SCRIPT
                 accept.contains("application/", true) -> XHR
                 else -> OTHER
             }
         }
-
-        private const val JAVASCRIPT_TYPE = "javascript"
     }
 }
 
