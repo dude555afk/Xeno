@@ -1,20 +1,42 @@
 package com.dude555afk.xeno.ui.summary
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,7 +63,6 @@ fun SummarySheet(
     offline: Boolean,
     error: String?,
     accent: Color,
-    onToneChange: (Prompts.Tone) -> Unit,
     onCopy: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -58,7 +79,7 @@ fun SummarySheet(
                 .background(Color.Black.copy(alpha = 0.6f))
                 .clickable(
                     indication = null,
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
             contentAlignment = Alignment.BottomCenter
         ) {
@@ -73,7 +94,7 @@ fun SummarySheet(
                     .fillMaxHeight(0.8f)
                     .clickable(
                         indication = null,
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        interactionSource = remember { MutableInteractionSource() }
                     ) { /* swallow */ }
             ) {
                 Column(Modifier.fillMaxSize()) {
@@ -108,7 +129,40 @@ fun SummarySheet(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(Modifier.weight(1f))
+
+                            // Only offered once there is something to copy.
+                            // A dead copy button mid-stream is a lie.
+                            if (streamText.isNotBlank()) {
+                                Surface(
+                                    shape = PillShape,
+                                    color = Color.White.copy(alpha = 0.06f),
+                                    onClick = onCopy
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = Dimens.spaceM,
+                                            vertical = 6.dp
+                                        ),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.ContentCopy,
+                                            contentDescription = "Copy summary",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(Dimens.spaceXs))
+                                        Text(
+                                            text = "Copy",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
                             if (offline) {
+                                Spacer(Modifier.width(Dimens.spaceS))
                                 Text(
                                     text = "offline",
                                     style = MaterialTheme.typography.labelSmall,
@@ -130,7 +184,8 @@ fun SummarySheet(
                         // Tone chips — same text, four different prompts.
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(Dimens.spaceS)
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement
+                                .spacedBy(Dimens.spaceS)
                         ) {
                             Prompts.Tone.entries.forEach { option ->
                                 val selected = option == tone
@@ -143,7 +198,10 @@ fun SummarySheet(
                                         text = option.label,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = Dimens.spaceM, vertical = 6.dp)
+                                        modifier = Modifier.padding(
+                                            horizontal = Dimens.spaceM,
+                                            vertical = 6.dp
+                                        )
                                     )
                                 }
                             }
