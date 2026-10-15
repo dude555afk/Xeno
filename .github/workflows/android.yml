@@ -29,11 +29,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # The ubuntu-latest image ships a partial Android SDK with cmdline-tools
-      # but NOT the platform/build-tools for compileSdk 35. android-actions/
-      # setup-android@v3 also failed on this runner (step 4 of run #45), so the
-      # SDK is installed directly from Google's zip instead of a third-party
-      # action. Two steps, both plain shell, nothing to break.
       - name: Install Android SDK
         run: |
           set -eux
@@ -61,15 +56,40 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      # Room writes its schema JSON here. Without the directory Gradle warns on
-      # every build and the schema.json export silently lands nowhere.
       - name: Create Room schema directory
         run: mkdir -p app/schemas
 
+      # The full Gradle output is captured to a file and committed back on
+      # failure. GitHub's own log endpoint requires admin rights, which the API
+      # token does not have, so a failed build was previously undiagnosable from
+      # here — "Process completed with exit code 1" was the entire error.
+      # Committing the log makes it readable through the normal contents API.
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        id: assemble
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --stacktrace --info > build-output.log 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Publish build log on failure
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f build-output.log
+          git diff --cached --quiet || git commit -m "ci: build log (exit=${OUTCOME:-unknown})"
+          git push origin HEAD:ci-logs || echo "log push failed; log remains local to the run"
+
+      - name: Fail the job if the build failed
+        if: steps.assemble.outputs.exit_code != '0'
+        run: |
+          echo "::error::gradle assembleDebug exited with code ${EXIT_CODE}"
+          tail -n 200 build-output.log
+          exit 1
 
       - name: Upload debug APK
+        if: steps.assemble.outputs.exit_code == '0'
         uses: actions/upload-artifact@v4
         with:
           name: xeno-debug
