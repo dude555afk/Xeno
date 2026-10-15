@@ -1,10 +1,16 @@
 package com.dude555afk.xeno.ui.tabstack
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,8 +48,8 @@ import com.dude555afk.xeno.ui.theme.Dimens
 /**
  * The tab stack — Arc's vertical sidebar, translated for touch.
  *
- * Compact pill-cards, generous negative space. On mobile the horizontal tab
- * strip is a lost cause; this is the honest equivalent.
+ * Compact pill-cards, swipe-to-dismiss, generous negative space. On mobile the
+ * horizontal tab strip is a lost cause; this is the honest equivalent.
  */
 @Composable
 fun TabStackSheet(
@@ -56,13 +64,13 @@ fun TabStackSheet(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = androidx.compose.animation.fadeIn(tween(180)) +
-            androidx.compose.animation.slideInVertically(
+        enter = fadeIn(tween(180)) +
+            slideInVertically(
                 initialOffsetY = { it / 3 },
                 animationSpec = tween(240)
             ),
-        exit = androidx.compose.animation.fadeOut(tween(140)) +
-            androidx.compose.animation.slideOutVertically(tween(180))
+        exit = fadeOut(tween(140)) +
+            slideOutVertically(tween(180))
     ) {
         Box(
             modifier = Modifier
@@ -70,7 +78,7 @@ fun TabStackSheet(
                 .background(Color.Black.copy(alpha = 0.6f))
                 .clickable(
                     indication = null,
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
             contentAlignment = Alignment.BottomCenter
         ) {
@@ -85,7 +93,7 @@ fun TabStackSheet(
                     .fillMaxHeight(0.72f)
                     .clickable(
                         indication = null,
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        interactionSource = remember { MutableInteractionSource() }
                     ) { /* swallow */ }
             ) {
                 Column(Modifier.fillMaxSize()) {
