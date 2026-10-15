@@ -58,10 +58,10 @@ object TextRank {
     }
 
     fun splitSentences(text: String): List<String> {
-        val cleaned = text.replace(Regex("\s+"), " ").trim()
+        val cleaned = text.replace(Regex("\\s+"), " ").trim()
         if (cleaned.isEmpty()) return emptyList()
 
-        val parts = cleaned.split(Regex("(?<=[.!?])\s+(?=[A-Z0-9\"'])"))
+        val parts = cleaned.split(Regex("(?<=[.!?])\\s+(?=[A-Z0-9\"'])"))
         return parts
             .map { it.trim() }
             .filter { it.length > 30 }
