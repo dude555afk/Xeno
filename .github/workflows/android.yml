@@ -115,14 +115,75 @@ jobs:
             echo "ci-logs push failed — console output above has the same content"
           fi
 
+      # ---------------------------------------------------------------------
+      # RELEASE SIGNING
+      #
+      # Placement matters: this runs after the debug build and upload so the
+      # debug path is byte-identical to what already works. The keystore is
+      # decoded here rather than fetched so no signing material ever needs to
+      # exist in the repository.
+      #
+      # The release APKs go to artifacts-release/, not artifacts/. The debug
+      # stage above copies from outputs/apk/debug/, and the release build writes
+      # to outputs/apk/release/ — pointing the release upload at artifacts/
+      # could only ever have failed with "no files found".
+      # ---------------------------------------------------------------------
+      - name: Decode release keystore
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -eu
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            echo "::warning::KEYSTORE_BASE64 is not set — the release APK will be UNSIGNED and the verify step will fail. See docs/SIGNING.md."
+            exit 0
+          fi
+          printf '%s' "${KEYSTORE_BASE64}" | base64 -d > release.jks
+          {
+            echo "storeFile=release.jks"
+            echo "storePassword=${KEYSTORE_PASSWORD}"
+            echo "keyAlias=${KEY_ALIAS}"
+            echo "keyPassword=${KEY_PASSWORD}"
+          } > keystore.properties
+          echo "release.jks: $(wc -c < release.jks) bytes"
+          echo "keystore.properties: $(wc -c < keystore.properties) bytes (passwords not echoed)"
+
       - name: Build release APK
         if: startsWith(github.ref, 'refs/tags/v')
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release.log
+
+      - name: Stage release APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          mkdir -p artifacts-release
+          cp -v app/build/outputs/apk/release/*.apk artifacts-release/
+          ls -la artifacts-release/
+
+      - name: Verify release APK signature
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -name apksigner -type f | head -1)"
+          if [ -z "${APKSIGNER}" ]; then
+            echo "::error::apksigner not found under ${ANDROID_HOME}/build-tools"
+            exit 1
+          fi
+          set -o pipefail
+          # Hard gate on purpose. An unsigned APK installs on nothing, and a
+          # release that reports success while producing one is worse than no
+          # release at all.
+          "${APKSIGNER}" verify --print-certs --verbose artifacts-release/*.apk | head -40
 
       - name: Upload release APK
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: xeno-release
-          path: artifacts/*.apk
+          path: artifacts-release/*.apk
           if-no-files-found: error

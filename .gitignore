@@ -13,3 +13,9 @@ local.properties
 *.keystore
 *.jks
 key.properties
+
+# Release signing material. `key.properties` above is the Flutter convention;
+# this project is Kotlin, so the real file is `keystore.properties`. Without
+# this line the file is committable, and a keystore password that reaches a
+# public repository is the single worst accident this build can have.
+keystore.properties

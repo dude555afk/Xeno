@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+
 /**
  * Room/KSP args live here rather than inside `defaultConfig`.
  *
@@ -18,6 +19,47 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.generateKotlin", "true")
 }
+
+
+/*
+ * Release signing.
+ *
+ * Two sources, in priority order:
+ *
+ *   1. `keystore.properties` in the repo root — for local builds. Gitignored.
+ *   2. Environment variables — for CI, where the workflow decodes the keystore
+ *      from a repository secret at the top of the job and writes
+ *      `keystore.properties` itself, so both paths read the same file.
+ *
+ * Neither source is required to be present, and that is deliberate rather than
+ * sloppy. A `signingConfigs` block that throws when its material is absent takes
+ * down every debug build on a fresh clone, which is a far worse failure than an
+ * unsigned debug APK — nobody installs those. `assembleRelease` is the only
+ * thing that needs the key, and the workflow verifies the signature before
+ * uploading so an unsigned release fails loudly instead of quietly shipping.
+ *
+ * See docs/SIGNING.md.
+ */
+val keystoreProps = java.util.Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+// Resolved against the root project, not this module, so a relative
+// `storeFile=release.jks` means the repo root whether or not Gradle was
+// invoked with `-p app`.
+val releaseKeystoreFile = rootProject.file(
+    keystoreProps.getProperty("storeFile")
+        ?: System.getenv("KEYSTORE_PATH")
+        ?: "release.jks"
+)
+
+val hasSigningMaterial: Boolean =
+    releaseKeystoreFile.exists() &&
+        (keystoreProps.getProperty("storePassword") ?: System.getenv("KEYSTORE_PASSWORD")) != null &&
+        (keystoreProps.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")) != null &&
+        (keystoreProps.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")) != null
+
 
 android {
     namespace = "com.dude555afk.xeno"
@@ -33,12 +75,31 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseKeystoreFile
+            storePassword = keystoreProps.getProperty("storePassword")
+                ?: System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = keystoreProps.getProperty("keyAlias")
+                ?: System.getenv("KEY_ALIAS")
+            keyPassword = keystoreProps.getProperty("keyPassword")
+                ?: System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
         }
         release {
+            // Only wire up the key when it is actually there. Attaching a
+            // signingConfig whose keystore does not exist fails with an AGP
+            // error that reads like a Gradle bug, so the check happens out here
+            // where the consequence is an unsigned APK the verify step catches.
+            if (hasSigningMaterial) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -67,6 +128,7 @@ android {
         }
     }
 }
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
