@@ -8,10 +8,10 @@ import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.AnswerSource
 import com.dude555afk.xeno.core.model.Citation
 import com.dude555afk.xeno.core.summarize.Prompts
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.Dispatchers
 
 /**
  * The flagship pipeline: query → search → read → synthesize with citations.
@@ -35,8 +35,9 @@ class AnswerEngine(
         // Explicit escape hatch beats heuristics.
         if (q.startsWith("?") || q.startsWith("ask:")) return true
 
-        val looksLikeUrl = q.matches(Regex("^(https?://)?[\w.-]+\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) &&
-            !q.contains(' ')
+        val looksLikeUrl = q.matches(
+            Regex("^(https?://)?[\\w.-]+\\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)
+        ) && !q.contains(' ')
         if (looksLikeUrl) return false
 
         val words = q.split(' ').size
@@ -134,7 +135,7 @@ class AnswerEngine(
         /** Pulls `[1][2][12]` markers out of streamed text. */
         fun parseCitations(markdown: String): List<Citation> {
             if (markdown.isBlank()) return emptyList()
-            return Regex("\[(\d{1,2})]").findAll(markdown)
+            return Regex("\\[(\\d{1,2})]").findAll(markdown)
                 .mapNotNull { m -> m.groupValues[1].toIntOrNull()?.let(::Citation) }
                 .distinctBy { it.sourceIndex }
                 .toList()
