@@ -7,6 +7,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -19,7 +20,7 @@ fun Modifier.glassSurface(
     shape: Shape,
     fill: Color = SurfaceCard,
     stroke: Color = StrokeSubtle,
-    strokeWidth: androidx.compose.ui.unit.Dp = 1.dp
+    strokeWidth: Dp = 1.dp
 ): Modifier = this
     .background(fill, shape)
     .border(strokeWidth, stroke, shape)
@@ -44,6 +45,12 @@ fun Modifier.glassHighlight(
     )
     .alpha(1f)
 
-/** Standard elevated card used across tab stack, source cards, settings rows. */
-fun Modifier.xenoCard(shape: Shape): Modifier =
-    glassSurface(shape).then(glassHighlight(shape, LocalAccent))
+/**
+ * Standard elevated card used across tab stack, source cards, settings rows.
+ *
+ * Takes the accent explicitly rather than reading [LocalAccent], because this
+ * is a Modifier extension and a Modifier factory is not composable — a
+ * composition local cannot be read from here.
+ */
+fun Modifier.xenoCard(shape: Shape, accent: Color): Modifier =
+    glassSurface(shape).then(glassHighlight(shape, accent))

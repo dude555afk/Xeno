@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive launcher icon for Xeno.
+
+  Foreground is a single vector so it scales from 108dp down without any
+  raster assets to ship. The mark is deliberately geometric — an "X" cut out of
+  a rounded square reads at 48dp, which is the size that actually matters.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rounded square plate, violet, the default space accent. -->
+    <path
+        android:fillColor="#7C5CFF"
+        android:pathData="M30,14h48a16,16 0 0 1 16,16v48a16,16 0 0 1 -16,16h-48a16,16 0 0 1 -16,-16v-48a16,16 0 0 1 16,-16z" />
+
+    <!-- The X, cut from the plate in black. -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M36,34l9,0l9,13l9,-13l9,0l-13,19l13,19l-9,0l-9,-13l-9,13l-9,0l13,-19z" />
+</vector>

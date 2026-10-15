@@ -8,12 +8,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * The ambient accent for the current space. Bleeds into caret, scroll glow,
- * active pill — not just "a color somewhere on screen".
+ * The ambient accent for the current space.
+ *
+ * Reads inside any composable that wants to tint itself without threading an
+ * `accent` parameter through five layers of call sites.
  */
-val LocalAccent: Color = staticCompositionLocalOf { DefaultAccent }.current
-
-typedef AccentProvider = androidx.compose.runtime.ProvidableCompositionLocal<Color>
+val LocalAccent = staticCompositionLocalOf { DefaultAccent }
 
 /**
  * Material 3 is the foundation, but the scheme is entirely ours.
