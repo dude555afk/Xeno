@@ -6,6 +6,19 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+/**
+ * Room/KSP args live here rather than inside `defaultConfig`.
+ *
+ * In the previous layout the `ksp { }` block sat nested in `android.defaultConfig`
+ * and only resolved because Kotlin DSL kept the project-level KspExtension in the
+ * implicit-receiver chain. It worked by accident and produced a project-wide
+ * config rather than the per-variant one that was clearly intended.
+ */
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 android {
     namespace = "com.dude555afk.xeno"
     compileSdk = 35
@@ -17,10 +30,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-            arg("room.generateKotlin", "true")
-        }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -56,12 +66,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    sourceSets {
-        getByName("main") {
-            assets.srcDirs(files("src/main/assets"))
-        }
-    }
 }
 
 dependencies {
@@ -82,7 +86,10 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    implementation(libs.androidx.webkit)
+
     implementation(libs.okhttp)
+    implementation(libs.okhttp.sse)
     implementation(libs.okhttp.logging)
 
     implementation(libs.kotlinx.serialization.json)
