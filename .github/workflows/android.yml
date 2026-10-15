@@ -11,10 +11,6 @@ on:
 permissions:
   contents: write
 
-env:
-  ANDROID_COMPILE_SDK: "35"
-  ANDROID_BUILD_TOOLS: "35.0.0"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,7 +27,7 @@ jobs:
 
       - name: Install Android SDK
         run: |
-          set -eux
+          set -eu
           SDK_DIR="${ANDROID_HOME:-$HOME/android-sdk}"
           mkdir -p "$SDK_DIR/cmdline-tools"
 
@@ -45,8 +41,8 @@ jobs:
           yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
             "platform-tools" \
-            "platforms;android-${ANDROID_COMPILE_SDK}" \
-            "build-tools;${ANDROID_BUILD_TOOLS}"
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
           echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
@@ -59,66 +55,53 @@ jobs:
       - name: Create Room schema directory
         run: mkdir -p app/schemas
 
+      # No continue-on-error, no EXIT_CODE dance, no pipefail tricks.
+      #
+      # GitHub Actions already runs every `run:` block under `bash -eo pipefail`.
+      # Anything added on top of that only creates new ways to be wrong. The
+      # previous version used `continue-on-error: true` so a failed build could
+      # still reach the log-publishing step, but that silenced the one signal CI
+      # exists to give: the job kept reporting "Build debug APK — success" while
+      # the APK silently did not exist, and the staging step failed on a cp.
+      #
+      # Now the build step simply fails. `if: always()` is what lets the log
+      # survive a failure, which is the only reason it was there at all.
       - name: Build debug APK
-        id: assemble
-        continue-on-error: true
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace --info > build-output.log 2>&1
-          echo "EXIT_CODE=$?" >> "$GITHUB_OUTPUT"
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
 
-      # Run #51 and #52 both compiled the app successfully — :app:packageDebug
-      # ran, Gradle exited 0, "Fail the job if the build failed" was skipped —
-      # and yet "Upload debug APK" still failed in under a second with
-      # "No files were found with the provided path".
-      #
-      # The reason is upload-artifact@v4. Its search is powered by
-      # @actions/glob, which applies .gitignore rules to the matched paths even
-      # though nothing in the action's README says so. Xeno's .gitignore has a
-      # `/build/` entry, which matches `app/build/`, so every APK Gradle wrote
-      # into app/build/outputs/ was invisible to the glob while remaining
-      # perfectly visible to a shell `find` — which is why the "Locate built
-      # APK" diagnostic step appeared to succeed immediately before the upload
-      # failed. A one-second failure with a successful build is the signature.
-      #
-      # Copying out of the ignored tree is the only fix that works without
-      # un-ignoring build output, which would put hundreds of megabytes of
-      # Gradle intermediates into `git status`. Not doing that.
+      # upload-artifact@v4 resolves its `path` through @actions/glob, which
+      # honours .gitignore. `/build/` in .gitignore matches app/build/, so the
+      # APK Gradle just produced is invisible to the action even though a shell
+      # `find` sees it plainly. Copy somewhere outside the ignored tree first.
       - name: Stage APK for upload
-        if: steps.assemble.outputs.EXIT_CODE == '0'
+        if: success()
         run: |
-          set -eux
+          set -eu
           mkdir -p artifacts
-          cp -v app/build/outputs/apk/debug/*.apk artifacts/ || {
-            echo "::error::no APK under app/build/outputs/apk/debug/"
-            find . -name '*.apk' -not -path './.git/*' || true
-            exit 1
-          }
+          cp -v app/build/outputs/apk/debug/*.apk artifacts/
           ls -la artifacts/
 
-      - name: Fail the job if the build failed
-        if: steps.assemble.outputs.EXIT_CODE != '0'
-        run: |
-          echo "::error::gradle assembleDebug exited with code ${{ steps.assemble.outputs.EXIT_CODE }}"
-          tail -n 200 build-output.log
-          exit 1
-
       - name: Upload debug APK
-        if: steps.assemble.outputs.EXIT_CODE == '0'
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: xeno-debug
           path: artifacts/*.apk
           if-no-files-found: error
 
+      # Always publish, even when the build step above failed. That is the whole
+      # point — a broken run is exactly when the log is worth reading.
       - name: Publish build log
         if: always()
         run: |
+          set -u
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f build-output.log
-          git diff --cached --quiet || git commit -m "ci: build log (exit=${{ steps.assemble.outputs.EXIT_CODE }})"
-          git push origin HEAD:ci-logs || echo "log push failed; log remains local to the run"
+          git diff --cached --quiet || git commit -m "ci: build log"
+          git push origin HEAD:ci-logs || echo "log push failed"
 
       - name: Build release APK
         if: startsWith(github.ref, 'refs/tags/v')
@@ -127,12 +110,9 @@ jobs:
       - name: Stage release APK for upload
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          set -eux
+          set -eu
           mkdir -p artifacts
-          cp -v app/build/outputs/apk/release/*.apk artifacts/ || {
-            echo "::error::no APK under app/build/outputs/apk/release/"
-            exit 1
-          }
+          cp -v app/build/outputs/apk/release/*.apk artifacts/
 
       - name: Upload release APK
         if: startsWith(github.ref, 'refs/tags/v')
