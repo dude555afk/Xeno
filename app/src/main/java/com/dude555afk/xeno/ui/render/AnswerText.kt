@@ -75,7 +75,7 @@ object AnswerText {
         accent: Color,
         onCitation: (Int) -> Unit
     ): AnnotatedString = buildAnnotatedString {
-        val tokenRegex = Regex("\*\*(.+?)\*\*|\[(\d{1,2})]")
+        val tokenRegex = Regex("\\*\\*(.+?)\\*\\*|\\[(\\d{1,2})]")
         var cursor = 0
 
         tokenRegex.findAll(text).forEach { match ->
