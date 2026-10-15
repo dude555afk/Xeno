@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,7 +28,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -70,10 +70,21 @@ fun AnswerSheet(
     val parsed = remember(result?.markdown) { AnswerText.parse(result?.markdown.orEmpty()) }
     val listState = rememberLazyListState()
 
+    /**
+     * Hoisted once so the LazyRow below never has to dereference a nullable
+     * inside a lambda. The previous version did `items(result.sources)` guarded
+     * only by `if (!result?.sources.isNullOrEmpty())` — Kotlin's smart-cast
+     * engine does not reason that far through a null-safe call chain, so
+     * `result` stayed nullable there and the build failed on a type mismatch.
+     * A non-null local is the unambiguous form and reads better anyway.
+     */
+    val sources = result?.sources.orEmpty()
+    val markdown = result?.markdown.orEmpty()
+
     // Keep the newest text in view as it streams. Keyed on length rather than
     // content so a token arriving mid-animation does not cancel the scroll.
-    LaunchedEffect(result?.markdown?.length) {
-        val count = (result?.sources?.size ?: 0) + parsed.blocks.size + 1
+    LaunchedEffect(markdown.length) {
+        val count = sources.size + parsed.blocks.size + 1
         if (count > 0) runCatching { listState.animateScrollToItem(count - 1) }
     }
 
@@ -147,7 +158,7 @@ fun AnswerSheet(
                         }
 
                         // Source cards — always first.
-                        if (!result?.sources.isNullOrEmpty()) {
+                        if (sources.isNotEmpty()) {
                             item {
                                 Text(
                                     text = "SOURCES",
@@ -158,11 +169,10 @@ fun AnswerSheet(
                             }
                             item {
                                 LazyRow(
-                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement
-                                        .spacedBy(Dimens.spaceM),
+                                    horizontalArrangement = Arrangement.spacedBy(Dimens.spaceM),
                                     contentPadding = PaddingValues(vertical = 2.dp)
                                 ) {
-                                    items(result.sources) { source ->
+                                    items(sources) { source ->
                                         SourceCard(source, accent, onOpenSource)
                                     }
                                 }
@@ -213,7 +223,7 @@ fun AnswerSheet(
                             }
                         }
 
-                        if (streaming && result?.markdown.isNullOrEmpty()) {
+                        if (streaming && markdown.isEmpty()) {
                             item { StreamingSkeleton() }
                         }
                     }
