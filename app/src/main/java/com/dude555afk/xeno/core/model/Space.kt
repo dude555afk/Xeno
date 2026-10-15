@@ -1,6 +1,7 @@
 package com.dude555afk.xeno.core.model
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 /**
  * A browsing space — Arc's spaces. Owns an accent colour that retints the UI,
@@ -24,3 +25,13 @@ fun defaultSpace() = Space(
     accent = com.dude555afk.xeno.ui.theme.DefaultAccent,
     position = 0
 )
+
+/** Inverse of [Space.accent] for the Room round-trip. */
+fun Space.toEntity(): com.dude555afk.xeno.core.storage.SpaceEntity =
+    com.dude555afk.xeno.core.storage.SpaceEntity(
+        id = id,
+        name = name,
+        accentArgb = accent.toArgb(),
+        position = position,
+        pinned = pinned
+    )
