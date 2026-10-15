@@ -38,7 +38,7 @@ jobs:
         run: |
           set -eux
           SDK_DIR="${ANDROID_HOME:-$HOME/android-sdk}"
-          mkdir -p "$SDEL_DIR" "$SDK_DIR/cmdline-tools"
+          mkdir -p "$SDK_DIR/cmdline-tools"
 
           if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
             curl -sSLo /tmp/cmdtools.zip \
