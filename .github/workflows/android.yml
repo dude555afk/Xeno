@@ -67,20 +67,34 @@ jobs:
           gradle assembleDebug --no-daemon --stacktrace --info > build-output.log 2>&1
           echo "EXIT_CODE=$?" >> "$GITHUB_OUTPUT"
 
-      # Run #51's build reported success yet the artifact step found no APK at
-      # app/build/outputs/apk/debug/*.apk. Without this the only way to find out
-      # where the file actually went was to read the log, which the API refuses
-      # to serve. So print it.
-      - name: Locate built APK
+      # Run #51 and #52 both compiled the app successfully — :app:packageDebug
+      # ran, Gradle exited 0, "Fail the job if the build failed" was skipped —
+      # and yet "Upload debug APK" still failed in under a second with
+      # "No files were found with the provided path".
+      #
+      # The reason is upload-artifact@v4. Its search is powered by
+      # @actions/glob, which applies .gitignore rules to the matched paths even
+      # though nothing in the action's README says so. Xeno's .gitignore has a
+      # `/build/` entry, which matches `app/build/`, so every APK Gradle wrote
+      # into app/build/outputs/ was invisible to the glob while remaining
+      # perfectly visible to a shell `find` — which is why the "Locate built
+      # APK" diagnostic step appeared to succeed immediately before the upload
+      # failed. A one-second failure with a successful build is the signature.
+      #
+      # Copying out of the ignored tree is the only fix that works without
+      # un-ignoring build output, which would put hundreds of megabytes of
+      # Gradle intermediates into `git status`. Not doing that.
+      - name: Stage APK for upload
+        if: steps.assemble.outputs.EXIT_CODE == '0'
         run: |
-          echo "=== find *.apk ==="
-          find . -name "*.apk" -not -path "./.git/*" 2>/dev/null || echo "(none)"
-          echo "=== find **/outputs ==="
-          find . -type d -name outputs -not -path "./.git/*" 2>/dev/null || echo "(none)"
-          echo "=== build dir listing ==="
-          ls -la app/build/outputs/apk/ 2>/dev/null || echo "(no app/build/outputs/apk)"
-          echo "=== build-output.log tail ==="
-          tail -n 40 build-output.log
+          set -eux
+          mkdir -p artifacts
+          cp -v app/build/outputs/apk/debug/*.apk artifacts/ || {
+            echo "::error::no APK under app/build/outputs/apk/debug/"
+            find . -name '*.apk' -not -path './.git/*' || true
+            exit 1
+          }
+          ls -la artifacts/
 
       - name: Fail the job if the build failed
         if: steps.assemble.outputs.EXIT_CODE != '0'
@@ -94,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xeno-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: artifacts/*.apk
           if-no-files-found: error
 
       - name: Publish build log
@@ -110,10 +124,20 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: gradle assembleRelease --no-daemon --stacktrace
 
+      - name: Stage release APK for upload
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eux
+          mkdir -p artifacts
+          cp -v app/build/outputs/apk/release/*.apk artifacts/ || {
+            echo "::error::no APK under app/build/outputs/apk/release/"
+            exit 1
+          }
+
       - name: Upload release APK
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: xeno-release
-          path: app/build/outputs/apk/release/*.apk
+          path: artifacts/*.apk
           if-no-files-found: error
