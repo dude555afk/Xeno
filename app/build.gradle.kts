@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -39,8 +41,15 @@ ksp {
  * uploading so an unsigned release fails loudly instead of quietly shipping.
  *
  * See docs/SIGNING.md.
+ *
+ * The `import java.util.Properties` at the top of this file is load-bearing, not
+ * decoration. Written inline as `java.util.Properties()` it fails to compile:
+ * at project scope `java` resolves to the Java plugin extension, so
+ * `java.util` is read as a member access on an unrelated object and Kotlin
+ * reports "Unresolved reference: util". Importing the type sidesteps the
+ * collision entirely.
  */
-val keystoreProps = java.util.Properties().apply {
+val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
