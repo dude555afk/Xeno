@@ -3,7 +3,8 @@ package com.dude555afk.xeno.core.blocking
 import android.webkit.WebResourceRequest
 
 /**
- * Resource categories used by filter-list rule options (`$script`, `$image`,\n * `$third-party`, …).
+ * Resource categories used by filter-list rule options (`$script`, `$image`,
+ * `$third-party`, …).
  *
  * WebView's `shouldInterceptRequest` gives us a URL and, on API 21+, a way to
  * sniff the Accept header — that's the best we can do, and for the vast
@@ -20,7 +21,7 @@ enum class ResourceType {
          * The header sniff is deliberately ordered: `Sec-Fetch-Dest` is the
          * authoritative answer where present, `Accept` is the fallback, and a
          * URL-extension check runs first only because media fetches often
-         * arrive with a generic `*/*` Accept.
+         * arrive with a fully generic Accept value.
          */
         fun fromRequest(request: WebResourceRequest): ResourceType {
             val url = request.url.toString()
