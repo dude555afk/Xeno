@@ -26,6 +26,12 @@
   two light endpoints over just its own 22dp so it stays brighter than the
   arch behind it, which is what makes it read as light rather than as more
   arch.
+
+  Note on colour syntax: every colour literal in this file needs a leading '#'.
+  AAPT parses bare 'FF121C38' as an opaque colour-name lookup and rejects it
+  with "is incompatible with attribute color" — which is what happened on the
+  first version of this file, and it fails at processDebugResources, long
+  before any Kotlin runs.
 -->
 
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -48,9 +54,9 @@
                 android:startY="0"
                 android:endX="83"
                 android:endY="0">
-                <item android:offset="0" android:color="FFA855F7" />
-                <item android:offset="0.45" android:color="FF6366F1" />
-                <item android:offset="1" android:color="FF22D3EE" />
+                <item android:offset="0" android:color="#FFA855F7" />
+                <item android:offset="0.45" android:color="#FF6366F1" />
+                <item android:offset="1" android:color="#FF22D3EE" />
             </gradient>
         </aapt:attr>
     </path>
@@ -64,8 +70,8 @@
                 android:startY="0"
                 android:endX="65"
                 android:endY="0">
-                <item android:offset="0" android:color="FFE9D5FF" />
-                <item android:offset="1" android:color="FF67E8F9" />
+                <item android:offset="0" android:color="#FFE9D5FF" />
+                <item android:offset="1" android:color="#FF67E8F9" />
             </gradient>
         </aapt:attr>
     </path>
