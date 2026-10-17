@@ -163,10 +163,19 @@ class FilterListEngine {
             if (rule.literal != null && rule.literal != "" && !url.contains(rule.literal)) continue
             if (!matchesOptions(rule.options, docHost, urlHost, type, thirdParty)) continue
 
-            if (rule.options.important) return true
-
-            if (rule.isException) sawAllow = true
-            else sawBlock = true
+            if (rule.options.important) {
+                if (rule.isException) {
+                    // Important exception: allow takes precedence over blocks.
+                    sawAllow = true
+                } else {
+                    // Important block: blocks immediately.
+                    return true
+                }
+            } else if (rule.isException) {
+                sawAllow = true
+            } else {
+                sawBlock = true
+            }
 
             if (sawBlock && sawAllow) break
         }
