@@ -223,7 +223,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 tabs = emptyList(),
                 activeTab = null,
                 load = PageLoadState(),
-                canGoBack = false
+                canGoBack = false,
+                canGoForward = false
             )
         }
     }
@@ -609,6 +610,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             if (!view.url.isNullOrBlank() && view.url != "about:blank") view.loadUrl("about:blank")
         } else if (view.url != tab.url) {
             view.loadUrl(tab.url)
+        } else {
+            // A retained tab may finish loading while another tab is active.
+            // Restore its actual progress/title instead of showing a false idle
+            // state just because the UI selection changed.
+            _state.update { current ->
+                if (current.activeTab?.id != tab.id) current else current.copy(
+                    load = PageLoadState(
+                        progress = view.progress / 100f,
+                        loading = view.progress < 100,
+                        url = view.url.orEmpty(),
+                        title = view.title.orEmpty()
+                    ),
+                    canGoBack = view.canGoBack(),
+                    canGoForward = view.canGoForward()
+                )
+            }
         }
 
         refreshBackState()
