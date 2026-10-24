@@ -107,22 +107,65 @@ fun TabStackSheet(
                             .background(Color.White.copy(alpha = 0.2f))
                     )
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(
-                            horizontal = Dimens.spaceL,
-                            vertical = Dimens.spaceS
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = Dimens.spaceL, end = Dimens.spaceS, bottom = Dimens.spaceM),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                active = tab.id == activeTabId,
-                                accent = accent,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = "Your tabs",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            Text(
+                                text = "${tabs.size} open",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Close tab switcher",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (tabs.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(Dimens.spaceXl),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No tabs open yet",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(
+                                horizontal = Dimens.spaceL,
+                                vertical = Dimens.spaceS
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)
+                        ) {
+                            items(tabs, key = { it.id }) { tab ->
+                                TabCard(
+                                    tab = tab,
+                                    active = tab.id == activeTabId,
+                                    accent = accent,
+                                    onSelect = { onSelect(tab) },
+                                    onClose = { onClose(tab) }
+                                )
+                            }
                         }
                     }
 
