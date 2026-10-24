@@ -73,6 +73,14 @@ fun BrowserScreen(
             }
         )
 
+        // First-run and empty tabs get a designed landing surface instead of a dead black canvas.
+        if (state.activeTab?.url.isNullOrBlank() && state.load.url.isBlank()) {
+            HomeScreen(
+                accent = accent,
+                onSearch = viewModel::openPalette
+            )
+        }
+
         // Spaces — top left, always available.
         SpacesBar(
             spaces = state.spaces,
