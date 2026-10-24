@@ -1,6 +1,7 @@
 package com.dude555afk.xeno.ui.browser
 
 import android.view.ViewGroup
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,20 @@ fun BrowserScreen(
     viewModel: BrowserViewModel,
     accent: Color
 ) {
+    // Android back should unwind browser surfaces before leaving the app.
+    BackHandler(
+        enabled = state.paletteVisible || state.tabStackVisible ||
+            state.summaryVisible || state.answer != null || state.canGoBack
+    ) {
+        when {
+            state.paletteVisible -> viewModel.closePalette()
+            state.tabStackVisible -> viewModel.toggleTabStack()
+            state.summaryVisible -> viewModel.dismissSummary()
+            state.answer != null -> viewModel.dismissAnswer()
+            state.canGoBack -> viewModel.goBack()
+        }
+    }
+
     Box(Modifier.fillMaxSize().background(Color.Black)) {
 
         // The page. The factory returns a container so the session pool can do
