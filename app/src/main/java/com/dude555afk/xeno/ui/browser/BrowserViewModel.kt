@@ -272,7 +272,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Called from the Activity. See [SessionPool.onTrimMemory]. */
-    fun trimMemory(level: Int) = pool.onTrimMemory(level)
+    fun trimMemory(level: Int) {
+        pool.onTrimMemory(level, activeSessionKey?.let { setOf(it) } ?: emptySet())
+    }
 
     // MARK: palette
 
@@ -586,14 +588,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
                         type = ResourceType.fromRequest(request),
-                        thirdParty = request.requestHeaders.keys.none { it.equals("Referer", true) } ||
-                            runCatching {
-                                val requestHost = request.url.host
-                                val pageHost = Uri.parse(view.url.orEmpty()).host
-                                requestHost != null && pageHost != null &&
-                                    !requestHost.equals(pageHost, ignoreCase = true) &&
-                                    !requestHost.endsWith(".$pageHost", ignoreCase = true)
-                            }.getOrDefault(false)
+                        // Preserve the current conservative behaviour until the
+                        // blocker has a proper registrable-domain/site-context model.
+                        thirdParty = true
                     )
                 }.getOrDefault(false)
             },
