@@ -67,6 +67,7 @@ data class BrowserUiState(
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
     val canGoBack: Boolean = false,
+    val canGoForward: Boolean = false,
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
@@ -663,11 +664,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
     }
 
-    /** Mirror the active session's history depth into state. */
+    /** Mirror the active WebView's history depth into observable UI state. */
     private fun refreshBackState() {
-        val back = activeSessionKey?.let(pool::peek)?.canGoBack() == true
-        if (_state.value.canGoBack != back) {
-            _state.update { it.copy(canGoBack = back) }
+        val view = activeSessionKey?.let(pool::peek)
+        val back = view?.canGoBack() == true
+        val forward = view?.canGoForward() == true
+        if (_state.value.canGoBack != back || _state.value.canGoForward != forward) {
+            _state.update { it.copy(canGoBack = back, canGoForward = forward) }
         }
     }
 
@@ -742,6 +745,27 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun goBack() {
         activeSessionKey?.let(pool::peek)?.takeIf { it.canGoBack() }?.goBack()
+    }
+
+    fun goForward() {
+        activeSessionKey?.let(pool::peek)?.takeIf { it.canGoForward() }?.goForward()
+    }
+
+    /** Reload the current page, or focus search when the active tab is empty. */
+    fun refreshOrStop() {
+        val view = activeSessionKey?.let(pool::peek)
+        if (view == null || _state.value.activeTab?.url.isNullOrBlank()) {
+            openPalette()
+            return
+        }
+
+        if (_state.value.load.loading) {
+            view.stopLoading()
+            _state.update { it.copy(load = it.load.copy(loading = false)) }
+        } else {
+            _state.update { it.copy(load = it.load.copy(loading = true, progress = 0.05f)) }
+            view.reload()
+        }
     }
 
     /**
