@@ -40,6 +40,20 @@ class SettingsStore(context: Context) {
         get() = prefs.getLong(KEY_SPACE, 1L)
         set(value) = prefs.edit { putLong(KEY_SPACE, value) }
 
+    /** Remember the most recently selected tab independently for each Space. */
+    fun activeTabId(spaceId: Long): Long? =
+        if (prefs.contains(activeTabKey(spaceId))) {
+            prefs.getLong(activeTabKey(spaceId), -1L).takeIf { it > 0L }
+        } else {
+            null
+        }
+
+    fun setActiveTabId(spaceId: Long, tabId: Long) {
+        if (tabId > 0L) prefs.edit { putLong(activeTabKey(spaceId), tabId) }
+    }
+
+    private fun activeTabKey(spaceId: Long): String = "${KEY_ACTIVE_TAB_PREFIX}$spaceId"
+
     val providerConfig: ProviderConfig
         get() = ProviderConfig(
             id = providerId,
@@ -69,5 +83,6 @@ class SettingsStore(context: Context) {
         const val KEY_MODEL = "model"
         const val KEY_BLOCKING = "blocking_enabled"
         const val KEY_SPACE = "active_space"
+        const val KEY_ACTIVE_TAB_PREFIX = "active_tab_space_"
     }
 }
