@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -126,10 +129,13 @@ fun BrowserScreen(
             loading = state.load.loading,
             accent = accent,
             canGoBack = state.canGoBack,
+            canGoForward = state.canGoForward,
             displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
             onOpenPalette = viewModel::openPalette,
             onSummarize = { viewModel.summarizeCurrentPage() },
             onBack = viewModel::goBack,
+            onForward = viewModel::goForward,
+            onReloadOrStop = viewModel::refreshOrStop,
             modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
         )
 
@@ -201,10 +207,13 @@ private fun FloatingBar(
     loading: Boolean,
     accent: Color,
     canGoBack: Boolean,
+    canGoForward: Boolean,
     displayUrl: String,
     onOpenPalette: () -> Unit,
     onSummarize: () -> Unit,
     onBack: () -> Unit,
+    onForward: () -> Unit,
+    onReloadOrStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceL)) {
@@ -233,6 +242,15 @@ private fun FloatingBar(
                             )
                         }
                     }
+                    if (canGoForward) {
+                        IconButton(onClick = onForward) {
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowForward,
+                                contentDescription = "Forward",
+                                tint = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
 
                     Row(
                         modifier = Modifier
@@ -257,6 +275,14 @@ private fun FloatingBar(
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    IconButton(onClick = onReloadOrStop) {
+                        Icon(
+                            imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
+                            contentDescription = if (loading) "Stop loading" else "Reload page",
+                            tint = Color.White.copy(alpha = 0.78f)
                         )
                     }
 
