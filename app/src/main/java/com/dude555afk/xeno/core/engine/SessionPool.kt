@@ -160,8 +160,8 @@ class SessionPool(
     /**
      * Trim down to [target] live sessions, dropping least-recently-used first.
      *
-     * Never destroys the currently active tab's session — that would be
-     * visible to the user as a blank screen.
+     * Callers should pass the active key in [keep]; this pool does not infer
+     * which session is visible because detached sessions are also valid.
      */
     fun trimTo(target: Int, keep: Set<String> = emptySet()) {
         val boundedTarget = target.coerceAtLeast(0)
@@ -190,17 +190,17 @@ class SessionPool(
      * cannot see. Parking preserves everything that matters and costs nothing.
      *
      * Only at CRITICAL/COMPLETE — i.e. the LMK is about to kill us anyway — do
-     * we start destroying sessions, and even then we keep one.
+     * we start destroying sessions. The caller protects the visible session.
      */
-    fun onTrimMemory(level: Int) {
+    fun onTrimMemory(level: Int, keep: Set<String> = emptySet()) {
         when {
-            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0)
-            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> trimTo(1)
+            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0, keep)
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> trimTo(1, keep)
             level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
-                sessions.keys.forEach(::park)
-                trimTo(1)
+                sessions.keys.filter { it !in keep }.forEach(::park)
+                trimTo(maxOf(1, keep.size), keep)
             }
-            else -> sessions.keys.forEach(::park)
+            else -> sessions.keys.filter { it !in keep }.forEach(::park)
         }
     }
 
