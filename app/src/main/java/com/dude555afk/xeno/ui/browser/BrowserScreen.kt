@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -86,13 +90,13 @@ fun BrowserScreen(
             spaces = state.spaces,
             activeSpaceId = state.activeSpace?.id ?: 0L,
             onSelect = viewModel::selectSpace,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = Dimens.spaceXl)
+            modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceM)
         )
 
         // Tab stack — top right.
         IconButton(
             onClick = viewModel::toggleTabStack,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = Dimens.spaceM, end = Dimens.spaceM)
+            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = Dimens.spaceM)
         ) {
             Icon(
                 imageVector = Icons.Rounded.Layers,
@@ -111,7 +115,7 @@ fun BrowserScreen(
             onOpenPalette = viewModel::openPalette,
             onSummarize = { viewModel.summarizeCurrentPage() },
             onBack = viewModel::goBack,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
         )
 
         CommandPalette(
