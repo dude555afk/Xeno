@@ -213,6 +213,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectSpace(space: Space) {
         settings.activeSpaceId = space.id
+        val previousSession = activeSessionKey
+        activeSessionKey = null
+        previousSession?.let(pool::detach)
         _state.update {
             it.copy(
                 activeSpace = space,
