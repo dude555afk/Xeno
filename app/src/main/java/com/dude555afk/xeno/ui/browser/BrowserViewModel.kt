@@ -1,11 +1,17 @@
 package com.dude555afk.xeno.ui.browser
 
 import android.app.Application
+import android.app.DownloadManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.net.Uri
+import android.os.Environment
 import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.webkit.URLUtil
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
@@ -38,11 +44,17 @@ import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.core.summarize.Summarizer
 import com.dude555afk.xeno.core.summarize.SummaryOutcome
 import com.dude555afk.xeno.XenoApplication
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -115,8 +127,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var summaryJob: Job? = null
     private var hintsJob: Job? = null
 
-    /** The tab the WebView session is currently showing. */
-    private var loadedTabId: Long? = null
+    /** A lightweight WebView is retained per recently used tab (pool cap: two). */
+    private var activeSessionKey: String? = null
+    private var webHost: ViewGroup? = null
 
     init {
         // The bundled list is already loading in XenoApplication; refresh the
@@ -144,19 +157,25 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 _state.update { it.copy(spaces = spaces) }
                 if (_state.value.activeSpace == null && spaces.isNotEmpty()) {
-                    selectSpace(spaces.first())
+                    val restored = spaces.firstOrNull { it.id == settings.activeSpaceId }
+                        ?: spaces.first()
+                    selectSpace(restored)
                 }
             }
         }
 
-        // Tabs for whichever space is active. The collector resolves the active
-        // tab by id against the fresh list rather than only defaulting when it
-        // is null, so a row the session rewrote (title, or a navigate in
-        // another path) is reflected here instead of being overwritten back.
+        // Switch the observed tab stream when the active Space changes. The
+        // previous nested collect never returned, so selecting another Space
+        // kept observing the old one forever.
         viewModelScope.launch {
-            _state.collect { snapshot ->
-                val space = snapshot.activeSpace ?: return@collect
-                db.tabDao().observeForSpace(space.id).collect { entities ->
+            _state
+                .map { it.activeSpace?.id }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .flatMapLatest { spaceId ->
+                    db.tabDao().observeForSpace(spaceId).map { entities -> spaceId to entities }
+                }
+                .collect { (spaceId, entities) ->
                     val tabs = entities.map {
                         Tab(
                             id = it.id,
@@ -164,19 +183,29 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                             url = it.url,
                             title = it.title,
                             isPeek = it.isPeek,
-                            position = it.position
+                            position = it.position,
+                            createdAt = it.createdAt,
+                            lastActiveAt = it.lastActiveAt
                         )
                     }
                     _state.update { current ->
-                        val active = current.activeTab
-                            ?.let { old -> tabs.firstOrNull { it.id == old.id } }
-                            ?: tabs.firstOrNull()
-                        current.copy(tabs = tabs, activeTab = active)
+                        if (current.activeSpace?.id != spaceId) {
+                            current
+                        } else {
+                            val active = current.activeTab
+                                ?.takeIf { old -> old.spaceId == spaceId && tabs.any { it.id == old.id } }
+                                ?: settings.activeTabId(spaceId)?.let { id ->
+                                    tabs.firstOrNull { it.id == id }
+                                }
+                                ?: tabs.firstOrNull()
+                            current.copy(tabs = tabs, activeTab = active)
+                        }
                     }
-                    _state.value.activeTab?.let(::syncSessionToTab)
+                    _state.value.activeTab
+                        ?.takeIf { it.spaceId == spaceId }
+                        ?.let(::syncSessionToTab)
                     refreshBackState()
                 }
-            }
         }
     }
 
@@ -184,19 +213,42 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectSpace(space: Space) {
         settings.activeSpaceId = space.id
-        _state.update { it.copy(activeSpace = space) }
+        _state.update {
+            it.copy(
+                activeSpace = space,
+                tabs = emptyList(),
+                activeTab = null,
+                load = PageLoadState(),
+                canGoBack = false
+            )
+        }
     }
 
     fun selectTab(tab: Tab) {
-        _state.update { it.copy(activeTab = tab, load = PageLoadState(url = tab.url)) }
+        settings.setActiveTabId(tab.spaceId, tab.id)
+        _state.update {
+            it.copy(
+                activeTab = tab,
+                load = PageLoadState(url = tab.url),
+                canGoBack = false
+            )
+        }
         syncSessionToTab(tab)
     }
 
     fun newTab() {
         viewModelScope.launch {
             val spaceId = _state.value.activeSpace?.id ?: 1L
-            val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
-            selectTab(Tab(id = id, spaceId = spaceId))
+            val position = (_state.value.tabs.maxOfOrNull { it.position } ?: -1) + 1
+            val id = db.tabDao().insert(
+                TabEntity(
+                    spaceId = spaceId,
+                    url = "",
+                    position = position,
+                    lastActiveAt = System.currentTimeMillis()
+                )
+            )
+            selectTab(Tab(id = id, spaceId = spaceId, position = position))
             _state.update { it.copy(tabStackVisible = false, paletteVisible = true) }
         }
     }
@@ -204,8 +256,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun closeTab(tab: Tab) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
-            pool.destroy("tab-${tab.id}")
-            if (loadedTabId == tab.id) loadedTabId = null
+            pool.destroy(sessionKey(tab))
+            if (activeSessionKey == sessionKey(tab)) activeSessionKey = null
 
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             when {
@@ -248,12 +300,19 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private fun refreshHistoryHints(q: String) {
         hintsJob?.cancel()
         hintsJob = viewModelScope.launch {
+            delay(140)
             if (q.isBlank()) {
                 _state.update { it.copy(historyHints = emptyList()) }
                 return@launch
             }
             val hits = withContext(Dispatchers.IO) {
-                runCatching { db.historyDao().search(q, limit = 8) }.getOrDefault(emptyList())
+                try {
+                    db.historyDao().search(q, limit = 8)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    emptyList()
+                }
             }
             _state.update { it.copy(historyHints = hits.map { h -> SearchHit(h.url, h.title) }) }
         }
@@ -330,8 +389,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (q.isEmpty()) return
 
         val url = when {
-            q.startsWith("http://") || q.startsWith("https://") -> q
-            q.matches(Regex("^[\\w.-]+\\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) -> "https://$q"
+            q.equals("about:blank", ignoreCase = true) -> "about:blank"
+            q.startsWith("http://", ignoreCase = true) || q.startsWith("https://", ignoreCase = true) -> q
+            q.matches(
+                Regex("^(?:[\\w-]+\\.)+[a-z]{2,}(?::[0-9]{1,5})?(?:[/?#].*)?$", RegexOption.IGNORE_CASE)
+            ) || q.matches(Regex("^localhost(?::[0-9]{1,5})?(?:[/?#].*)?$", RegexOption.IGNORE_CASE)) ||
+                q.matches(Regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?::[0-9]{1,5})?(?:[/?#].*)?$")) ->
+                "https://$q"
             else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
         }
 
@@ -340,22 +404,48 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val current = _state.value.activeTab
             val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
+            val now = System.currentTimeMillis()
 
-            val id = if (current != null && current.id != 0L) {
-                db.tabDao().update(
+            val id = if (current != null && current.id > 0L) {
+                val stored = db.tabDao().byId(current.id)
+                if (stored != null) {
+                    db.tabDao().update(stored.copy(url = url, title = "", lastActiveAt = now))
+                    current.id
+                } else {
+                    val position = (_state.value.tabs.maxOfOrNull { it.position } ?: -1) + 1
+                    db.tabDao().insert(
+                        TabEntity(
+                            spaceId = spaceId,
+                            url = url,
+                            position = position,
+                            lastActiveAt = now
+                        )
+                    )
+                }
+            } else {
+                val position = (_state.value.tabs.maxOfOrNull { it.position } ?: -1) + 1
+                db.tabDao().insert(
                     TabEntity(
-                        id = current.id,
                         spaceId = spaceId,
                         url = url,
-                        position = current.position
+                        position = position,
+                        lastActiveAt = now
                     )
                 )
-                current.id
-            } else {
-                db.tabDao().insert(TabEntity(spaceId = spaceId, url = url))
             }
 
-            selectTab(Tab(id = id, spaceId = spaceId, url = url))
+            val storedTab = db.tabDao().byId(id)
+            selectTab(
+                Tab(
+                    id = id,
+                    spaceId = spaceId,
+                    url = url,
+                    title = "",
+                    position = storedTab?.position ?: current?.position ?: 0,
+                    createdAt = storedTab?.createdAt ?: now,
+                    lastActiveAt = now
+                )
+            )
         }
     }
 
@@ -381,7 +471,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             // so this is nearly instant and costs no extra engine. A page that
             // navigated on since is re-extracted from a scratch WebView rather
             // than silently summarising the wrong thing.
-            val existing = pool.peek(SESSION_KEY)
+            val existing = activeSessionKey?.let(pool::peek)
             val content = if (existing != null && existing.url == tab.url) {
                 injector.extract(existing, tab.url)
             } else {
@@ -461,80 +551,145 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * view instead of allocating a fresh ~200 MB engine.
      */
     fun attachHost(host: ViewGroup) {
-        val view = pool.acquire(SESSION_KEY, host)
+        webHost = host
+        _state.value.activeTab?.let(::syncSessionToTab)
+        refreshBackState()
+    }
+
+    fun detachHost() {
+        pool.detachAll()
+        webHost = null
+    }
+
+    private fun sessionKey(tab: Tab): String =
+        if (tab.id > 0L) "tab-${tab.id}" else SESSION_KEY
+
+    /**
+     * Activate the selected tab's retained WebView. The pool keeps at most two
+     * sessions; older tabs are cheaply restored from their persisted URL when
+     * selected again instead of allocating a WebView for every tab.
+     */
+    private fun syncSessionToTab(tab: Tab) {
+        val key = sessionKey(tab)
+        val host = webHost ?: run {
+            activeSessionKey = key
+            return
+        }
+
+        val view = pool.acquire(key, host)
+        activeSessionKey = key
         view.webViewClient = XenoWebViewClient(
-            listener = sessionListener(),
+            listener = sessionListener(tab.id, key),
             blocker = { request ->
                 if (!settings.blockingEnabled) false else runCatching {
                     filters.shouldBlock(
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
                         type = ResourceType.fromRequest(request),
-                        thirdParty = true
+                        thirdParty = request.requestHeaders.keys.none { it.equals("Referer", true) } ||
+                            runCatching {
+                                val requestHost = request.url.host
+                                val pageHost = Uri.parse(view.url.orEmpty()).host
+                                requestHost != null && pageHost != null &&
+                                    !requestHost.equals(pageHost, ignoreCase = true) &&
+                                    !requestHost.endsWith(".$pageHost", ignoreCase = true)
+                            }.getOrDefault(false)
                     )
                 }.getOrDefault(false)
             },
             assetLoader = assetLoader,
             cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
         )
-
-        val activeUrl = _state.value.activeTab?.url
-        if (!activeUrl.isNullOrBlank() && view.url != activeUrl) {
-            view.loadUrl(activeUrl)
-            loadedTabId = _state.value.activeTab?.id
+        view.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+            enqueueDownload(url, userAgent, contentDisposition, mimeType)
         }
+
+        if (tab.url.isBlank()) {
+            if (!view.url.isNullOrBlank() && view.url != "about:blank") view.loadUrl("about:blank")
+        } else if (view.url != tab.url) {
+            view.loadUrl(tab.url)
+        }
+
         refreshBackState()
     }
 
-    fun detachHost() = pool.park(SESSION_KEY)
-
-    /**
-     * Point the live session at [tab] if it is not already showing it.
-     *
-     * Without this, selecting a tab from the stack updates the address bar and
-     * leaves the WebView showing the previous page — the single most confusing
-     * state a browser can be in.
-     */
-    private fun syncSessionToTab(tab: Tab) {
-        val view = pool.peek(SESSION_KEY) ?: return
-
-        when {
-            tab.url.isBlank() -> {
-                if (loadedTabId != tab.id) {
-                    view.loadUrl("about:blank")
-                    loadedTabId = tab.id
-                }
-            }
-
-            view.url != tab.url || loadedTabId != tab.id -> {
-                view.loadUrl(tab.url)
-                loadedTabId = tab.id
-            }
+    private fun enqueueDownload(
+        url: String,
+        userAgent: String?,
+        contentDisposition: String?,
+        mimeType: String?
+    ) {
+        val uri = runCatching { Uri.parse(url) }.getOrNull()
+        if (uri == null || (uri.scheme != "https" && uri.scheme != "http") || uri.host.isNullOrBlank()) {
+            Toast.makeText(getApplication(), "This download URL isn't supported", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        val manager = getApplication<Application>()
+            .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+        if (manager == null) {
+            Toast.makeText(getApplication(), "Download manager unavailable", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val guessed = URLUtil.guessFileName(url, contentDisposition, mimeType)
+        val fileName = java.io.File(guessed)
+            .name
+            .replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]"), "_")
+            .take(180)
+            .ifBlank { "download" }
+
+        val request = DownloadManager.Request(uri)
+            .setTitle(fileName)
+            .setDescription(uri.host ?: "Download")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+
+        if (!userAgent.isNullOrBlank()) request.addRequestHeader("User-Agent", userAgent)
+        if (!mimeType.isNullOrBlank()) request.setMimeType(mimeType)
+        // WebView's DownloadListener does not transfer the current session's
+        // cookies to DownloadManager automatically. Use only cookies for the
+        // exact HTTPS/HTTP download host, with no logging or persistence.
+        CookieManager.getInstance().getCookie(url)
+            ?.takeIf { it.isNotBlank() }
+            ?.let { request.addRequestHeader("Cookie", it) }
+
+        runCatching { manager.enqueue(request) }
+            .onSuccess {
+                Toast.makeText(getApplication(), "Download started", Toast.LENGTH_SHORT).show()
+            }
+            .onFailure {
+                Toast.makeText(getApplication(), "Couldn't start download", Toast.LENGTH_SHORT).show()
+            }
     }
 
-    /** Mirror the session's history depth into state so the bar can show it. */
+    /** Mirror the active session's history depth into state. */
     private fun refreshBackState() {
-        val back = pool.peek(SESSION_KEY)?.canGoBack() == true
+        val back = activeSessionKey?.let(pool::peek)?.canGoBack() == true
         if (_state.value.canGoBack != back) {
             _state.update { it.copy(canGoBack = back) }
         }
     }
 
-    private fun sessionListener() = object : SessionListener {
+    private fun sessionListener(tabId: Long, key: String) = object : SessionListener {
         override fun onPageStarted(url: String) {
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
-                it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
+                it.copy(load = PageLoadState(loading = true, progress = 0.05f, url = url))
             }
             refreshBackState()
         }
 
         override fun onPageProgress(url: String, progress: Int) {
-            _state.update { it.copy(load = it.load.copy(progress = progress / 100f)) }
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            _state.update { it.copy(load = it.load.copy(progress = progress / 100f, url = url)) }
         }
 
         override fun onPageFinished(url: String, title: String) {
             if (url.isBlank() || url == "about:blank") return
+            // Redirects can deliver a late finish callback for an earlier URL.
+            // Ignore it if this tab's WebView has already moved on.
+            if (pool.peek(key)?.url != url) return
 
             viewModelScope.launch {
                 val existing = db.historyDao().byUrl(url)
@@ -543,21 +698,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     db.historyDao().bump(url, title, System.currentTimeMillis())
                 }
-            }
 
-            // Keep the tab's stored title current, so the tab stack is not full
-            // of URLs where titles should be.
-            val tabId = loadedTabId ?: _state.value.activeTab?.id
-            if (tabId != null && title.isNotBlank()) {
-                viewModelScope.launch {
-                    db.tabDao().byId(tabId)?.let { entity ->
-                        if (entity.title != title) {
-                            db.tabDao().update(entity.copy(title = title))
-                        }
+                db.tabDao().byId(tabId)?.let { entity ->
+                    val active = _state.value.activeTab?.id == tabId
+                    if (entity.url != url || entity.title != title) {
+                        db.tabDao().update(
+                            entity.copy(
+                                url = url,
+                                title = title,
+                                lastActiveAt = if (active) System.currentTimeMillis() else entity.lastActiveAt
+                            )
+                        )
                     }
                 }
             }
 
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
                 it.copy(
                     load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
@@ -569,9 +725,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
 
         override fun onExternalNavigation(requestedUrl: String): Boolean {
+            val uri = Uri.parse(requestedUrl)
+            if (uri.scheme != "http" && uri.scheme != "https" &&
+                uri.scheme != "mailto" && uri.scheme != "tel" &&
+                uri.scheme != "geo" && uri.scheme != "intent"
+            ) return true
+
             val intent = android.content.Intent(
                 android.content.Intent.ACTION_VIEW,
-                android.net.Uri.parse(requestedUrl)
+                uri
             ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { getApplication<Application>().startActivity(intent) }
             return true
@@ -579,7 +741,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun goBack() {
-        pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
+        activeSessionKey?.let(pool::peek)?.takeIf { it.canGoBack() }?.goBack()
     }
 
     /**
