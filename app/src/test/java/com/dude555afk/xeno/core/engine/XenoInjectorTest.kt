@@ -48,7 +48,7 @@ class XenoInjectorTest {
     }
 
     @Test
-    fun cosmeticSelectorsAreEscapedAsJavaScriptStrings() {
+    fun cosmeticSelectorsAreEscapedAsJavaScriptStringsAndObserveDynamicNodes() {
         val script = XenoInjector.script(
             documentUrl = "https://example.com",
             cosmeticSelectors = listOf(".ad", "a[href='x']"),
@@ -57,9 +57,10 @@ class XenoInjectorTest {
         )
 
         assertNotNull(script)
-        assertTrue(script!!.contains("document.querySelectorAll"))
+        assertTrue(script!!.contains("querySelectorAll"))
         assertTrue(script.contains("MutationObserver"))
         assertTrue(script.contains("removeMatches"))
         assertTrue(script.contains("a[href="))
+        assertTrue(script.contains("root.matches"))
     }
 }
