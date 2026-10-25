@@ -529,6 +529,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
+    fun providerConfigFor(id: String): ProviderConfig = settings.providerConfigFor(id)
+
     fun saveProviderConfig(config: ProviderConfig) {
         if (isPrivateMode) {
             _state.update { it.copy(settingsError = "Provider settings are shared with your normal browser and cannot be changed in private mode.") }
