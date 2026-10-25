@@ -117,6 +117,29 @@ class AiClient(
      * Non-streaming one-shot call. Used for cheap decisions where round-tripping
      * deltas would be pure overhead.
      */
+    /** Fetch the provider's live catalogue instead of relying on stale hard-coded model names. */
+    suspend fun fetchModels(config: ProviderConfig): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url(config.baseUrl.trimEnd('/') + "/models")
+            .get()
+            .header("Accept", "application/json")
+            .apply {
+                if (config.apiKey.isNotBlank()) header("Authorization", "Bearer ${config.apiKey}")
+            }
+            .build()
+
+        http.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw AiException(response.code, body)
+            runCatching {
+                json.decodeFromString(ModelsResponse.serializer(), body).data
+                    .filter { it.id.isNotBlank() }
+                    .distinctBy { it.id }
+                    .sortedBy { (it.name ?: it.id).lowercase() }
+            }.getOrElse { throw AiException(response.code, "Invalid /models response: ${body.take(240)}") }
+        }
+    }
+
     suspend fun complete(config: ProviderConfig, request: ChatRequest): String =
         withContext(Dispatchers.IO) {
             val url = config.baseUrl.trimEnd('/') + "/chat/completions"
