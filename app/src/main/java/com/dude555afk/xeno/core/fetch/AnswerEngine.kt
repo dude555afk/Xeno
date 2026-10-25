@@ -84,7 +84,7 @@ class AnswerEngine(
             return@flow
         }
 
-        if (config.apiKey.isBlank()) {
+        if (config.apiKey.isBlank() && !config.allowsAnonymousFreeModel) {
             // No key configured — hand back the sources rather than nothing.
             emit(AnswerResult(query, usable, markdown = NO_KEY))
             return@flow
