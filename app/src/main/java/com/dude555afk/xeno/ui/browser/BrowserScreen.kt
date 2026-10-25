@@ -153,6 +153,24 @@ fun BrowserScreen(
             modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
         )
 
+        if (state.pageError != null) {
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = 112.dp, start = 24.dp, end = 24.dp)
+                    .clickable(onClick = viewModel::refreshOrStop),
+                shape = PillShape,
+                color = Color(0xFF1C1C1C),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
+            ) {
+                Text(
+                    text = "Page couldn't load · Tap to retry",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
         CommandPalette(
             visible = state.paletteVisible,
             query = state.query,
