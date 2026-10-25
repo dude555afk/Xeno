@@ -303,6 +303,7 @@ fun BrowserScreen(
             sitePermissions = state.sitePermissions,
             currentTitle = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
             currentUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
+            desktopSiteEnabled = state.desktopSiteEnabled,
             downloads = state.downloads,
             blockingEnabled = state.blockingEnabled,
             thirdPartyCookiesEnabled = state.thirdPartyCookiesEnabled,
@@ -313,6 +314,9 @@ fun BrowserScreen(
             onOpenPanel = viewModel::openPanel,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
+            onCopyCurrentUrl = viewModel::copyCurrentUrl,
+            onShareCurrentUrl = viewModel::shareCurrentUrl,
+            onToggleDesktopSite = viewModel::toggleDesktopSite,
             onOpenSiteSettings = viewModel::openSiteSettings,
             onSitePermissionChange = { capability, enabled ->
                 viewModel.setSitePermission(capability, enabled)
