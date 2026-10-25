@@ -91,6 +91,7 @@ data class BrowserUiState(
     val summaryError: String? = null,
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
+    val thirdPartyCookiesEnabled: Boolean = false,
     val hasApiKey: Boolean = false,
     val panel: BrowserPanel? = null,
     val historyEntries: List<HistoryEntity> = emptyList(),
@@ -139,6 +140,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
+            thirdPartyCookiesEnabled = settings.thirdPartyCookiesEnabled,
             hasApiKey = settings.hasApiKey
         )
     )
@@ -290,6 +292,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setBlockingEnabled(enabled: Boolean) {
         settings.blockingEnabled = enabled
         _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    fun setThirdPartyCookiesEnabled(enabled: Boolean) {
+        settings.thirdPartyCookiesEnabled = enabled
+        pool.liveKeys().forEach { key ->
+            pool.peek(key)?.let { CookieManager.getInstance().setAcceptThirdPartyCookies(it, enabled) }
+        }
+        _state.update { it.copy(thirdPartyCookiesEnabled = enabled) }
     }
 
     fun openHistoryEntry(entry: HistoryEntity) {
@@ -784,6 +794,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
+        CookieManager.getInstance().setAcceptThirdPartyCookies(view, settings.thirdPartyCookiesEnabled)
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(tab.id, key),
             blocker = { request ->
