@@ -563,17 +563,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setFingerprintingProtectionEnabled(enabled: Boolean) {
         if (!isPrivateMode) settings.fingerprintingProtectionEnabled = enabled
         _state.update { it.copy(fingerprintingProtectionEnabled = enabled) }
-        activeSessionKey?.let(pool::peek)?.let { view ->
-            view.evaluateJavascript(
-                com.dude555afk.xeno.core.engine.XenoInjector.script(
-                    documentUrl = view.url.orEmpty(),
-                    cosmeticSelectors = emptyList(),
-                    redirectPopups = false,
-                    fingerprintingProtection = enabled
-                ) ?: "void(0)",
-                null
-            )
-        }
+        // WebView does not expose a reliable isolated-world injection point.
+        // Reload so the setting is present from the next document-start attempt.
+        activeSessionKey?.let(pool::peek)?.reload()
     }
 
     fun openSiteSettings() {
