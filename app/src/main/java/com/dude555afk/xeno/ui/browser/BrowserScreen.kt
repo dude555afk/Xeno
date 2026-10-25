@@ -66,12 +66,14 @@ fun BrowserScreen(
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
         enabled = state.paletteVisible || state.tabStackVisible ||
-            state.panel != null || state.readerVisible || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
+            state.panel != null || state.readerVisible || state.translationConsentVisible || state.translationVisible || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
     ) {
         when {
             state.paletteVisible -> viewModel.closePalette()
             state.tabStackVisible -> viewModel.toggleTabStack()
             state.readerVisible -> viewModel.closeReaderMode()
+            state.translationVisible -> viewModel.closeTranslation()
+            state.translationConsentVisible -> viewModel.cancelTranslationConsent()
             state.panel != null -> viewModel.closePanel()
             state.summaryConsentVisible -> viewModel.cancelSummaryConsent()
             state.summaryVisible -> viewModel.dismissSummary()
@@ -232,6 +234,7 @@ fun BrowserScreen(
             blockingEnabled = state.blockingEnabled,
             thirdPartyCookiesEnabled = state.thirdPartyCookiesEnabled,
             provider = viewModel.providerConfig(),
+            translationLanguage = state.translationLanguage,
             settingsError = state.settingsError,
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
@@ -242,6 +245,8 @@ fun BrowserScreen(
             onBlockingChange = viewModel::setBlockingEnabled,
             onThirdPartyCookiesChange = viewModel::setThirdPartyCookiesEnabled,
             onSaveProvider = viewModel::saveProviderConfig,
+            onTranslationLanguageChange = viewModel::setTranslationLanguage,
+            onTranslate = viewModel::requestTranslation,
             onRefreshDownloads = viewModel::refreshDownloads,
             onOpenDownload = viewModel::openDownloadedFile,
             onRemoveDownload = viewModel::removeDownload
@@ -254,6 +259,42 @@ fun BrowserScreen(
             error = state.readerError,
             onDismiss = viewModel::closeReaderMode
         )
+
+        TranslationSheet(
+            visible = state.translationVisible,
+            loading = state.translationLoading,
+            language = state.translationLanguage,
+            title = state.translationConsentTitle.ifBlank { state.activeTab?.displayTitle.orEmpty() },
+            text = state.translationText,
+            error = state.translationError,
+            notice = state.translationNotice,
+            onDismiss = viewModel::closeTranslation
+        )
+
+        if (state.translationConsentVisible) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = viewModel::cancelTranslationConsent,
+                title = { Text("Translate with AI?") },
+                text = {
+                    Text(
+                        "Xeno will extract readable text from \"${state.translationConsentTitle}\" and send it to \"${viewModel.providerConfig().displayName}\" to translate it into \"${state.translationLanguage}\". Cookies, passwords, browsing history, and unrelated tabs are not included. The provider's own data policies apply."
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = viewModel::confirmTranslationConsent) {
+                        Text("Translate")
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = viewModel::cancelTranslationConsent) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color(0xFF171717),
+                titleContentColor = Color.White,
+                textContentColor = Color.White.copy(alpha = 0.8f)
+            )
+        }
 
         if (state.summaryConsentVisible) {
             androidx.compose.material3.AlertDialog(
