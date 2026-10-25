@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -65,7 +64,6 @@ import com.dude555afk.xeno.PrivateBrowserActivity
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.core.model.SiteCapability
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
-import com.dude555afk.xeno.ui.spaces.SpacesBar
 import com.dude555afk.xeno.ui.summary.SummarySheet
 import com.dude555afk.xeno.ui.tabstack.TabStackSheet
 import com.dude555afk.xeno.ui.theme.Dimens
@@ -143,14 +141,10 @@ fun BrowserScreen(
         // The new-tab surface owns its own bottom search control, like Arc Search.
         val isHome = state.activeTab?.url.isNullOrBlank() && state.load.url.isBlank()
         if (isHome) {
-            HomeScreen(
-                accent = accent,
-                onSearch = viewModel::openPalette
-            )
+            HomeScreen()
         }
 
-        // Spaces live in the regular browser. A private session instead carries
-        // a visible privacy marker so it cannot be confused with normal tabs.
+        // Keep private browsing visibly distinct without a permanent top toolbar.
         if (state.isPrivateMode) {
             Surface(
                 modifier = Modifier.align(Alignment.TopStart)
@@ -168,60 +162,28 @@ fun BrowserScreen(
                     Text("PRIVATE", modifier = Modifier.padding(start = 8.dp), color = Color(0xFFC9F63E), style = MaterialTheme.typography.labelMedium, letterSpacing = 1.sp)
                 }
             }
-        } else {
-            SpacesBar(
-                spaces = state.spaces,
-                activeSpaceId = state.activeSpace?.id ?: 0L,
-                onSelect = viewModel::selectSpace,
-                modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceM)
-            )
         }
 
-        // Tab stack — top right.
-        IconButton(
-            onClick = viewModel::toggleTabStack,
-            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = 56.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Layers,
-                contentDescription = "Tabs",
-                tint = Color.White.copy(alpha = 0.7f)
-            )
-        }
-
-        IconButton(
-            onClick = { viewModel.openPanel(BrowserPanel.MENU) },
-            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = Dimens.spaceM)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.MoreHoriz,
-                contentDescription = "Browser menu",
-                tint = Color.White.copy(alpha = 0.82f)
-            )
-        }
-
-        // On a new tab, HomeScreen owns the search field. On pages, keep the
-        // controls in one calm floating capsule rather than a crowded toolbar.
-        if (!isHome) {
-            FloatingBar(
-                loadProgress = state.load.progress,
-                loading = state.load.loading,
-                accent = accent,
-                canGoBack = state.canGoBack,
-                canGoForward = state.canGoForward,
-                displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
-                onOpenPalette = viewModel::openPalette,
-                onSummarize = { viewModel.summarizeCurrentPage() },
-                onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
-                onOpenTabs = viewModel::toggleTabStack,
-                onOpenReader = viewModel::openReaderMode,
-                onOpenFind = viewModel::openFindInPage,
-                onBack = viewModel::goBack,
-                onForward = viewModel::goForward,
-                onReloadOrStop = viewModel::refreshOrStop,
-                modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
-            )
-        }
+        // Arc Search's defining control layout: tabs left, new search center,
+        // and conventional browser controls behind the upward chevron.
+        FloatingBar(
+            loadProgress = state.load.progress,
+            loading = state.load.loading,
+            accent = accent,
+            canGoBack = state.canGoBack,
+            canGoForward = state.canGoForward,
+            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
+            onOpenPalette = viewModel::openPalette,
+            onNewTab = viewModel::newTab,
+            onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
+            onOpenTabs = viewModel::toggleTabStack,
+            onOpenReader = viewModel::openReaderMode,
+            onOpenFind = viewModel::openFindInPage,
+            onBack = viewModel::goBack,
+            onForward = viewModel::goForward,
+            onReloadOrStop = viewModel::refreshOrStop,
+            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
+        )
 
         if (state.pageError != null) {
             Surface(
@@ -456,11 +418,8 @@ fun BrowserScreen(
 }
 
 /**
- * The floating bar — back, address field, summarize. A pill, like everything.
- *
- * The address field shows the live page URL, not the palette's in-progress
- * query. Showing `state.query` here meant the bar kept whatever the user last
- * typed long after they had dismissed the palette and moved on.
+ * Arc Search-style bottom controls. The persistent row stays deliberately tiny;
+ * address/navigation controls are revealed only when the chevron is opened.
  */
 @Composable
 private fun FloatingBar(
@@ -471,7 +430,7 @@ private fun FloatingBar(
     canGoForward: Boolean,
     displayUrl: String,
     onOpenPalette: () -> Unit,
-    onSummarize: () -> Unit,
+    onNewTab: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenTabs: () -> Unit,
     onOpenReader: () -> Unit,
@@ -482,116 +441,178 @@ private fun FloatingBar(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
-        Surface(
-            shape = PillShape,
-            color = Color(0xF20D0D0D),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 5.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    if (canGoBack) {
-                        IconButton(onClick = onBack, modifier = Modifier.size(42.dp)) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White.copy(alpha = 0.72f), modifier = Modifier.size(19.dp))
-                        }
-                    }
-                    if (canGoForward) {
-                        IconButton(onClick = onForward, modifier = Modifier.size(42.dp)) {
-                            Icon(Icons.Rounded.ArrowForward, contentDescription = "Forward", tint = Color.White.copy(alpha = 0.62f), modifier = Modifier.size(19.dp))
-                        }
-                    }
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(PillShape)
-                            .clickable(onClick = onOpenPalette)
-                            .padding(horizontal = 10.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = accent,
-                            modifier = Modifier.size(19.dp)
-                        )
-                        Spacer(Modifier.width(9.dp))
-                        Text(
-                            text = displayUrl.ifBlank { "Search or ask Xeno" },
-                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    IconButton(onClick = onReloadOrStop, modifier = Modifier.size(42.dp)) {
-                        Icon(
-                            imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
-                            contentDescription = if (loading) "Stop loading" else "Reload page",
-                            tint = Color.White.copy(alpha = 0.72f),
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = accent,
-                        onClick = onSummarize,
-                        modifier = Modifier.padding(end = 2.dp).size(38.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.AutoAwesome, contentDescription = "Ask Xeno about this page", tint = Color.Black, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                    IconButton(
-                        onClick = { expanded = !expanded },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                            contentDescription = if (expanded) "Collapse browser controls" else "Expand browser controls",
-                            tint = Color.White.copy(alpha = 0.68f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                if (expanded) {
+        if (expanded) {
+            Surface(
+                shape = PillShape,
+                color = Color(0xF2161616),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(vertical = 4.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .padding(horizontal = 5.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        IconButton(
+                            onClick = onBack,
+                            enabled = canGoBack,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White.copy(alpha = if (canGoBack) 0.9f else 0.28f),
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = onForward,
+                            enabled = canGoForward,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.ArrowForward,
+                                contentDescription = "Forward",
+                                tint = Color.White.copy(alpha = if (canGoForward) 0.9f else 0.28f),
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(PillShape)
+                                .clickable(onClick = onOpenPalette)
+                                .padding(horizontal = 8.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.66f),
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(Modifier.width(7.dp))
+                            Text(
+                                text = displayUrl.ifBlank { "Search or enter address" },
+                                color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        IconButton(onClick = onReloadOrStop, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
+                                contentDescription = if (loading) "Stop loading" else "Reload page",
+                                tint = Color.White.copy(alpha = 0.78f),
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        IconButton(onClick = onOpenMenu, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                imageVector = Icons.Rounded.MoreHoriz,
+                                contentDescription = "Browser menu",
+                                tint = Color.White.copy(alpha = 0.78f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    if (loading) {
+                        LinearProgressIndicator(
+                            progress = { loadProgress },
+                            modifier = Modifier.fillMaxWidth().height(2.dp),
+                            color = accent,
+                            trackColor = Color.Transparent
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 7.dp, vertical = 5.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ExpandedTool(Icons.Rounded.MenuBook, "Reader", onOpenReader)
                         ExpandedTool(Icons.Rounded.FindInPage, "Find", onOpenFind)
-                        ExpandedTool(Icons.Rounded.Layers, "Tabs", onOpenTabs)
-                        ExpandedTool(Icons.Rounded.MoreHoriz, "Menu", onOpenMenu)
+                        ExpandedTool(Icons.Rounded.MoreHoriz, "More", onOpenMenu)
                     }
                 }
-                if (loading) {
-                    LinearProgressIndicator(
-                        progress = { loadProgress },
-                        modifier = Modifier.fillMaxWidth().height(2.dp).clip(PillShape),
-                        color = accent,
-                        trackColor = Color.Transparent
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = Color(0xF2232323),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                onClick = onOpenTabs,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Layers,
+                        contentDescription = "Open tabs",
+                        tint = Color.White.copy(alpha = 0.91f),
+                        modifier = Modifier.size(23.dp)
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = Color(0xFF303030),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                onClick = onNewTab,
+                modifier = Modifier.size(54.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "New search",
+                        tint = Color.White,
+                        modifier = Modifier.size(27.dp)
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = Color(0xF2232323),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                onClick = { expanded = !expanded },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                        contentDescription = if (expanded) "Collapse browser controls" else "Show browser controls",
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(23.dp)
                     )
                 }
             }
         }
     }
 }
-
 
 @Composable
 private fun ExpandedTool(
