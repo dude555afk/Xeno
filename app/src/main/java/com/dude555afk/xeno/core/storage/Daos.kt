@@ -52,6 +52,9 @@ interface TabDao {
     @Query("DELETE FROM tabs WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM tabs WHERE spaceId = :spaceId")
+    suspend fun deleteForSpace(spaceId: Long)
+
     /** Called on startup — stale peek tabs are never restored. */
     @Query("DELETE FROM tabs WHERE isPeek = 1")
     suspend fun deletePeekTabs()
