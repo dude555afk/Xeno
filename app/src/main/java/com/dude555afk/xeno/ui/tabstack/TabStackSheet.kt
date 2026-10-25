@@ -1,7 +1,6 @@
 package com.dude555afk.xeno.ui.tabstack
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -10,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,16 +18,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -52,7 +51,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-imp@Composable
+import androidx.compose.ui.unit.dp
+import com.dude555afk.xeno.core.model.Tab
+
+/**
+ * Full-screen, horizontally browsable tab carousel modelled after Arc Search
+ * on Android. Previews come from small in-memory WebView snapshots where
+ * available; no page screenshots are written to disk.
+ */
+@Composable
 fun TabStackSheet(
     visible: Boolean,
     tabs: List<Tab>,
@@ -134,10 +141,7 @@ fun TabStackSheet(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        contentPadding = PaddingValues(
-                            horizontal = 30.dp,
-                            vertical = 12.dp
-                        ),
+                        contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -182,17 +186,6 @@ fun TabStackSheet(
     }
 }
 
-graphy.labelLarge,
-                            color = Color.Black,
-                            modifier = Modifier.padding(horizontal = Dimens.spaceXl, vertical = Dimens.spaceM)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun TabCard(
     tab: Tab,
@@ -203,7 +196,8 @@ private fun TabCard(
 ) {
     val scale by animateFloatAsState(
         targetValue = if (active) 1f else 0.96f,
-        animationSpec = tween(180), label = "tabScale"
+        animationSpec = tween(180),
+        label = "tabScale"
     )
     val host = runCatching {
         android.net.Uri.parse(tab.url).host?.removePrefix("www.").orEmpty()
@@ -257,6 +251,7 @@ private fun TabCard(
                     )
                 }
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
