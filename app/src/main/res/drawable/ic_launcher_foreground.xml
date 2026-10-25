@@ -1,78 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!--
-  Adaptive launcher icon — foreground layer.
-
-  Geometry, so it stays exact at every size:
-
-    Arch centreline  M34,80 L34,46 A20,20 0 0 1 74,46 L74,80
-      up the left leg, semicircular arc over the top, down the right leg.
-      The arc is a true semicircle: the chord (34,46)-to-(74,46) is 40 and the
-      radius is 20, so it is its own diameter. Centre (54,46), apex (54,26).
-
-    strokeWidth 18 with round caps puts the drawn extent at x 25-83, y 17-89.
-      The adaptive-icon safe zone is 72x72 centred, i.e. x 18-90, y 18-90.
-      The arch sits inside it on all four sides, so no launcher mask clips
-      the mark. That constraint is why the legs stop at y=80 rather than
-      running to the edge — a full-height arch gets its caps shaved off by
-      circular masks.
-
-    Sparkle centre (54,58), rx = ry = 11.
-      It sits in the arch opening, whose interior is x 43-65, y 35-80. The
-      sparkle spans exactly x 43-65, so it fits the opening with no overlap.
-
-  Both paths carry their own horizontal gradient. The arch runs violet through
-  indigo to cyan across the full 58dp of the arch's width; the sparkle uses the
-  two light endpoints over just its own 22dp so it stays brighter than the
-  arch behind it, which is what makes it read as light rather than as more
-  arch.
-
-  Note on colour syntax: every colour literal in this file needs a leading '#'.
-  AAPT parses bare 'FF121C38' as an opaque colour-name lookup and rejects it
-  with "is incompatible with attribute color" — which is what happened on the
-  first version of this file, and it fails at processDebugResources, long
-  before any Kotlin runs.
--->
-
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- The arch / portal. Stroked, not filled, so the middle stays open. -->
     <path
-        android:pathData="M34,80 L34,46 A20,20 0 0 1 74,46 L74,80"
-        android:strokeWidth="18"
+        android:pathData="M31,79 L31,45 A23,23 0 0 1 77,45 L77,79"
+        android:strokeWidth="10"
         android:strokeLineCap="round"
-        android:fillColor="#00000000">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="25"
-                android:startY="0"
-                android:endX="83"
-                android:endY="0">
-                <item android:offset="0" android:color="#FFA855F7" />
-                <item android:offset="0.45" android:color="#FF6366F1" />
-                <item android:offset="1" android:color="#FF22D3EE" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
-    <!-- The sparkle, inside the opening. -->
-    <path android:pathData="M54,47 Q56.6,55.4 65,58 Q56.6,60.6 54,69 Q51.4,60.6 43,58 Q51.4,55.4 54,47 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="43"
-                android:startY="0"
-                android:endX="65"
-                android:endY="0">
-                <item android:offset="0" android:color="#FFE9D5FF" />
-                <item android:offset="1" android:color="#FF67E8F9" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round"
+        android:strokeColor="#FFC7F542"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M54,45 L58,55 L68,59 L58,63 L54,73 L50,63 L40,59 L50,55 Z"
+        android:fillColor="#FFC7F542" />
 </vector>
