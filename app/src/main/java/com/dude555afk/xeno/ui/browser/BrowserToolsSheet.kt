@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.ai.ProviderConfig
+import com.dude555afk.xeno.core.ai.ProviderPresets
 import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.SiteCapability
@@ -447,14 +448,54 @@ fun BrowserToolsSheet(
                             Button(onClick = onTranslate, modifier = Modifier.fillMaxWidth()) { Text("Translate page") }
                         }
                         BrowserPanel.SETTINGS -> {
+                            var selectedProviderId by remember(provider.id, panel) { mutableStateOf(provider.id) }
                             var baseUrl by remember(provider.baseUrl, panel) { mutableStateOf(provider.baseUrl) }
                             var model by remember(provider.model, panel) { mutableStateOf(provider.model) }
                             var apiKey by remember(provider.apiKey, panel) { mutableStateOf(provider.apiKey) }
+                            val selectedPreset = ProviderPresets.byId(selectedProviderId)
                             Column(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                InfoCard("Kilo AI Gateway", if (isPrivateMode) "AI provider settings are read-only in private mode." else "Use a key for paid models or a supported model ending in :free for keyless access.")
+                                InfoCard(
+                                    selectedPreset.displayName,
+                                    when {
+                                        isPrivateMode -> "AI provider settings are read-only in private mode."
+                                        selectedProviderId == "kilo" -> "Supported Kilo models ending in :free can be used without a key. Other models need your key."
+                                        selectedProviderId == "local" -> "Use a local OpenAI-compatible server. On a phone, localhost means the phone itself; enter a reachable LAN address when needed."
+                                        else -> "This provider generally requires your own API key. Xeno sends only queries or page text you explicitly approve."
+                                    }
+                                )
+                                ProviderPresets.all.chunked(2).forEach { presetRow ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        presetRow.forEach { preset ->
+                                            FilterChip(
+                                                selected = selectedProviderId == preset.id,
+                                                onClick = {
+                                                    selectedProviderId = preset.id
+                                                    baseUrl = preset.baseUrl
+                                                    model = preset.model
+                                                    apiKey = ""
+                                                },
+                                                enabled = !isPrivateMode,
+                                                label = {
+                                                    Text(
+                                                        when (preset.id) {
+                                                            "openrouter" -> "OpenRouter"
+                                                            "local" -> "Local"
+                                                            else -> preset.displayName
+                                                        },
+                                                        maxLines = 1
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
                                 OutlinedTextField(
                                     baseUrl, { baseUrl = it }, label = { Text("OpenAI-compatible base URL") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -467,7 +508,7 @@ fun BrowserToolsSheet(
                                     singleLine = true, modifier = Modifier.fillMaxWidth()
                                 )
                                 OutlinedTextField(
-                                    apiKey, { apiKey = it }, label = { Text("API key (optional for free models)") },
+                                    apiKey, { apiKey = it }, label = { Text("API key (if required)") },
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                     readOnly = isPrivateMode,
@@ -478,8 +519,18 @@ fun BrowserToolsSheet(
                                     enabled = !isPrivateMode && baseUrl.isNotBlank() && model.isNotBlank(),
                                     onClick = {
                                         val url = baseUrl.trim().trimEnd('/')
-                                        if (url.startsWith("https://") || (provider.id == "local" && url.startsWith("http://"))) {
-                                            onSaveProvider(provider.copy(baseUrl = url, model = model.trim(), apiKey = apiKey.trim()))
+                                        val validScheme = url.startsWith("https://") ||
+                                            (selectedProviderId == "local" && url.startsWith("http://"))
+                                        if (validScheme) {
+                                            onSaveProvider(
+                                                provider.copy(
+                                                    id = selectedProviderId,
+                                                    displayName = selectedPreset.displayName,
+                                                    baseUrl = url,
+                                                    model = model.trim(),
+                                                    apiKey = apiKey.trim()
+                                                )
+                                            )
                                         }
                                     }
                                 ) { Text("Save AI settings") }
