@@ -790,9 +790,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
                         type = ResourceType.fromRequest(request),
-                        // Preserve the current conservative behaviour until the
-                        // blocker has a proper registrable-domain/site-context model.
-                        thirdParty = true
+                        thirdParty = !request.isForMainFrame &&
+                            filters.isThirdPartyRequest(
+                                request.url.toString(),
+                                request.requestHeaders.entries
+                                    .firstOrNull { it.key.equals("Referer", ignoreCase = true) }
+                                    ?.value
+                                    .orEmpty()
+                                    .ifBlank { view.url.orEmpty() }
+                            )
                     )
                 }.getOrDefault(false)
             },
