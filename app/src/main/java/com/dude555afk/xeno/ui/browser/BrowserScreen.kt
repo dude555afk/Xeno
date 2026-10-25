@@ -1,6 +1,10 @@
 package com.dude555afk.xeno.ui.browser
 
+import android.app.Activity
+import android.content.Intent
+import android.os.Build
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +32,7 @@ import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -39,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -63,6 +69,8 @@ fun BrowserScreen(
     viewModel: BrowserViewModel,
     accent: Color
 ) {
+    val context = LocalContext.current
+
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
         enabled = state.paletteVisible || state.tabStackVisible ||
@@ -110,13 +118,33 @@ fun BrowserScreen(
             )
         }
 
-        // Spaces — top left, always available.
-        SpacesBar(
-            spaces = state.spaces,
-            activeSpaceId = state.activeSpace?.id ?: 0L,
-            onSelect = viewModel::selectSpace,
-            modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceM)
-        )
+        // Spaces live in the regular browser. A private session instead carries
+        // a visible privacy marker so it cannot be confused with normal tabs.
+        if (state.isPrivateMode) {
+            Surface(
+                modifier = Modifier.align(Alignment.TopStart)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = Dimens.spaceL, top = Dimens.spaceM),
+                shape = PillShape,
+                color = Color(0xFF151B10),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC9F63E).copy(alpha = 0.35f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Rounded.Shield, contentDescription = null, tint = Color(0xFFC9F63E), modifier = Modifier.size(16.dp))
+                    Text("PRIVATE", modifier = Modifier.padding(start = 8.dp), color = Color(0xFFC9F63E), style = MaterialTheme.typography.labelMedium, letterSpacing = 1.sp)
+                }
+            }
+        } else {
+            SpacesBar(
+                spaces = state.spaces,
+                activeSpaceId = state.activeSpace?.id ?: 0L,
+                onSelect = viewModel::selectSpace,
+                modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceM)
+            )
+        }
 
         // Tab stack — top right.
         IconButton(
@@ -249,6 +277,7 @@ fun BrowserScreen(
             bookmarks = state.bookmarks,
             spaces = state.spaces,
             activeSpaceId = state.activeSpace?.id,
+            isPrivateMode = state.isPrivateMode,
             currentTitle = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
             currentUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
             downloads = state.downloads,
@@ -261,6 +290,16 @@ fun BrowserScreen(
             onOpenPanel = viewModel::openPanel,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
+            onTogglePrivateMode = {
+                if (state.isPrivateMode) {
+                    (context as? Activity)?.finish()
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    viewModel.closePanel()
+                    context.startActivity(Intent(context, PrivateBrowserActivity::class.java))
+                } else {
+                    Toast.makeText(context, "Private browsing requires Android 9 or newer.", Toast.LENGTH_LONG).show()
+                }
+            },
             onHistoryClick = viewModel::openHistoryEntry,
             onBookmarkClick = viewModel::openBookmark,
             onRemoveBookmark = viewModel::removeBookmark,
