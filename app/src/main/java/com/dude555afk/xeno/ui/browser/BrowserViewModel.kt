@@ -278,7 +278,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                                     tabs.firstOrNull { it.id == id }
                                 }
                                 ?: tabs.firstOrNull()
-                            current.copy(tabs = tabs, activeTab = active)
+                            current.copy(
+                                tabs = tabs,
+                                activeTab = active,
+                                // Arc Search's launch is search-first. Open the
+                                // palette once when a blank tab is first restored.
+                                paletteVisible = current.paletteVisible ||
+                                    (current.activeTab == null && active != null && active.url.isBlank())
+                            )
                         }
                     }
                     _state.value.activeTab
