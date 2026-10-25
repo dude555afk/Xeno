@@ -37,7 +37,8 @@ class XenoWebViewClient(
     /** Return true to block the request outright. */
     private val blocker: (WebResourceRequest) -> Boolean = { false },
     private val assetLoader: androidx.webkit.WebViewAssetLoader,
-    private val cosmeticSelectors: () -> List<String> = { emptyList() }
+    private val cosmeticSelectors: () -> List<String> = { emptyList() },
+    private val fingerprintingProtection: () -> Boolean = { false }
 ) : WebViewClient() {
 
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -52,7 +53,8 @@ class XenoWebViewClient(
             val script = XenoInjector.script(
                 documentUrl = target,
                 cosmeticSelectors = cosmeticSelectors(),
-                redirectPopups = true
+                redirectPopups = true,
+                fingerprintingProtection = fingerprintingProtection()
             )
             if (script != null) {
                 runCatching { view.evaluateJavascript(script, null) }
