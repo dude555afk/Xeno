@@ -2,6 +2,7 @@ package com.dude555afk.xeno.ui.browser
 
 import android.app.Application
 import android.app.DownloadManager
+import android.app.DownloadManager.Query
 import android.content.Intent
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -591,10 +592,38 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     // MARK: summarizing
 
+    /** Request explicit consent before page text can leave the device. */
     fun summarizeCurrentPage(tone: Prompts.Tone = _state.value.summaryTone) {
         val tab = _state.value.activeTab ?: return
         if (!tab.hasContent) return
+        _state.update {
+            it.copy(
+                summaryConsentVisible = true,
+                summaryConsentUrl = tab.url,
+                summaryConsentTitle = tab.displayTitle,
+                summaryTone = tone
+            )
+        }
+    }
 
+    fun cancelSummaryConsent() {
+        _state.update {
+            it.copy(summaryConsentVisible = false, summaryConsentUrl = "", summaryConsentTitle = "")
+        }
+    }
+
+    fun confirmSummaryConsent() {
+        val snapshot = _state.value
+        val tab = snapshot.activeTab?.takeIf {
+            it.hasContent && it.id > 0L && it.url == snapshot.summaryConsentUrl
+        }
+        val tone = snapshot.summaryTone
+        cancelSummaryConsent()
+        if (tab != null) startSummary(tab, tone)
+    }
+
+    private fun startSummary(tab: Tab, tone: Prompts.Tone) {
+        if (_state.value.activeTab?.id != tab.id || _state.value.activeTab?.url != tab.url) return
         summaryJob?.cancel()
         _state.update {
             it.copy(
@@ -607,58 +636,53 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         summaryJob = viewModelScope.launch {
-            // Prefer the live session: it already has the page loaded and warm,
-            // so this is nearly instant and costs no extra engine. A page that
-            // navigated on since is re-extracted from a scratch WebView rather
-            // than silently summarising the wrong thing.
-            val existing = activeSessionKey?.let(pool::peek)
-            val content = if (existing != null && existing.url == tab.url) {
-                injector.extract(existing, tab.url)
-            } else {
+            try {
+                // Extract in a short-lived reader WebView. ReadabilityInjector loads the
+                // URL to establish its DOM, so never point it at the visible tab and
+                // unexpectedly reload the page the user was reading.
                 val scratch = WebView(getApplication())
-                try {
+                val content = try {
                     injector.extract(scratch, tab.url)
                 } finally {
-                    runCatching { scratch.destroy() }
-                }
-            }
-
-            // [Summarizer.summarize] chunks long pages and runs TextRank, both
-            // of which are real work. On the main dispatcher that is a jank
-            // spike visible before a single token arrives.
-            val outcome = withContext(Dispatchers.Default) {
-                summarizer.summarize(content, settings.providerConfig, tone)
-            }
-
-            when (outcome) {
-                is SummaryOutcome.Unreadable -> _state.update {
-                    it.copy(
-                        summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only."
-                    )
+                    runCatching { scratch.stopLoading(); scratch.destroy() }
                 }
 
-                is SummaryOutcome.Offline -> _state.update {
-                    it.copy(
-                        summaryText = outcome.text,
-                        summaryOffline = true
-                    )
+                val outcome = withContext(Dispatchers.Default) {
+                    summarizer.summarize(content, settings.providerConfig, tone)
                 }
 
-                is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
-                    _state.update {
-                        it.copy(
-                            summaryText = it.summaryText + delta.text,
-                            // Sticks once the local fallback has been used.
-                            summaryOffline = it.summaryOffline || delta.offlineFallback
-                        )
+                when (outcome) {
+                    is SummaryOutcome.Unreadable -> _state.update {
+                        it.copy(summaryError = "This page couldn't be read — it may be paywalled or JavaScript-only.")
+                    }
+                    is SummaryOutcome.Offline -> _state.update {
+                        it.copy(summaryText = outcome.text, summaryOffline = true)
+                    }
+                    is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
+                        _state.update {
+                            it.copy(
+                                summaryText = it.summaryText + delta.text,
+                                summaryOffline = it.summaryOffline || delta.offlineFallback
+                            )
+                        }
                     }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _state.update { it.copy(summaryError = "Couldn't create a summary. Please try again.") }
             }
         }
     }
 
-    fun setSummaryTone(tone: Prompts.Tone) = summarizeCurrentPage(tone)
-
+    fun setSummaryTone(tone: Prompts.Tone) {
+        val state = _state.value
+        if (state.summaryVisible) {
+            state.activeTab?.let { startSummary(it, tone) }
+        } else {
+            summarizeCurrentPage(tone)
+        }
+    }
     fun dismissSummary() {
         summaryJob?.cancel()
         _state.update { it.copy(summaryVisible = false) }
