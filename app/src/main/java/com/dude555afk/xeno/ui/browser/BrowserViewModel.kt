@@ -1188,7 +1188,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
             override fun onPermissionRequest(request: PermissionRequest?) {
                 if (request == null) return
-                val host = Uri.parse(request.origin.toString()).host.orEmpty().lowercase()
+                val originUri = Uri.parse(request.origin.toString())
+                val host = originUri.host.orEmpty().lowercase()
+                val secureOrigin = originUri.scheme == "https" ||
+                    host == "localhost" || host == "127.0.0.1"
+                if (!secureOrigin) {
+                    request.deny()
+                    return
+                }
                 val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
                 val granted = request.resources.filter { resource ->
                     when (resource) {
@@ -1210,8 +1217,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
             ) {
-                val host = Uri.parse(origin.orEmpty()).host.orEmpty().lowercase()
-                val allowed = sitePermissionStore.isAllowed(
+                val originUri = Uri.parse(origin.orEmpty())
+                val host = originUri.host.orEmpty().lowercase()
+                val secureOrigin = originUri.scheme == "https" ||
+                    host == "localhost" || host == "127.0.0.1"
+                val allowed = secureOrigin && sitePermissionStore.isAllowed(
                     host,
                     SiteCapability.LOCATION
                 ) && (
