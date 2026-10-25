@@ -1417,8 +1417,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        if (isPrivateMode) clearPrivateSessionData() else pool.destroyAll()
+        // Cancel collectors/jobs before closing and deleting the private DB.
         super.onCleared()
+        if (isPrivateMode) clearPrivateSessionData() else pool.destroyAll()
     }
 
     companion object {
