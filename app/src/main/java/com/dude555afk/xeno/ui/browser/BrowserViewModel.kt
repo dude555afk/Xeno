@@ -1321,6 +1321,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private fun sessionListener(tabId: Long, key: String) = object : SessionListener {
         override fun onPageStarted(url: String) {
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            pool.peek(key)?.let { applySitePermissions(it, url, key) }
             _state.update {
                 it.copy(load = PageLoadState(loading = true, progress = 0.05f, url = url), pageError = null)
             }
@@ -1361,6 +1362,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            pool.peek(key)?.let { applySitePermissions(it, url, key) }
             _state.update {
                 it.copy(
                     load = PageLoadState(progress = 1f, loading = false, url = url, title = title),
@@ -1507,6 +1509,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             CookieManager.getInstance().flush()
             WebStorage.getInstance().deleteAllData()
             WebViewDatabase.getInstance(getApplication()).clearHttpAuthUsernamePassword()
+            sitePermissionStore.clear()
             XenoDatabase.clearPrivateDatabase(getApplication())
         }
     }
