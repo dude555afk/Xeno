@@ -58,6 +58,8 @@ class XenoInjectorTest {
 
         assertNotNull(script)
         assertTrue(script!!.contains("document.querySelectorAll"))
+        assertTrue(script.contains("MutationObserver"))
+        assertTrue(script.contains("removeMatches"))
         assertTrue(script.contains("a[href="))
     }
 }
