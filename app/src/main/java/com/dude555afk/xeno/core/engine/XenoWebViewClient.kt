@@ -52,27 +52,26 @@ class XenoWebViewClient(
         failedMainFrameUrl = null
         listener.onPageStarted(target)
 
-        // Cosmetic stripping has to happen inside the page, before its own
-        // scripts layout the ad containers. onPageStarted is the earliest
-        // hook we get, and evaluateJavascript here runs ahead of most
-        // first-party JS.
+        // Do not inject here: evaluateJavascript can still target the previous
+        // document while the new one is navigating. Injection happens at
+        // onPageCommitVisible below, when the new document actually exists.
+    }
+
+    override fun onPageCommitVisible(view: WebView?, url: String?) {
+        // This is the first safe point to target the newly committed document.
+        // Running evaluateJavascript from onPageStarted can hit the previous
+        // document and silently lose cosmetic/fingerprinting protections.
         if (view != null) {
+            val target = url.orEmpty()
             val script = XenoInjector.script(
                 documentUrl = target,
                 cosmeticSelectors = cosmeticSelectors(),
                 redirectPopups = true,
                 fingerprintingProtection = fingerprintingProtection()
             )
-            if (script != null) {
-                runCatching { view.evaluateJavascript(script, null) }
-            }
+            if (script != null) runCatching { view.evaluateJavascript(script, null) }
         }
-    }
 
-    override fun onPageCommitVisible(view: WebView?, url: String?) {
-        // Reported separately from onPageFinished because SPAs fire
-        // onPageFinished before anything renders, and the title is the one
-        // thing that IS reliable at commit time.
         val title = view?.title.orEmpty()
         if (title.isNotBlank()) listener.onPageProgress(url.orEmpty(), 100)
     }
