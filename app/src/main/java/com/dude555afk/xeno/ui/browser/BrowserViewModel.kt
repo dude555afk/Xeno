@@ -162,9 +162,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
-            thirdPartyCookiesEnabled = settings.thirdPartyCookiesEnabled,
+            thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
             hasApiKey = settings.hasApiKey,
-            bookmarks = bookmarkStore.all(),
+            bookmarks = if (isPrivateMode) emptyList() else bookmarkStore.all(),
             isPrivateMode = isPrivateMode
         )
     )
@@ -465,12 +465,12 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setBlockingEnabled(enabled: Boolean) {
-        settings.blockingEnabled = enabled
+        if (!isPrivateMode) settings.blockingEnabled = enabled
         _state.update { it.copy(blockingEnabled = enabled) }
     }
 
     fun setThirdPartyCookiesEnabled(enabled: Boolean) {
-        settings.thirdPartyCookiesEnabled = enabled
+        if (!isPrivateMode) settings.thirdPartyCookiesEnabled = enabled
         pool.liveKeys().forEach { key ->
             pool.peek(key)?.let { CookieManager.getInstance().setAcceptThirdPartyCookies(it, enabled) }
         }
@@ -488,16 +488,19 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val url = snapshot.load.url.ifBlank { tab.url }
         if (url.isBlank() || url == "about:blank") return
         val title = snapshot.load.title.ifBlank { tab.displayTitle }
+        if (isPrivateMode) return
         val bookmarks = bookmarkStore.add(url, title)
         _state.update { it.copy(bookmarks = bookmarks, panel = BrowserPanel.BOOKMARKS) }
     }
 
     fun openBookmark(bookmark: Bookmark) {
+        if (isPrivateMode) return
         closePanel()
         navigate(bookmark.url)
     }
 
     fun removeBookmark(bookmark: Bookmark) {
+        if (isPrivateMode) return
         val bookmarks = bookmarkStore.remove(bookmark.url)
         _state.update { it.copy(bookmarks = bookmarks) }
     }
@@ -1072,7 +1075,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
-        CookieManager.getInstance().setAcceptThirdPartyCookies(view, settings.thirdPartyCookiesEnabled)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(view, _state.value.thirdPartyCookiesEnabled)
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(tab.id, key),
             blocker = { request ->
