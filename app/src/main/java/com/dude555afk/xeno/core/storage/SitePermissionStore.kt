@@ -33,9 +33,7 @@ class SitePermissionStore(context: Context, privateMode: Boolean) {
         prefs.edit().putBoolean(key(host, capability), allowed).apply()
     }
 
-    fun clear() {
-        prefs.edit().clear().apply()
-    }
+    fun clear(): Boolean = prefs.edit().clear().commit()
 
     private fun get(host: String, capability: SiteCapability, default: Boolean): Boolean =
         prefs.getBoolean(key(host, capability), default)
