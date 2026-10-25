@@ -206,14 +206,18 @@ fun BrowserToolsSheet(
                                     Icons.Rounded.Computer,
                                     onToggleDesktopSite
                                 )
-                                MenuAction(
-                                    "Bookmark current page",
-                                    currentTitle.ifBlank { currentUrl },
-                                    Icons.Rounded.BookmarkAdd,
-                                    onAddBookmark
-                                )
+                                if (!isPrivateMode) {
+                                    MenuAction(
+                                        "Bookmark current page",
+                                        currentTitle.ifBlank { currentUrl },
+                                        Icons.Rounded.BookmarkAdd,
+                                        onAddBookmark
+                                    )
+                                }
                             }
-                            MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                            if (!isPrivateMode) {
+                                MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                            }
                             MenuAction("Spaces", "${spaces.size} workspaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
                             MenuAction(
                                 if (isPrivateMode) "Close private session" else "New private session",
