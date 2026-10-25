@@ -311,7 +311,7 @@ fun BrowserScreen(
             provider = viewModel.providerConfig(),
             availableModels = state.availableModels,
             modelsLoading = state.modelsLoading,
-            onFetchModels = { viewModel.fetchProviderModels() },
+            onFetchModels = { config -> viewModel.fetchProviderModels(config) },
             onProviderSelected = viewModel::providerConfigFor,
             translationLanguage = state.translationLanguage,
             settingsError = state.settingsError,
