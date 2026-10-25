@@ -66,11 +66,12 @@ fun BrowserScreen(
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
         enabled = state.paletteVisible || state.tabStackVisible ||
-            state.panel != null || state.readerVisible || state.translationConsentVisible || state.translationVisible || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
+            state.panel != null || state.findVisible || state.readerVisible || state.translationConsentVisible || state.translationVisible || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
     ) {
         when {
             state.paletteVisible -> viewModel.closePalette()
             state.tabStackVisible -> viewModel.toggleTabStack()
+            state.findVisible -> viewModel.closeFindInPage()
             state.readerVisible -> viewModel.closeReaderMode()
             state.translationVisible -> viewModel.closeTranslation()
             state.translationConsentVisible -> viewModel.cancelTranslationConsent()
@@ -174,6 +175,21 @@ fun BrowserScreen(
             }
         }
 
+        if (state.findVisible) {
+            FindInPageBar(
+                query = state.findQuery,
+                matches = state.findMatches,
+                activeMatch = state.findActiveMatch,
+                onQueryChange = viewModel::updateFindQuery,
+                onPrevious = { viewModel.findNext(false) },
+                onNext = { viewModel.findNext(true) },
+                onDismiss = viewModel::closeFindInPage,
+                modifier = Modifier.align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(top = 60.dp, start = 16.dp, end = 16.dp)
+            )
+        }
+
         CommandPalette(
             visible = state.paletteVisible,
             query = state.query,
@@ -244,6 +260,7 @@ fun BrowserScreen(
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
             onOpenReader = viewModel::openReaderMode,
+            onOpenFind = viewModel::openFindInPage,
             onHistoryClick = viewModel::openHistoryEntry,
             onBookmarkClick = viewModel::openBookmark,
             onRemoveBookmark = viewModel::removeBookmark,
