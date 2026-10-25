@@ -62,9 +62,9 @@ class SessionPool(
             settings.allowUniversalAccessFromFileURLs = false
             settings.safeBrowsingEnabled = true
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            // This browser currently has no second-window UI. Keeping popups in
-            // the current WebView is safer than advertising unsupported windows.
-            settings.setSupportMultipleWindows(false)
+            // User-initiated popup windows are captured by WebChromeClient
+            // and opened as regular Xeno tabs.
+            settings.setSupportMultipleWindows(true)
             settings.mediaPlaybackRequiresUserGesture = true
             settings.loadWithOverviewMode = true
             settings.useWideViewPort = true
