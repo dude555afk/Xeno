@@ -63,6 +63,7 @@ fun BrowserToolsSheet(
     history: List<HistoryEntity>,
     downloads: List<BrowserDownload>,
     blockingEnabled: Boolean,
+    thirdPartyCookiesEnabled: Boolean,
     provider: ProviderConfig,
     settingsError: String?,
     onDismiss: () -> Unit,
@@ -72,6 +73,7 @@ fun BrowserToolsSheet(
     onClearHistory: () -> Unit,
     onClearBrowsingData: () -> Unit,
     onBlockingChange: (Boolean) -> Unit,
+    onThirdPartyCookiesChange: (Boolean) -> Unit,
     onSaveProvider: (ProviderConfig) -> Unit,
     onRefreshDownloads: () -> Unit,
     onOpenDownload: (BrowserDownload) -> Unit,
@@ -225,6 +227,14 @@ fun BrowserToolsSheet(
                                 }
                                 Switch(checked = blockingEnabled, onCheckedChange = onBlockingChange)
                             }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Third-party cookies", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
+                                    Text("Off by default to reduce cross-site tracking.", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Switch(checked = thirdPartyCookiesEnabled, onCheckedChange = onThirdPartyCookiesChange)
+                            }
+                            InfoCard("Site permissions", "Camera, microphone, and location requests are denied until per-site controls are implemented.")
                             InfoCard("Local-first", "History and preferences stay on this device. Xeno does not add telemetry.")
                             InfoCard("AI page summaries", "Page text is sent to your AI provider only after you confirm.")
                             Button(onClick = onClearBrowsingData, modifier = Modifier.fillMaxWidth()) {
