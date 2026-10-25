@@ -81,6 +81,10 @@ data class BrowserUiState(
     val pageError: String? = null,
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
+    val findVisible: Boolean = false,
+    val findQuery: String = "",
+    val findMatches: Int = 0,
+    val findActiveMatch: Int = 0,
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
@@ -256,6 +260,46 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // MARK: browser panels
+
+    fun openFindInPage() {
+        val tab = _state.value.activeTab ?: return
+        if (!tab.hasContent) return
+        closePanel()
+        _state.update { it.copy(findVisible = true, findQuery = "", findMatches = 0, findActiveMatch = 0) }
+        activeSessionKey?.let(pool::peek)?.apply {
+            clearMatches()
+            setFindListener { activeOrdinal, numberOfMatches, isDoneCounting ->
+                if (isDoneCounting) {
+                    _state.update {
+                        it.copy(
+                            findMatches = numberOfMatches,
+                            findActiveMatch = if (numberOfMatches > 0) activeOrdinal + 1 else 0
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateFindQuery(query: String) {
+        _state.update { it.copy(findQuery = query, findMatches = 0, findActiveMatch = 0) }
+        val view = activeSessionKey?.let(pool::peek) ?: return
+        if (query.isBlank()) {
+            view.clearMatches()
+        } else {
+            view.findAllAsync(query)
+        }
+    }
+
+    fun findNext(forward: Boolean) {
+        val view = activeSessionKey?.let(pool::peek) ?: return
+        if (_state.value.findMatches > 0) view.findNext(forward)
+    }
+
+    fun closeFindInPage() {
+        activeSessionKey?.let(pool::peek)?.clearMatches()
+        _state.update { it.copy(findVisible = false, findQuery = "", findMatches = 0, findActiveMatch = 0) }
+    }
 
     fun openPanel(panel: BrowserPanel) {
         _state.update { it.copy(panel = panel, settingsError = null) }
@@ -643,6 +687,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
+        closeFindInPage()
         settings.setActiveTabId(tab.spaceId, tab.id)
         _state.update {
             it.copy(
