@@ -794,6 +794,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val remaining = existing.filterNot { it.id == space.id }
             val deletedTabs = db.tabDao().all().filter { it.spaceId == space.id }
             deletedTabs.forEach { entity ->
+                desktopSiteTabIds.remove(entity.id)
                 pool.destroy("tab-${entity.id}")
             }
             if (deletedTabs.any { "tab-${it.id}" == activeSessionKey }) {
@@ -877,6 +878,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun closeTab(tab: Tab) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
+            desktopSiteTabIds.remove(tab.id)
             pool.destroy(sessionKey(tab))
             if (activeSessionKey == sessionKey(tab)) activeSessionKey = null
 
