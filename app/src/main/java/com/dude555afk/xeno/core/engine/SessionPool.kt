@@ -65,6 +65,9 @@ class SessionPool(
             // User-initiated popup windows are captured by WebChromeClient
             // and opened as regular Xeno tabs.
             settings.setSupportMultipleWindows(true)
+            // Sign-in, checkout and other user-tapped flows commonly use window.open.
+            // The ChromeClient still rejects popups without a user gesture.
+            settings.javaScriptCanOpenWindowsAutomatically = true
             settings.mediaPlaybackRequiresUserGesture = true
             settings.loadWithOverviewMode = true
             settings.useWideViewPort = true

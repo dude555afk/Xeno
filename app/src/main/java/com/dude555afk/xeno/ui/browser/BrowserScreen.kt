@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
@@ -65,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,6 +94,10 @@ fun BrowserScreen(
     accent: Color
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
+    // Keep browser chrome out of the way of Android's keyboard, including
+    // keyboards opened by form fields inside a website.
+    val keyboardVisible = WindowInsets.ime.getBottom(density) > 0
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -187,7 +193,7 @@ fun BrowserScreen(
         // and conventional browser controls behind the upward chevron. The bar
         // follows page scroll direction and stays out of the keyboard workflow.
         AnimatedVisibility(
-            visible = state.chromeVisible && !state.paletteVisible,
+            visible = state.chromeVisible && !state.paletteVisible && !keyboardVisible,
             enter = slideInVertically(
                 initialOffsetY = { it / 3 },
                 animationSpec = tween(170)
@@ -218,21 +224,30 @@ fun BrowserScreen(
             )
         }
 
-        if (state.pageError != null) {
-            Surface(
-                modifier = Modifier.align(Alignment.BottomCenter)
-                    .padding(bottom = 112.dp, start = 24.dp, end = 24.dp)
-                    .clickable(onClick = viewModel::refreshOrStop),
-                shape = PillShape,
-                color = Color(0xFF1C1C1C),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
-            ) {
-                Text(
-                    text = "Page couldn't load · Tap to retry",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    color = Color.White.copy(alpha = 0.9f),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+        AnimatedVisibility(
+            visible = state.pageError != null && !keyboardVisible,
+            enter = fadeIn(tween(180)) + scaleIn(initialScale = 0.96f, animationSpec = tween(180)),
+            exit = fadeOut(tween(120)) + scaleOut(targetScale = 0.98f, animationSpec = tween(120)),
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .padding(bottom = 112.dp, start = 24.dp, end = 24.dp)
+        ) {
+            val error = state.pageError
+            if (error != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = viewModel::refreshOrStop),
+                    shape = PillShape,
+                    color = Color(0xFF1C1C1C),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
+                ) {
+                    Text(
+                        text = "Page couldn't load · ${error.take(72)} · Tap to retry",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
@@ -322,6 +337,7 @@ fun BrowserScreen(
             fingerprintingProtectionEnabled = state.fingerprintingProtectionEnabled,
             provider = viewModel.providerConfig(),
             availableModels = state.availableModels,
+             availableModelsProviderId = state.availableModelsProviderId,
             modelsLoading = state.modelsLoading,
             onFetchModels = { config -> viewModel.fetchProviderModels(config) },
             onProviderSelected = viewModel::providerConfigFor,

@@ -137,6 +137,7 @@ data class BrowserUiState(
     val readerError: String? = null,
     val settingsError: String? = null,
     val availableModels: List<ModelInfo> = emptyList(),
+    val availableModelsProviderId: String? = null,
     val modelsLoading: Boolean = false,
     val translationLanguage: String = "English",
     val translationConsentVisible: Boolean = false,
@@ -550,7 +551,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun fetchProviderModels(config: ProviderConfig = settings.providerConfig) {
         if (isPrivateMode) return
-        _state.update { it.copy(modelsLoading = true, settingsError = null, availableModels = emptyList()) }
+        _state.update {
+            it.copy(
+                modelsLoading = true,
+                settingsError = null,
+                availableModels = emptyList(),
+                availableModelsProviderId = config.id
+            )
+        }
         viewModelScope.launch {
             runCatching { ai.fetchModels(config) }
                 .onSuccess { models ->
@@ -1453,6 +1461,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 val popup = WebView(view.context)
                 popup.settings.javaScriptEnabled = true
                 popup.settings.domStorageEnabled = true
+                popup.settings.javaScriptCanOpenWindowsAutomatically = true
                 popup.webViewClient = object : WebViewClient() {
                     private var opened = false
 
@@ -1651,7 +1660,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             _state.update {
                 it.copy(
                     load = it.load.copy(loading = false, progress = 1f, url = url),
-                    pageError = "This page couldn't load. Check your connection or try again."
+                    pageError = description
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+                        .take(120)
+                        .ifBlank { "Network request failed" }
                 )
             }
         }

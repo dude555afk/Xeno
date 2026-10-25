@@ -90,4 +90,9 @@ data class ModelInfo(
     val name: String? = null,
     val description: String? = null,
     val context_length: Int? = null
-)
+) {
+    /** Kilo supports anonymous free model IDs plus its free auto-router. */
+    val isFree: Boolean
+        get() = id.endsWith(":free", ignoreCase = true) ||
+            id.equals("kilo-auto/free", ignoreCase = true)
+}

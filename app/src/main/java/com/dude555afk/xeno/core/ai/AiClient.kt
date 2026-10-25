@@ -38,6 +38,13 @@ class AiClient(
         explicitNulls = false
     }
 ) {
+    // Discovery is a settings action, not a generation request. Bound its wait
+    // so a stalled endpoint cannot leave the model picker spinning for minutes.
+    private val catalogHttp = http.newBuilder()
+        .callTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     /**
      * Stream a chat completion as incremental text deltas. The callback bridge
@@ -128,15 +135,34 @@ class AiClient(
             }
             .build()
 
-        http.newCall(request).execute().use { response ->
+        catalogHttp.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) throw AiException(response.code, body)
-            runCatching {
+            val fetched = runCatching {
                 json.decodeFromString(ModelsResponse.serializer(), body).data
                     .filter { it.id.isNotBlank() }
                     .distinctBy { it.id }
-                    .sortedBy { (it.name ?: it.id).lowercase() }
-            }.getOrElse { throw AiException(response.code, "Invalid /models response: ${body.take(240)}") }
+            }.getOrElse {
+                throw AiException(response.code, "Invalid /models response: ${body.take(240)}")
+            }
+
+            // Kilo's virtual free router is documented but may not appear in
+            // the concrete /models response. Always keep it selectable.
+            val withKiloFreeRouter = if (
+                config.id == "kilo" &&
+                fetched.none { it.id.equals("kilo-auto/free", ignoreCase = true) }
+            ) {
+                fetched + ModelInfo(
+                    id = "kilo-auto/free",
+                    name = "Kilo Auto Free",
+                    description = "Anonymous free auto-router"
+                )
+            } else fetched
+
+            withKiloFreeRouter.sortedWith(
+                compareBy<ModelInfo> { if (config.id == "kilo" && it.isFree) 0 else 1 }
+                    .thenBy { (it.name ?: it.id).lowercase() }
+            )
         }
     }
 

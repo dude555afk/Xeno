@@ -18,6 +18,13 @@ class ProviderConfigTest {
     }
 
     @Test
+    fun catalogueMarksAnonymousFreeModelIds() {
+        assertTrue(ModelInfo(id = "kilo-auto/free").isFree)
+        assertTrue(ModelInfo(id = "provider/model:free").isFree)
+        assertFalse(ModelInfo(id = "provider/paid-model").isFree)
+    }
+
+    @Test
     fun localProviderAllowsNoKeyOnlyOnLoopbackOrPrivateLan() {
         assertTrue(ProviderPresets.Local.copy(baseUrl = "http://127.0.0.1:11434/v1").allowsAnonymousFreeModel)
         assertTrue(ProviderPresets.Local.copy(baseUrl = "http://192.168.1.20:1234/v1").allowsAnonymousFreeModel)

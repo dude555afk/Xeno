@@ -91,6 +91,7 @@ fun BrowserToolsSheet(
     fingerprintingProtectionEnabled: Boolean,
     provider: ProviderConfig,
     availableModels: List<ModelInfo>,
+    availableModelsProviderId: String?,
     modelsLoading: Boolean,
     onFetchModels: (ProviderConfig) -> Unit,
     onProviderSelected: (String) -> ProviderConfig,
@@ -128,8 +129,24 @@ fun BrowserToolsSheet(
 ) {
     AnimatedVisibility(
         visible = panel != null,
-        enter = fadeIn(),
-        exit = fadeOut()
+        enter = fadeIn(androidx.compose.animation.core.tween(210)) +
+            androidx.compose.animation.slideInVertically(
+                initialOffsetY = { it / 6 },
+                animationSpec = androidx.compose.animation.core.tween(250)
+            ) +
+            androidx.compose.animation.scaleIn(
+                initialScale = 0.985f,
+                animationSpec = androidx.compose.animation.core.tween(220)
+            ),
+        exit = fadeOut(androidx.compose.animation.core.tween(140)) +
+            androidx.compose.animation.slideOutVertically(
+                targetOffsetY = { it / 10 },
+                animationSpec = androidx.compose.animation.core.tween(160)
+            ) +
+            androidx.compose.animation.scaleOut(
+                targetScale = 0.99f,
+                animationSpec = androidx.compose.animation.core.tween(150)
+            )
     ) {
         Box(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.64f)).clickable(
@@ -471,6 +488,26 @@ fun BrowserToolsSheet(
                             var model by remember(provider.model, panel) { mutableStateOf(provider.model) }
                             var apiKey by remember(provider.apiKey, panel) { mutableStateOf(provider.apiKey) }
                             val selectedPreset = ProviderPresets.byId(selectedProviderId)
+                            val catalogueForSelection = remember(
+                                availableModels, availableModelsProviderId, selectedProviderId, apiKey
+                            ) {
+                                val source = availableModels
+                                    .takeIf { availableModelsProviderId == selectedProviderId }
+                                    .orEmpty()
+                                if (selectedProviderId == "kilo" && apiKey.isBlank()) {
+                                    source.filter { it.isFree }
+                                } else source
+                            }
+                            var modelSearch by remember(selectedProviderId, panel) { mutableStateOf("") }
+                            val filteredModels = remember(catalogueForSelection, modelSearch) {
+                                catalogueForSelection.filter { option ->
+                                    listOfNotNull(
+                                        option.name,
+                                        option.id,
+                                        if (option.isFree) "free" else null
+                                    ).joinToString(" ").contains(modelSearch.trim(), ignoreCase = true)
+                                }
+                            }
                             Column(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -479,7 +516,7 @@ fun BrowserToolsSheet(
                                     selectedPreset.displayName,
                                     when {
                                         isPrivateMode -> "AI provider settings are read-only in private mode."
-                                        selectedProviderId == "kilo" -> "Supported Kilo models ending in :free can be used without a key. Other models need your key."
+                                        selectedProviderId == "kilo" -> "Fetch the live Kilo catalogue below. Free models and Kilo Auto Free work without a key; anonymous requests are rate-limited and may reach upstream model providers, so avoid confidential data."
                                         selectedProviderId == "local" -> "Use a local OpenAI-compatible server. On a phone, localhost means the phone itself; enter a reachable LAN address when needed."
                                         else -> "This provider generally requires your own API key. Xeno sends only queries or page text you explicitly approve."
                                     }
@@ -498,6 +535,7 @@ fun BrowserToolsSheet(
                                                     baseUrl = selectedConfig.baseUrl
                                                     model = selectedConfig.model
                                                     apiKey = selectedConfig.apiKey
+                                                    modelSearch = ""
                                                 },
                                                 enabled = !isPrivateMode,
                                                 label = {
@@ -550,19 +588,23 @@ fun BrowserToolsSheet(
                                     Box {
                                         OutlinedButton(
                                             onClick = { modelMenuExpanded = true },
-                                            enabled = availableModels.isNotEmpty()
+                                            enabled = filteredModels.isNotEmpty()
                                         ) { Text("Choose") }
                                         DropdownMenu(
                                             expanded = modelMenuExpanded,
                                             onDismissRequest = { modelMenuExpanded = false }
                                         ) {
-                                            availableModels.forEach { option ->
+                                            filteredModels.take(100).forEach { option ->
                                                 DropdownMenuItem(
                                                     text = {
                                                         Column {
                                                             Text(option.name ?: option.id)
-                                                            if (option.name != null) {
-                                                                Text(option.id, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                                            if (option.name != null || option.isFree) {
+                                                                Text(
+                                                                     if (option.isFree) "FREE · ${option.id}" else option.id,
+                                                                     style = MaterialTheme.typography.labelSmall,
+                                                                     color = if (option.isFree) Color(0xFFB6F36A) else TextSecondary
+                                                                 )
                                                             }
                                                         }
                                                     },
@@ -574,6 +616,26 @@ fun BrowserToolsSheet(
                                             }
                                         }
                                     }
+                                }
+                                if (catalogueForSelection.isNotEmpty()) {
+                                    OutlinedTextField(
+                                        value = modelSearch,
+                                        onValueChange = { modelSearch = it },
+                                        label = {
+                                            Text(
+                                                if (selectedProviderId == "kilo" && apiKey.isBlank())
+                                                    "Search free Kilo models"
+                                                else "Search fetched models"
+                                            )
+                                        },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Text(
+                                        "${filteredModels.size} matching models",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextSecondary
+                                    )
                                 }
                                 OutlinedTextField(
                                     apiKey, { apiKey = it }, label = { Text("API key (if required)") },
