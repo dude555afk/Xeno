@@ -24,6 +24,7 @@ import android.webkit.WebStorage
 import android.webkit.WebSettings
 import android.webkit.WebViewDatabase
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -914,20 +915,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun newTab() {
+    fun newTab(initialUrl: String? = null) {
         viewModelScope.launch {
             val spaceId = _state.value.activeSpace?.id ?: 1L
             val position = (_state.value.tabs.maxOfOrNull { it.position } ?: -1) + 1
             val id = db.tabDao().insert(
                 TabEntity(
                     spaceId = spaceId,
-                    url = "",
+                    url = initialUrl.orEmpty(),
                     position = position,
                     lastActiveAt = System.currentTimeMillis()
                 )
             )
             selectTab(Tab(id = id, spaceId = spaceId, position = position))
-            _state.update { it.copy(tabStackVisible = false, paletteVisible = true) }
+            _state.update {
+                it.copy(tabStackVisible = false, paletteVisible = initialUrl.isNullOrBlank())
+            }
         }
     }
 
@@ -1441,7 +1444,51 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 isDialog: Boolean,
                 isUserGesture: Boolean,
                 resultMsg: android.os.Message?
-            ): Boolean = false
+            ): Boolean {
+                if (!isUserGesture || view == null || resultMsg == null) return false
+                val popup = WebView(view.context)
+                popup.settings.javaScriptEnabled = true
+                popup.settings.domStorageEnabled = true
+                popup.webViewClient = object : WebViewClient() {
+                    private var opened = false
+
+                    override fun shouldOverrideUrlLoading(
+                        popupView: WebView?,
+                        request: android.webkit.WebResourceRequest?
+                    ): Boolean {
+                        val target = request?.url?.toString().orEmpty()
+                        if (!opened && (target.startsWith("https://") || target.startsWith("http://"))) {
+                            opened = true
+                            newTab(target)
+                        }
+                        popupView?.stopLoading()
+                        popupView?.destroy()
+                        return true
+                    }
+
+                    @Suppress("DEPRECATION")
+                    override fun shouldOverrideUrlLoading(
+                        popupView: WebView?,
+                        url: String?
+                    ): Boolean {
+                        val target = url.orEmpty()
+                        if (!opened && (target.startsWith("https://") || target.startsWith("http://"))) {
+                            opened = true
+                            newTab(target)
+                        }
+                        popupView?.stopLoading()
+                        popupView?.destroy()
+                        return true
+                    }
+                }
+                val transport = resultMsg.obj as? WebView.WebViewTransport ?: run {
+                    popup.destroy()
+                    return false
+                }
+                transport.webView = popup
+                resultMsg.sendToTarget()
+                return true
+            }
         }
 
         view.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
