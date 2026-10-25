@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
     private val viewModel: BrowserViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         // A cold-start deep link opens in the active tab. Restored Activities
         // already recover their durable tab state, so don't replay the same link.
