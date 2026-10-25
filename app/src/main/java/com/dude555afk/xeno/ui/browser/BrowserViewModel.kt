@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Environment
 import android.view.ViewGroup
@@ -21,6 +22,7 @@ import android.webkit.WebView
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
@@ -41,6 +43,8 @@ import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.model.PageLoadState
 import com.dude555afk.xeno.core.model.SearchHit
+import com.dude555afk.xeno.core.model.SiteCapability
+import com.dude555afk.xeno.core.model.SitePermissions
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.core.model.ExtractedContent
@@ -50,6 +54,7 @@ import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.BookmarkStore
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
+import com.dude555afk.xeno.core.storage.SitePermissionStore
 import com.dude555afk.xeno.core.storage.SpaceEntity
 import com.dude555afk.xeno.core.storage.TabEntity
 import com.dude555afk.xeno.core.storage.XenoDatabase
@@ -84,6 +89,8 @@ data class BrowserUiState(
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
     val isPrivateMode: Boolean = false,
+    val currentSiteHost: String = "",
+    val sitePermissions: SitePermissions = SitePermissions(),
     val findVisible: Boolean = false,
     val findQuery: String = "",
     val findMatches: Int = 0,
@@ -140,6 +147,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val db = XenoDatabase.get(app)
     private val settings = SettingsStore(app)
     private val bookmarkStore = BookmarkStore(app)
+    private val sitePermissionStore = SitePermissionStore(app, isPrivateMode)
 
     /**
      * Reuse the filter engine the Application built rather than making a second
@@ -472,10 +480,65 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setThirdPartyCookiesEnabled(enabled: Boolean) {
         if (!isPrivateMode) settings.thirdPartyCookiesEnabled = enabled
-        pool.liveKeys().forEach { key ->
-            pool.peek(key)?.let { CookieManager.getInstance().setAcceptThirdPartyCookies(it, enabled) }
-        }
         _state.update { it.copy(thirdPartyCookiesEnabled = enabled) }
+        pool.liveKeys().forEach { key ->
+            pool.peek(key)?.let { view ->
+                val host = Uri.parse(view.url.orEmpty()).host.orEmpty()
+                val allowed = sitePermissionStore.read(host, enabled).thirdPartyCookiesEnabled
+                CookieManager.getInstance().setAcceptThirdPartyCookies(view, allowed)
+            }
+        }
+    }
+
+    fun openSiteSettings() {
+        val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
+        val host = Uri.parse(url).host.orEmpty().lowercase()
+        if (host.isBlank()) return
+        val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
+        _state.update {
+            it.copy(
+                panel = BrowserPanel.SITE_SETTINGS,
+                currentSiteHost = host,
+                sitePermissions = permissions
+            )
+        }
+    }
+
+    fun setSitePermission(capability: SiteCapability, allowed: Boolean) {
+        val host = _state.value.currentSiteHost.ifBlank {
+            Uri.parse(_state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }).host.orEmpty()
+        }.lowercase()
+        if (host.isBlank()) return
+        sitePermissionStore.set(host, capability, allowed)
+        val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
+        _state.update { it.copy(currentSiteHost = host, sitePermissions = permissions) }
+
+        val view = activeSessionKey?.let(pool::peek) ?: return
+        when (capability) {
+            SiteCapability.JAVASCRIPT -> {
+                view.settings.javaScriptEnabled = permissions.javaScriptEnabled
+                view.reload()
+            }
+            SiteCapability.THIRD_PARTY_COOKIES -> {
+                CookieManager.getInstance().setAcceptThirdPartyCookies(view, permissions.thirdPartyCookiesEnabled)
+            }
+            SiteCapability.LOCATION, SiteCapability.CAMERA, SiteCapability.MICROPHONE -> Unit
+        }
+    }
+
+    private fun sitePermissionsFor(url: String): SitePermissions {
+        val host = Uri.parse(url).host.orEmpty().lowercase()
+        return sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
+    }
+
+    private fun applySitePermissions(view: WebView, url: String) {
+        val host = Uri.parse(url).host.orEmpty().lowercase()
+        val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
+        view.settings.javaScriptEnabled = permissions.javaScriptEnabled
+        CookieManager.getInstance().setAcceptThirdPartyCookies(view, permissions.thirdPartyCookiesEnabled)
+        if (activeSessionKey != null && activeSessionKey == view.tag as? String) {
+            _state.update { it.copy(currentSiteHost = host, sitePermissions = permissions) }
+        }
     }
 
     fun openHistoryEntry(entry: HistoryEntity) {
