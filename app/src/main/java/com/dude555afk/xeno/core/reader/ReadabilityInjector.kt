@@ -51,6 +51,29 @@ class ReadabilityInjector(
             "(function(){try{var b=document.body;var t=(b&&b.innerText)||'';" +
                 "return document.readyState+':'+t.length;}catch(e){return 'err:0';}})()"
 
+        // Readability can be blocked by a site's CSP or fail on unusual markup.
+        // Fall back to visible DOM text only; never attempt to bypass a paywall.
+        private const val FALLBACK_CALL = """
+            (function(){
+              try {
+                var b = document.body;
+                var t = (b && b.innerText) || '';
+                var author = document.querySelector('meta[name="author"]');
+                var description = document.querySelector('meta[name="description"]');
+                return JSON.stringify({
+                  url: location.href,
+                  title: document.title || '',
+                  byline: author ? (author.content || '') : '',
+                  text: t,
+                  excerpt: description ? (description.content || '') : '',
+                  wordCount: t.trim() ? t.trim().split(/\\s+/).length : 0
+                });
+              } catch(e) {
+                return JSON.stringify({url: location.href, title: document.title || '', text: '', excerpt: '', wordCount: 0});
+              }
+            })()
+        """.trimIndent()
+
         /** Injected once per navigation so [PROBE_CALL]/[EXTRACT_CALL] exist. */
         private const val BOOTSTRAP =
             "(function(){if(window.__xenoReadability)return;" +
@@ -94,10 +117,9 @@ class ReadabilityInjector(
                     }
 
                     override fun onPageFinished(view: WebView?, finishedUrl: String?) {
-                        // The bootstrap only ever runs as a script tag append,
-                        // so once the document is done the script has been
-                        // fetched and executed — bar a CSP block, which is
-                        // handled by the readiness probe going quiet.
+                        // onPageStarted can fire before documentElement exists, so
+                        // retry here when the DOM is guaranteed to be present.
+                        runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
                         once { if (cont.isActive) cont.resume(Unit) }
                     }
 
@@ -147,8 +169,18 @@ class ReadabilityInjector(
         }
 
         val raw = evalToString(webView, EXTRACT_CALL)
+        val primary = parse(raw, url)
+        val result = if (!primary.isJunk) {
+            primary
+        } else {
+            // If the bundled extractor failed (often due to CSP or a custom SPA),
+            // use text that is actually visible in the loaded DOM as a conservative
+            // fallback. A subscriber wall is not bypassed; only exposed text is read.
+            val fallback = parse(evalToString(webView, FALLBACK_CALL), url)
+            if (!fallback.isJunk) fallback else primary
+        }
         webView.webViewClient = previousClient
-        parse(raw, url)
+        result
     }
 
     /**
