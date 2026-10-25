@@ -16,6 +16,7 @@ import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.URLUtil
 import android.webkit.WebStorage
+import android.webkit.WebViewDatabase
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
@@ -81,6 +82,7 @@ data class BrowserUiState(
     val pageError: String? = null,
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
+    val isPrivateMode: Boolean = false,
     val findVisible: Boolean = false,
     val findQuery: String = "",
     val findMatches: Int = 0,
@@ -133,6 +135,7 @@ data class BrowserUiState(
  */
 class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
+    private val isPrivateMode = (app as? XenoApplication)?.isPrivateProcess == true
     private val db = XenoDatabase.get(app)
     private val settings = SettingsStore(app)
     private val bookmarkStore = BookmarkStore(app)
@@ -161,7 +164,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             blockingEnabled = settings.blockingEnabled,
             thirdPartyCookiesEnabled = settings.thirdPartyCookiesEnabled,
             hasApiKey = settings.hasApiKey,
-            bookmarks = bookmarkStore.all()
+            bookmarks = bookmarkStore.all(),
+            isPrivateMode = isPrivateMode
         )
     )
     val state: StateFlow<BrowserUiState> = _state.asStateFlow()
@@ -670,7 +674,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectSpace(space: Space) {
-        settings.activeSpaceId = space.id
+        if (!isPrivateMode) settings.activeSpaceId = space.id
         val previousSession = activeSessionKey
         activeSessionKey = null
         previousSession?.let(pool::detach)
@@ -688,7 +692,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: Tab) {
         closeFindInPage()
-        settings.setActiveTabId(tab.spaceId, tab.id)
+        if (!isPrivateMode) settings.setActiveTabId(tab.spaceId, tab.id)
         _state.update {
             it.copy(
                 activeTab = tab,
@@ -1382,8 +1386,35 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    override fun onCleared() {
+    /**
+     * Called only when the isolated private activity is finishing. Its WebView
+     * profile, cookies, storage, HTTP auth, transient tabs and separate database
+     * are cleared without touching the normal browser profile/database.
+     */
+    fun clearPrivateSessionData() {
+        if (!isPrivateMode) return
+        runCatching {
+            pool.liveKeys().forEach { key ->
+                pool.peek(key)?.let { view ->
+                    view.stopLoading()
+                    view.clearCache(true)
+                    view.clearHistory()
+                    view.clearFormData()
+                }
+            }
+        }
         pool.destroyAll()
+        runCatching {
+            CookieManager.getInstance().removeAllCookies(null)
+            CookieManager.getInstance().flush()
+            WebStorage.getInstance().deleteAllData()
+            WebViewDatabase.getInstance(getApplication()).clearHttpAuthUsernamePassword()
+            XenoDatabase.clearPrivateDatabase(getApplication())
+        }
+    }
+
+    override fun onCleared() {
+        if (isPrivateMode) clearPrivateSessionData() else pool.destroyAll()
         super.onCleared()
     }
 
