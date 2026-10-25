@@ -153,7 +153,7 @@ class AnswerEngine(
             emit(
                 AnswerResult(
                     query = query,
-                    sources = usable,
+                    sources = displaySources,
                     markdown = markdown,
                     citations = parseCitations(markdown)
                 )
