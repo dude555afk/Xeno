@@ -76,28 +76,46 @@ class AnswerEngine(
 
         val read = fetcher.fetch(sources, maxSources = MAX_SOURCES)
         val usable = read.filter { it.extracted != null }
+        val displaySources = if (usable.isNotEmpty()) usable else read
 
-        emit(AnswerResult(query, usable))
+        emit(AnswerResult(query, displaySources))
 
-        if (usable.isEmpty()) {
+        // Prefer full extracted articles. If a site blocks extraction or only
+        // exposes a short preview, use the search engine's own snippet as
+        // explicitly limited evidence instead of failing the entire Ask flow.
+        // This does not unlock paywalled content or invent text the page hides.
+        val promptSources = if (usable.isNotEmpty()) {
+            usable.mapNotNull { s ->
+                val content = s.extracted ?: return@mapNotNull null
+                Prompts.IndexedSourceText(
+                    index = s.index,
+                    url = s.url,
+                    title = s.title.ifBlank { content.title },
+                    text = content.text.take(CHARS_PER_SOURCE)
+                )
+            }
+        } else {
+            hits.mapNotNull { hit ->
+                if (hit.snippet.isBlank()) return@mapNotNull null
+                val index = hits.indexOf(hit) + 1
+                Prompts.IndexedSourceText(
+                    index = index,
+                    url = hit.url,
+                    title = hit.title,
+                    text = "Search-result snippet only; full page could not be extracted. " + hit.snippet.take(600)
+                )
+            }
+        }
+
+        if (promptSources.isEmpty()) {
             emit(AnswerResult(query, read, markdown = UNREADABLE))
             return@flow
         }
 
         if (config.apiKey.isBlank() && !config.allowsAnonymousFreeModel) {
             // No key configured — hand back the sources rather than nothing.
-            emit(AnswerResult(query, usable, markdown = NO_KEY))
+            emit(AnswerResult(query, displaySources, markdown = NO_KEY))
             return@flow
-        }
-
-        val promptSources = usable.mapNotNull { s ->
-            val content = s.extracted ?: return@mapNotNull null
-            Prompts.IndexedSourceText(
-                index = s.index,
-                url = s.url,
-                title = s.title.ifBlank { content.title },
-                text = content.text.take(CHARS_PER_SOURCE)
-            )
         }
 
         val request = ChatRequest(
@@ -122,7 +140,7 @@ class AnswerEngine(
                 emit(
                     AnswerResult(
                         query = query,
-                        sources = usable,
+                        sources = displaySources,
                         markdown = markdown,
                         citations = parseCitations(markdown)
                     )
