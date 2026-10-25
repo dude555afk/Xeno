@@ -372,6 +372,45 @@ fun BrowserToolsSheet(
                                 }
                             }
                         }
+                        BrowserPanel.SITE_SETTINGS -> Column(
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            InfoCard(
+                                "Permissions for " + currentSiteHost,
+                                "Sensitive permissions are denied by default. Enabling one also requires Android permission. This preference applies only to this exact host."
+                            )
+                            SitePermissionToggle(
+                                title = "JavaScript",
+                                subtitle = "Reloads the page when changed",
+                                checked = sitePermissions.javaScriptEnabled,
+                                onChange = { onSitePermissionChange(SiteCapability.JAVASCRIPT, it) }
+                            )
+                            SitePermissionToggle(
+                                title = "Third-party cookies",
+                                subtitle = "Override the global cookie default for this site",
+                                checked = sitePermissions.thirdPartyCookiesEnabled,
+                                onChange = { onSitePermissionChange(SiteCapability.THIRD_PARTY_COOKIES, it) }
+                            )
+                            SitePermissionToggle(
+                                title = "Location",
+                                subtitle = "Requires Android location permission",
+                                checked = sitePermissions.allowLocation,
+                                onChange = { onSitePermissionChange(SiteCapability.LOCATION, it) }
+                            )
+                            SitePermissionToggle(
+                                title = "Camera",
+                                subtitle = "Requires Android camera permission",
+                                checked = sitePermissions.allowCamera,
+                                onChange = { onSitePermissionChange(SiteCapability.CAMERA, it) }
+                            )
+                            SitePermissionToggle(
+                                title = "Microphone",
+                                subtitle = "Requires Android microphone permission",
+                                checked = sitePermissions.allowMicrophone,
+                                onChange = { onSitePermissionChange(SiteCapability.MICROPHONE, it) }
+                            )
+                        }
                         BrowserPanel.TRANSLATE -> Column(
                             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -438,6 +477,24 @@ fun BrowserToolsSheet(
     }
 }
 
+@Composable
+private fun SitePermissionToggle(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
 @Composable
 private fun SpaceManagementRow(
     space: Space,
