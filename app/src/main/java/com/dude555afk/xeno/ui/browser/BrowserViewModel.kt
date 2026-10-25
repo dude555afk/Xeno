@@ -915,7 +915,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun newTab(initialUrl: String? = null) {
+    fun newTab() = createTab(null)
+
+    private fun newTab(initialUrl: String) = createTab(initialUrl)
+
+    private fun createTab(initialUrl: String?) {
         viewModelScope.launch {
             val spaceId = _state.value.activeSpace?.id ?: 1L
             val position = (_state.value.tabs.maxOfOrNull { it.position } ?: -1) + 1
