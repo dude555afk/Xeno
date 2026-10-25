@@ -15,8 +15,13 @@ data class ProviderConfig(
     val apiKey: String,
     val model: String,
     val enabled: Boolean = true
-)
-
+) {
+    /** Kilo permits anonymous calls only for explicitly free models. */
+    val allowsAnonymousFreeModel: Boolean
+        get() = id == "kilo" &&
+            baseUrl.trimEnd('/').equals("https://ai-gateway.kilo.ai/api/v1", ignoreCase = true) &&
+            model.endsWith(":free", ignoreCase = true)
+}
 /**
  * Built-in presets. The user can override every field.
  *
@@ -29,9 +34,9 @@ object ProviderPresets {
     val Kilo = ProviderConfig(
         id = "kilo",
         displayName = "Kilo Gateway",
-        baseUrl = "https://api.kilo.ai/api/gateway",
+        baseUrl = "https://ai-gateway.kilo.ai/api/v1",
         apiKey = "",
-        model = "glm-4.6-air"
+        model = "z-ai/glm-5:free"
     )
 
     val Groq = ProviderConfig(
