@@ -847,6 +847,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         syncSessionToTab(tab)
+        viewModelScope.launch(Dispatchers.IO) {
+            db.tabDao().byId(tab.id)?.let { entity ->
+                val now = System.currentTimeMillis()
+                if (now - entity.lastActiveAt > TAB_ACTIVE_WRITE_INTERVAL_MS) {
+                    db.tabDao().update(entity.copy(lastActiveAt = now))
+                }
+            }
+        }
     }
 
     fun newTab() {
@@ -1622,6 +1630,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         private const val FILTER_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000L
         private const val MAX_FILTER_LIST_BYTES = 12 * 1024 * 1024
         private const val STREAM_UI_BATCH_CHARS = 28
+        private const val TAB_ACTIVE_WRITE_INTERVAL_MS = 30_000L
         private const val MAX_TRANSLATION_CHARS = 30_000
         private const val MAX_TRANSLATION_CHUNK_CHARS = 5_000
     }
