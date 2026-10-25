@@ -437,8 +437,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val source = content.text.take(MAX_TRANSLATION_CHARS)
                 val chunks = source.chunked(MAX_TRANSLATION_CHUNK_CHARS)
+                val translationOutput = StringBuilder()
+                var pendingTranslationChars = 0
                 chunks.forEachIndexed { index, chunk ->
-                    if (index > 0) _state.update { it.copy(translationText = it.translationText + "\n\n") }
+                    if (index > 0) translationOutput.append("\n\n")
                     val request = ChatRequest(
                         model = config.model,
                         messages = listOf(
@@ -450,8 +452,18 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         maxTokens = 1800
                     )
                     ai.stream(config, request).collect { delta ->
-                        _state.update { it.copy(translationText = it.translationText + delta) }
+                        translationOutput.append(delta)
+                        pendingTranslationChars += delta.length
+                        if (pendingTranslationChars >= STREAM_UI_BATCH_CHARS) {
+                            val snapshot = translationOutput.toString()
+                            _state.update { it.copy(translationText = snapshot) }
+                            pendingTranslationChars = 0
+                        }
                     }
+                }
+                if (pendingTranslationChars > 0) {
+                    val snapshot = translationOutput.toString()
+                    _state.update { it.copy(translationText = snapshot) }
                 }
                 _state.update {
                     it.copy(
@@ -1122,12 +1134,26 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     is SummaryOutcome.Offline -> _state.update {
                         it.copy(summaryText = outcome.text, summaryOffline = true)
                     }
-                    is SummaryOutcome.Streaming -> outcome.deltas.collect { delta ->
-                        _state.update {
-                            it.copy(
-                                summaryText = it.summaryText + delta.text,
-                                summaryOffline = it.summaryOffline || delta.offlineFallback
-                            )
+                    is SummaryOutcome.Streaming -> {
+                        val output = StringBuilder()
+                        var pendingChars = 0
+                        outcome.deltas.collect { delta ->
+                            output.append(delta.text)
+                            pendingChars += delta.text.length
+                            if (pendingChars >= STREAM_UI_BATCH_CHARS || delta.offlineFallback) {
+                                val snapshot = output.toString()
+                                _state.update {
+                                    it.copy(
+                                        summaryText = snapshot,
+                                        summaryOffline = it.summaryOffline || delta.offlineFallback
+                                    )
+                                }
+                                pendingChars = 0
+                            }
+                        }
+                        if (pendingChars > 0) {
+                            val snapshot = output.toString()
+                            _state.update { it.copy(summaryText = snapshot) }
                         }
                     }
                 }
@@ -1603,6 +1629,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         private const val FILTER_READ_TIMEOUT_MS = 10_000
         private const val FILTER_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000L
         private const val MAX_FILTER_LIST_BYTES = 12 * 1024 * 1024
+        private const val STREAM_UI_BATCH_CHARS = 28
         private const val MAX_TRANSLATION_CHARS = 30_000
         private const val MAX_TRANSLATION_CHUNK_CHARS = 5_000
     }
