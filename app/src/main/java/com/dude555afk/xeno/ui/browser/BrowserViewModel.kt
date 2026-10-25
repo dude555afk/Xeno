@@ -875,6 +875,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         closePalette()
+        closeFindInPage()
 
         viewModelScope.launch {
             val current = _state.value.activeTab
@@ -1080,7 +1081,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(tab.id, key),
             blocker = { request ->
-                if (!settings.blockingEnabled) false else runCatching {
+                if (!_state.value.blockingEnabled) false else runCatching {
                     filters.shouldBlock(
                         url = request.url.toString(),
                         documentUrl = view.url ?: "",
