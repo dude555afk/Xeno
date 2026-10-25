@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.core.blocking
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,62 +12,32 @@ class FilterListEngineTest {
         val engine = FilterListEngine()
         engine.load("||ads.example^")
 
-        assertTrue(engine.shouldBlock(
-            "https://ads.example/banner.js",
-            "https://news.test/",
-            ResourceType.SCRIPT,
-            thirdParty = true
-        ))
-        assertTrue(engine.shouldBlock(
-            "https://cdn.ads.example/banner.js",
-            "https://news.test/",
-            ResourceType.SCRIPT,
-            thirdParty = true
-        ))
+        assertTrue(engine.shouldBlock("https://ads.example/banner.js", "https://news.test/", ResourceType.SCRIPT, thirdParty = true))
+        assertTrue(engine.shouldBlock("https://cdn.ads.example/banner.js", "https://news.test/", ResourceType.SCRIPT, thirdParty = true))
     }
 
     @Test
     fun thirdPartyOptionsRespectInitiatingDocumentContext() {
         val engine = FilterListEngine()
-        engine.load("||metrics.example^$third-party")
+        engine.load("||metrics.example^\u0024third-party")
 
-        assertTrue(engine.shouldBlock(
-            "https://metrics.example/pixel",
-            "https://shop.other/",
-            ResourceType.IMAGE,
-            thirdParty = true
-        ))
-        assertFalse(engine.shouldBlock(
-            "https://metrics.example/pixel",
-            "https://shop.other/",
-            ResourceType.IMAGE,
-            thirdParty = false
-        ))
+        assertTrue(engine.shouldBlock("https://metrics.example/pixel", "https://shop.other/", ResourceType.IMAGE, thirdParty = true))
+        assertFalse(engine.shouldBlock("https://metrics.example/pixel", "https://shop.other/", ResourceType.IMAGE, thirdParty = false))
     }
 
     @Test
     fun allowExceptionOverridesMatchingNetworkBlock() {
         val engine = FilterListEngine()
-        engine.load("||ads.example^\n@@||ads.example/allowed.js")
+        engine.load(listOf("||ads.example^", "@@||ads.example/allowed.js").joinToString("\n"))
 
-        assertTrue(engine.shouldBlock(
-            "https://ads.example/blocked.js",
-            "https://news.test/",
-            ResourceType.SCRIPT,
-            thirdParty = true
-        ))
-        assertFalse(engine.shouldBlock(
-            "https://ads.example/allowed.js",
-            "https://news.test/",
-            ResourceType.SCRIPT,
-            thirdParty = true
-        ))
+        assertTrue(engine.shouldBlock("https://ads.example/blocked.js", "https://news.test/", ResourceType.SCRIPT, thirdParty = true))
+        assertFalse(engine.shouldBlock("https://ads.example/allowed.js", "https://news.test/", ResourceType.SCRIPT, thirdParty = true))
     }
 
     @Test
     fun cosmeticExceptionsRemoveSelectorsOnlyOnTheirDomain() {
         val engine = FilterListEngine()
-        engine.load("##.ad\nexample.com##.sponsor\nexample.com#@#.ad")
+        engine.load(listOf("##.ad", "example.com##.sponsor", "example.com#@#.ad").joinToString("\n"))
 
         val onExample = engine.cosmeticFor("https://www.example.com/article")
         assertFalse(".ad should be excepted for example.com", ".ad" in onExample)
@@ -79,13 +50,11 @@ class FilterListEngineTest {
     @Test
     fun identicalFilterTextIsNotLoadedTwice() {
         val engine = FilterListEngine()
-        val rules = "||ads.example^\n||track.example^"
+        val rules = listOf("||ads.example^", "||track.example^").joinToString("\n")
         engine.load(rules)
         val firstCount = engine.ruleCount
-
         engine.load(rules)
-
         assertTrue(firstCount > 0)
-        assertTrue("duplicate source should not duplicate rules", engine.ruleCount == firstCount)
+        assertEquals(firstCount, engine.ruleCount)
     }
 }
