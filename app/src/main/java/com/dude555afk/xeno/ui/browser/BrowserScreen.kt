@@ -240,6 +240,7 @@ fun BrowserScreen(
         TabStackSheet(
             visible = state.tabStackVisible,
             tabs = state.tabs,
+            previews = state.tabPreviews,
             activeTabId = state.activeTab?.id,
             accent = accent,
             onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
