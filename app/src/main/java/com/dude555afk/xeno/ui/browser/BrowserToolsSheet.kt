@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
@@ -82,6 +83,7 @@ fun BrowserToolsSheet(
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
+    onOpenFind: () -> Unit,
     onHistoryClick: (HistoryEntity) -> Unit,
     onBookmarkClick: (Bookmark) -> Unit,
     onRemoveBookmark: (Bookmark) -> Unit,
@@ -193,6 +195,7 @@ fun BrowserToolsSheet(
                                 onRefreshDownloads()
                             }
                             MenuAction("Reader mode", "A quiet, readable article view", Icons.Rounded.Article, onOpenReader)
+                            MenuAction("Find in page", "Search text on the current page", Icons.Rounded.Search, onOpenFind)
                             MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
