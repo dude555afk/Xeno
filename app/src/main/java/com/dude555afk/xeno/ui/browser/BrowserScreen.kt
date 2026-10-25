@@ -131,8 +131,9 @@ fun BrowserScreen(
             }
         )
 
-        // First-run and empty tabs get a designed landing surface instead of a dead black canvas.
-        if (state.activeTab?.url.isNullOrBlank() && state.load.url.isBlank()) {
+        // The new-tab surface owns its own bottom search control, like Arc Search.
+        val isHome = state.activeTab?.url.isNullOrBlank() && state.load.url.isBlank()
+        if (isHome) {
             HomeScreen(
                 accent = accent,
                 onSearch = viewModel::openPalette
@@ -190,21 +191,24 @@ fun BrowserScreen(
             )
         }
 
-        // The floating bar.
-        FloatingBar(
-            loadProgress = state.load.progress,
-            loading = state.load.loading,
-            accent = accent,
-            canGoBack = state.canGoBack,
-            canGoForward = state.canGoForward,
-            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
-            onOpenPalette = viewModel::openPalette,
-            onSummarize = { viewModel.summarizeCurrentPage() },
-            onBack = viewModel::goBack,
-            onForward = viewModel::goForward,
-            onReloadOrStop = viewModel::refreshOrStop,
-            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
-        )
+        // On a new tab, HomeScreen owns the search field. On pages, keep the
+        // controls in one calm floating capsule rather than a crowded toolbar.
+        if (!isHome) {
+            FloatingBar(
+                loadProgress = state.load.progress,
+                loading = state.load.loading,
+                accent = accent,
+                canGoBack = state.canGoBack,
+                canGoForward = state.canGoForward,
+                displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
+                onOpenPalette = viewModel::openPalette,
+                onSummarize = { viewModel.summarizeCurrentPage() },
+                onBack = viewModel::goBack,
+                onForward = viewModel::goForward,
+                onReloadOrStop = viewModel::refreshOrStop,
+                modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
+            )
+        }
 
         if (state.pageError != null) {
             Surface(
@@ -460,100 +464,84 @@ private fun FloatingBar(
     onReloadOrStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceL)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 12.dp)
+    ) {
         Surface(
             shape = PillShape,
-            color = Color(0xF20A0A0A),
+            color = Color(0xF20D0D0D),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
+                        .padding(horizontal = 5.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    // Only shown when there is somewhere to go back to. A
-                    // permanently-visible back arrow that does nothing is worse
-                    // than no arrow at all.
                     if (canGoBack) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White.copy(alpha = 0.7f)
-                            )
+                        IconButton(onClick = onBack, modifier = Modifier.size(42.dp)) {
+                            Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White.copy(alpha = 0.72f), modifier = Modifier.size(19.dp))
                         }
                     }
                     if (canGoForward) {
-                        IconButton(onClick = onForward) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowForward,
-                                contentDescription = "Forward",
-                                tint = Color.White.copy(alpha = 0.7f)
-                            )
+                        IconButton(onClick = onForward, modifier = Modifier.size(42.dp)) {
+                            Icon(Icons.Rounded.ArrowForward, contentDescription = "Forward", tint = Color.White.copy(alpha = 0.62f), modifier = Modifier.size(19.dp))
                         }
                     }
-
                     Row(
                         modifier = Modifier
                             .weight(1f)
                             .clip(PillShape)
                             .clickable(onClick = onOpenPalette)
-                            .padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceM),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
+                            .padding(horizontal = 10.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
+                            tint = accent,
+                            modifier = Modifier.size(19.dp)
                         )
-                        Spacer(Modifier.width(Dimens.spaceS))
+                        Spacer(Modifier.width(9.dp))
                         Text(
-                            text = displayUrl.ifBlank { "Search or ask anything" },
-                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.4f)
-                            else Color.White.copy(alpha = 0.9f),
+                            text = displayUrl.ifBlank { "Search or ask Xeno" },
+                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.9f),
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
-
-                    IconButton(onClick = onReloadOrStop) {
+                    IconButton(onClick = onReloadOrStop, modifier = Modifier.size(42.dp)) {
                         Icon(
                             imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                             contentDescription = if (loading) "Stop loading" else "Reload page",
-                            tint = Color.White.copy(alpha = 0.78f)
+                            tint = Color.White.copy(alpha = 0.72f),
+                            modifier = Modifier.size(19.dp)
                         )
                     }
-
-                    // The summarize action — the flagship, one tap away.
                     Surface(
-                        shape = PillShape,
+                        shape = CircleShape,
                         color = accent,
                         onClick = onSummarize,
-                        modifier = Modifier.padding(end = 4.dp)
+                        modifier = Modifier.padding(end = 2.dp).size(38.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "Summarize",
-                            tint = Color.Black,
-                            modifier = Modifier.padding(Dimens.spaceS)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.AutoAwesome, contentDescription = "Ask Xeno about this page", tint = Color.Black, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
-
                 if (loading) {
                     LinearProgressIndicator(
                         progress = { loadProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .clip(PillShape),
-                        color = accent
+                        modifier = Modifier.fillMaxWidth().height(2.dp).clip(PillShape),
+                        color = accent,
+                        trackColor = Color.Transparent
                     )
                 }
             }
