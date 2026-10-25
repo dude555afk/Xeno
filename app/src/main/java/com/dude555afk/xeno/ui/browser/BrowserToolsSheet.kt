@@ -92,7 +92,7 @@ fun BrowserToolsSheet(
     provider: ProviderConfig,
     availableModels: List<ModelInfo>,
     modelsLoading: Boolean,
-    onFetchModels: () -> Unit,
+    onFetchModels: (ProviderConfig) -> Unit,
     onProviderSelected: (String) -> ProviderConfig,
     translationLanguage: String,
     settingsError: String?,
@@ -533,7 +533,15 @@ fun BrowserToolsSheet(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     OutlinedButton(
-                                        onClick = onFetchModels,
+                                        onClick = {
+                                            onFetchModels(provider.copy(
+                                                id = selectedProviderId,
+                                                displayName = selectedPreset.displayName,
+                                                baseUrl = baseUrl.trim().trimEnd('/'),
+                                                model = model.trim(),
+                                                apiKey = apiKey.trim()
+                                            ))
+                                        },
                                         enabled = !isPrivateMode && !modelsLoading && baseUrl.isNotBlank(),
                                         modifier = Modifier.weight(1f)
                                     ) {
