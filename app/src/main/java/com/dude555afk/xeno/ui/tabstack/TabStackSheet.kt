@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +30,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,7 +58,6 @@ fun TabStackSheet(
     tabs: List<Tab>,
     previews: Map<Long, Bitmap>,
     activeTabId: Long?,
-    accent: Color,
     onSelect: (Tab) -> Unit,
     onClose: (Tab) -> Unit,
     onNewTab: () -> Unit,
@@ -149,7 +146,6 @@ fun TabStackSheet(
                                 tab = tab,
                                 preview = previews[tab.id],
                                 active = tab.id == activeTabId,
-                                accent = accent,
                                 onSelect = { onSelect(tab) },
                                 onClose = { onClose(tab) }
                             )
@@ -202,7 +198,6 @@ private fun TabCard(
     tab: Tab,
     preview: Bitmap?,
     active: Boolean,
-    accent: Color,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
