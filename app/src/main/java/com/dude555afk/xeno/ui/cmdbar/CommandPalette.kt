@@ -141,8 +141,14 @@ fun CommandPalette(
                             cursorBrush = SolidColor(accent),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
-                                onGo = { keyboard?.hide(); onNavigate(query.trim()) },
-                                onSearch = { keyboard?.hide(); onNavigate(query.trim()) }
+                                onGo = {
+                                    keyboard?.hide()
+                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
+                                },
+                                onSearch = {
+                                    keyboard?.hide()
+                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
+                                }
                             ),
                             decorationBox = { inner ->
                                 if (query.isEmpty()) {
