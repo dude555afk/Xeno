@@ -35,9 +35,28 @@ object XenoInjector {
                 (function(){
                   try {
                     var s = [$quoted];
-                    for (var i = 0; i < s.length; i++) {
-                      var els = document.querySelectorAll(s[i]);
-                      for (var j = 0; j < els.length; j++) els[j].remove();
+                    var removeMatches = function(root) {
+                      for (var i = 0; i < s.length; i++) {
+                        try {
+                          if (root && root.matches && root.matches(s[i])) root.remove();
+                          var els = (root || document).querySelectorAll(s[i]);
+                          for (var j = 0; j < els.length; j++) els[j].remove();
+                        } catch (e) {}
+                      }
+                    };
+                    removeMatches(document);
+                    // Many sites add ad placeholders after initial render. Keep
+                    // cosmetic rules active for nodes inserted after injection.
+                    if (document.documentElement && window.MutationObserver) {
+                      var observer = new MutationObserver(function(records) {
+                        for (var r = 0; r < records.length; r++) {
+                          var nodes = records[r].addedNodes || [];
+                          for (var n = 0; n < nodes.length; n++) {
+                            if (nodes[n].nodeType === 1) removeMatches(nodes[n]);
+                          }
+                        }
+                      });
+                      observer.observe(document.documentElement, {childList:true, subtree:true});
                     }
                   } catch (e) {}
                 })();
