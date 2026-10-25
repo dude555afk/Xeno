@@ -231,6 +231,7 @@ fun BrowserScreen(
             downloads = state.downloads,
             blockingEnabled = state.blockingEnabled,
             provider = viewModel.providerConfig(),
+            settingsError = state.settingsError,
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
             onOpenReader = viewModel::openReaderMode,
