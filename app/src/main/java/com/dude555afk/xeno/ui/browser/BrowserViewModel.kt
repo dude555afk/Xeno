@@ -543,6 +543,88 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     // MARK: spaces & tabs
 
+    fun createSpace(rawName: String) {
+        val name = rawName.trim().take(32)
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val existing = db.spaceDao().all()
+            val position = (existing.maxOfOrNull { it.position } ?: -1) + 1
+            val accent = SpaceAccents.forIndex(existing.size)
+            val id = db.spaceDao().insert(
+                SpaceEntity(
+                    name = name,
+                    accentArgb = accent.toArgb(),
+                    position = position
+                )
+            )
+            selectSpace(
+                Space(
+                    id = id,
+                    name = name,
+                    accent = accent,
+                    position = position
+                )
+            )
+            closePanel()
+        }
+    }
+
+    fun renameSpace(space: Space, rawName: String) {
+        val name = rawName.trim().take(32)
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            db.spaceDao().update(
+                SpaceEntity(
+                    id = space.id,
+                    name = name,
+                    accentArgb = space.accent.toArgb(),
+                    position = space.position,
+                    pinned = space.pinned
+                )
+            )
+            _state.update { current ->
+                current.copy(
+                    spaces = current.spaces.map { if (it.id == space.id) it.copy(name = name) else it },
+                    activeSpace = current.activeSpace?.let {
+                        if (it.id == space.id) it.copy(name = name) else it
+                    }
+                )
+            }
+        }
+    }
+
+    fun deleteSpace(space: Space) {
+        viewModelScope.launch {
+            val existing = db.spaceDao().all()
+            if (existing.size <= 1 || existing.none { it.id == space.id }) return@launch
+
+            val remaining = existing.filterNot { it.id == space.id }
+            val deletedTabs = db.tabDao().all().filter { it.spaceId == space.id }
+            deletedTabs.forEach { entity ->
+                pool.destroy("tab-${entity.id}")
+            }
+            if (deletedTabs.any { "tab-${it.id}" == activeSessionKey }) {
+                activeSessionKey = null
+            }
+            db.tabDao().deleteForSpace(space.id)
+            db.spaceDao().delete(space.toEntity())
+
+            if (_state.value.activeSpace?.id == space.id) {
+                val next = remaining.first()
+                selectSpace(
+                    Space(
+                        id = next.id,
+                        name = next.name,
+                        accent = Color(next.accentArgb),
+                        position = next.position,
+                        pinned = next.pinned
+                    )
+                )
+            }
+            closePanel()
+        }
+    }
+
     fun selectSpace(space: Space) {
         settings.activeSpaceId = space.id
         val previousSession = activeSessionKey
