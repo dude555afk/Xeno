@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,10 +48,8 @@ import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.theme.Dimens
 
 /**
- * The tab stack — Arc's vertical sidebar, translated for touch.
- *
- * Compact pill-cards, swipe-to-dismiss, generous negative space. On mobile the
- * horizontal tab strip is a lost cause; this is the honest equivalent.
+ * Touch-first tab switcher inspired by Arc Search's page-preview carousel.
+ * Tall cards make each tab feel like a page, not a row in a settings list.
  */
 @Composable
 fun TabStackSheet(
@@ -149,13 +148,13 @@ fun TabStackSheet(
                             )
                         }
                     } else {
-                        LazyColumn(
+                        LazyRow(
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(
                                 horizontal = Dimens.spaceL,
-                                vertical = Dimens.spaceS
+                                vertical = Dimens.spaceM
                             ),
-                            verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             items(tabs, key = { it.id }) { tab ->
                                 TabCard(
@@ -200,49 +199,120 @@ private fun TabCard(
     onClose: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (active) 1f else 0.98f,
-        animationSpec = tween(160), label = "tabScale"
+        targetValue = if (active) 1f else 0.96f,
+        animationSpec = tween(180), label = "tabScale"
     )
+    val host = runCatching {
+        android.net.Uri.parse(tab.url).host?.removePrefix("www.").orEmpty()
+    }.getOrDefault("")
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (active) accent.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.05f),
+        shape = RoundedCornerShape(26.dp),
+        color = Color(0xFF111111),
         border = BorderStroke(
-            1.dp,
-            if (active) accent.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.06f)
+            if (active) 2.dp else 1.dp,
+            if (active) accent.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.09f)
         ),
         onClick = onSelect,
-        modifier = Modifier.fillMaxWidth().scale(scale)
+        modifier = Modifier
+            .width(260.dp)
+            .fillMaxHeight()
+            .scale(scale)
     ) {
-        Row(
-            modifier = Modifier.padding(Dimens.spaceM),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = tab.displayTitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (tab.url.isNotBlank()) {
+        Column(Modifier.fillMaxSize()) {
+            // Abstract page preview until the browser exposes real per-tab thumbnails.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(19.dp))
+                    .background(Color(0xFFF2F0EB))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(0.42f)
+                            .height(7.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF252525).copy(alpha = 0.75f))
+                    )
+                    Box(
+                        Modifier
+                            .fillMaxWidth(0.82f)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(Color(0xFF252525).copy(alpha = 0.88f))
+                    )
+                    Box(
+                        Modifier
+                            .fillMaxWidth(0.66f)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(Color(0xFF252525).copy(alpha = 0.88f))
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    repeat(4) { index ->
+                        Box(
+                            Modifier
+                                .fillMaxWidth(if (index == 3) 0.62f else 1f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF666666).copy(alpha = 0.20f))
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(76.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFDBD8D0))
+                    )
+                }
+                if (tab.url.isBlank()) {
                     Text(
-                        text = tab.url,
+                        "New tab",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color(0xFF252525),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = tab.displayTitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = host.ifBlank { if (tab.url.isBlank()) "Search the web" else tab.url },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.54f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
-
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "Close tab",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Close tab",
+                        tint = Color.White.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }
