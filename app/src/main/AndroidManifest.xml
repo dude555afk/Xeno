@@ -21,6 +21,16 @@
         tools:targetApi="35">
 
         <activity
+            android:name=".PrivateBrowserActivity"
+            android:process=":private"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:label="Private browsing · Xeno"
+            android:theme="@style/Theme.Xeno" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
