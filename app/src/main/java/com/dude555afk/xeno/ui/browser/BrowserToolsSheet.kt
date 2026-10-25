@@ -475,10 +475,10 @@ fun BrowserToolsSheet(
                                             FilterChip(
                                                 selected = selectedProviderId == preset.id,
                                                 onClick = {
+                                                    if (selectedProviderId != preset.id) apiKey = ""
                                                     selectedProviderId = preset.id
                                                     baseUrl = preset.baseUrl
                                                     model = preset.model
-                                                    apiKey = ""
                                                 },
                                                 enabled = !isPrivateMode,
                                                 label = {
