@@ -101,7 +101,8 @@ data class BrowserUiState(
     val readerVisible: Boolean = false,
     val readerContent: ExtractedContent? = null,
     val readerLoading: Boolean = false,
-    val readerError: String? = null
+    val readerError: String? = null,
+    val settingsError: String? = null
 )
 
 /**
@@ -238,7 +239,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: browser panels
 
     fun openPanel(panel: BrowserPanel) {
-        _state.update { it.copy(panel = panel) }
+        _state.update { it.copy(panel = panel, settingsError = null) }
         if (panel == BrowserPanel.DOWNLOADS) refreshDownloads()
     }
 
@@ -279,9 +280,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
     fun saveProviderConfig(config: ProviderConfig) {
-        settings.saveProvider(config)
-        _state.update { it.copy(hasApiKey = settings.hasApiKey) }
-        closePanel()
+        if (settings.saveProvider(config)) {
+            _state.update { it.copy(hasApiKey = settings.hasApiKey, settingsError = null, panel = null) }
+        } else {
+            _state.update { it.copy(settingsError = "Couldn't securely save that key. Nothing was saved.") }
+        }
     }
 
     fun setBlockingEnabled(enabled: Boolean) {
