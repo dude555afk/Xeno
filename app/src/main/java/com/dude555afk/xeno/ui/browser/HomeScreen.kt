@@ -8,6 +8,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -20,6 +27,25 @@ import com.dude555afk.xeno.R
  */
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
+    val motion = rememberInfiniteTransition(label = "homeAmbientMotion")
+    val floatY = motion.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoFloat"
+    )
+    val logoScale = motion.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.025f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoBreath"
+    )
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -38,7 +64,11 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(R.drawable.ic_launcher_foreground),
             contentDescription = "Xeno",
-            modifier = Modifier.size(84.dp)
+            modifier = Modifier.size(84.dp).graphicsLayer {
+                translationY = floatY.value
+                scaleX = logoScale.value
+                scaleY = logoScale.value
+            }
         )
     }
 }
