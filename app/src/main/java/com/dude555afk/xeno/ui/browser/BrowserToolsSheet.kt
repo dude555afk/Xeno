@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.ai.ProviderConfig
+import com.dude555afk.xeno.core.ai.ModelInfo
 import com.dude555afk.xeno.core.ai.ProviderPresets
 import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.model.Space
@@ -89,6 +90,9 @@ fun BrowserToolsSheet(
     thirdPartyCookiesEnabled: Boolean,
     fingerprintingProtectionEnabled: Boolean,
     provider: ProviderConfig,
+    availableModels: List<ModelInfo>,
+    modelsLoading: Boolean,
+    onFetchModels: () -> Unit,
     onProviderSelected: (String) -> ProviderConfig,
     translationLanguage: String,
     settingsError: String?,
@@ -522,6 +526,47 @@ fun BrowserToolsSheet(
                                     readOnly = isPrivateMode,
                                     singleLine = true, modifier = Modifier.fillMaxWidth()
                                 )
+                                var modelMenuExpanded by remember { mutableStateOf(false) }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedButton(
+                                        onClick = onFetchModels,
+                                        enabled = !isPrivateMode && !modelsLoading && baseUrl.isNotBlank(),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(if (modelsLoading) "Fetching models…" else "Fetch models")
+                                    }
+                                    Box {
+                                        OutlinedButton(
+                                            onClick = { modelMenuExpanded = true },
+                                            enabled = availableModels.isNotEmpty()
+                                        ) { Text("Choose") }
+                                        DropdownMenu(
+                                            expanded = modelMenuExpanded,
+                                            onDismissRequest = { modelMenuExpanded = false }
+                                        ) {
+                                            availableModels.forEach { option ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Column {
+                                                            Text(option.name ?: option.id)
+                                                            if (option.name != null) {
+                                                                Text(option.id, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                                            }
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        model = option.id
+                                                        modelMenuExpanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                                 OutlinedTextField(
                                     apiKey, { apiKey = it }, label = { Text("API key (if required)") },
                                     visualTransformation = PasswordVisualTransformation(),
