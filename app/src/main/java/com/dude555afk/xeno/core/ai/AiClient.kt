@@ -49,7 +49,7 @@ class AiClient(
         require(config.baseUrl.isNotBlank()) { "provider baseUrl is blank" }
         require(config.model.isNotBlank()) { "provider model is blank" }
 
-        val url = config.baseUrl.trimEnd('/') + "/chat/completions"
+        val url = endpoint(config) + "/chat/completions"
         val body = json.encodeToString(ChatRequest.serializer(), request.copy(stream = true))
             .toRequestBody(JSON)
 
@@ -120,7 +120,7 @@ class AiClient(
     /** Fetch the provider's live catalogue instead of relying on stale hard-coded model names. */
     suspend fun fetchModels(config: ProviderConfig): List<ModelInfo> = withContext(Dispatchers.IO) {
         val request = Request.Builder()
-            .url(config.baseUrl.trimEnd('/') + "/models")
+            .url(endpoint(config) + "/models")
             .get()
             .header("Accept", "application/json")
             .apply {
@@ -142,7 +142,7 @@ class AiClient(
 
     suspend fun complete(config: ProviderConfig, request: ChatRequest): String =
         withContext(Dispatchers.IO) {
-            val url = config.baseUrl.trimEnd('/') + "/chat/completions"
+            val url = endpoint(config) + "/chat/completions"
             val body = json.encodeToString(ChatRequest.serializer(), request.copy(stream = false))
                 .toRequestBody(JSON)
 
@@ -165,6 +165,25 @@ class AiClient(
                 }.getOrElse { throw AiException(response.code, text.take(300)) }
             }
         }
+
+    private fun endpoint(config: ProviderConfig): String {
+        val base = config.baseUrl.trim().trimEnd('/')
+        if (base.startsWith("https://", ignoreCase = true)) return base
+
+        // Never send a bearer key to a remote cleartext URL.
+        if (config.id != "local" || !base.startsWith("http://", ignoreCase = true)) {
+            throw IllegalArgumentException("Remote AI providers must use HTTPS.")
+        }
+        val host = runCatching { java.net.URI(base).host?.lowercase() }.getOrNull().orEmpty()
+        val isPrivateHost = host == "localhost" || host == "127.0.0.1" ||
+            host == "::1" || host == "10.0.2.2" || host.endsWith(".local") ||
+            host.startsWith("10.") || host.startsWith("192.168.") ||
+            host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[01])\\..*"))
+        if (!isPrivateHost) {
+            throw IllegalArgumentException("HTTP is allowed only for a local or private-LAN AI endpoint.")
+        }
+        return base
+    }
 
     companion object {
         private val JSON = "application/json; charset=utf-8".toMediaType()
