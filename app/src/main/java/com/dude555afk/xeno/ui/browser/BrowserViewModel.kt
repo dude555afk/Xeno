@@ -146,6 +146,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
     private var hintsJob: Job? = null
+    private var readerJob: Job? = null
 
     /** A lightweight WebView is retained per recently used tab (pool cap: two). */
     private var activeSessionKey: String? = null
@@ -243,6 +244,38 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun closePanel() { _state.update { it.copy(panel = null) } }
 
+    fun openReaderMode() {
+        val tab = _state.value.activeTab?.takeIf { it.hasContent } ?: return
+        closePanel()
+        readerJob?.cancel()
+        _state.update { it.copy(readerVisible = true, readerLoading = true, readerContent = null, readerError = null) }
+        readerJob = viewModelScope.launch {
+            val scratch = WebView(getApplication())
+            try {
+                val content = injector.extract(scratch, tab.url)
+                if (_state.value.activeTab?.id != tab.id) {
+                    _state.update { it.copy(readerVisible = false, readerLoading = false) }
+                    return@launch
+                }
+                if (content.isJunk) {
+                    _state.update { it.copy(readerLoading = false, readerError = "This page doesn't expose enough readable article text.") }
+                } else {
+                    _state.update { it.copy(readerLoading = false, readerContent = content) }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _state.update { it.copy(readerLoading = false, readerError = "Reader mode couldn't extract this page.") }
+            } finally {
+                runCatching { scratch.stopLoading(); scratch.destroy() }
+            }
+        }
+    }
+
+    fun closeReaderMode() {
+        readerJob?.cancel()
+        _state.update { it.copy(readerVisible = false, readerLoading = false, readerContent = null, readerError = null) }
+    }
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
     fun saveProviderConfig(config: ProviderConfig) {
