@@ -87,6 +87,7 @@ fun BrowserToolsSheet(
     downloads: List<BrowserDownload>,
     blockingEnabled: Boolean,
     thirdPartyCookiesEnabled: Boolean,
+    fingerprintingProtectionEnabled: Boolean,
     provider: ProviderConfig,
     translationLanguage: String,
     settingsError: String?,
@@ -112,6 +113,7 @@ fun BrowserToolsSheet(
     onClearBrowsingData: () -> Unit,
     onBlockingChange: (Boolean) -> Unit,
     onThirdPartyCookiesChange: (Boolean) -> Unit,
+    onFingerprintingProtectionChange: (Boolean) -> Unit,
     onSaveProvider: (ProviderConfig) -> Unit,
     onTranslationLanguageChange: (String) -> Unit,
     onTranslate: () -> Unit,
@@ -340,11 +342,18 @@ fun BrowserToolsSheet(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("Third-party cookies", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
-                                    Text("Off by default to reduce cross-site tracking.", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                    Text("Off by default; exact-site overrides are available in Site settings.", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
                                 }
                                 Switch(checked = thirdPartyCookiesEnabled, onCheckedChange = onThirdPartyCookiesChange)
                             }
-                            InfoCard("Site permissions", "Camera, microphone, and location requests are denied until per-site controls are implemented.")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Reduce fingerprinting", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
+                                    Text("Best-effort normalization of hardware and WebGL signals. WebView can still expose other signals.", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Switch(checked = fingerprintingProtectionEnabled, onCheckedChange = onFingerprintingProtectionChange)
+                            }
+                            InfoCard("Site permissions", "Location, camera, and microphone require an explicit site allow-list and Android permission. JavaScript and third-party cookies are configurable per site.")
                             InfoCard("Local-first", "History and preferences stay on this device. Xeno does not add telemetry.")
                             InfoCard("AI page summaries", "Page text is sent to your AI provider only after you confirm.")
                             Button(onClick = onClearBrowsingData, modifier = Modifier.fillMaxWidth()) {
