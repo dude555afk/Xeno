@@ -467,6 +467,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
     fun saveProviderConfig(config: ProviderConfig) {
+        if (isPrivateMode) {
+            _state.update { it.copy(settingsError = "Provider settings are shared with your normal browser and cannot be changed in private mode.") }
+            return
+        }
         if (settings.saveProvider(config)) {
             _state.update { it.copy(hasApiKey = settings.hasApiKey, settingsError = null, panel = null) }
         } else {
@@ -599,6 +603,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refreshDownloads() {
+        if (isPrivateMode) {
+            _state.update { it.copy(downloads = emptyList()) }
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             val manager = getApplication<Application>()
                 .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
@@ -647,7 +655,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openDownloadedFile(download: BrowserDownload) {
-        if (download.status != "Completed") return
+        if (isPrivateMode || download.status != "Completed") return
         val manager = getApplication<Application>()
             .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager ?: return
         val uri = runCatching { manager.getUriForDownloadedFile(download.id) }.getOrNull() ?: return
@@ -658,6 +666,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun removeDownload(download: BrowserDownload) {
+        if (isPrivateMode) return
         val manager = getApplication<Application>()
             .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager ?: return
         manager.remove(download.id)
@@ -1274,6 +1283,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         contentDisposition: String?,
         mimeType: String?
     ) {
+        if (isPrivateMode) {
+            Toast.makeText(
+                getApplication(),
+                "Downloads are disabled in private mode to avoid leaving a system download record.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
         val uri = runCatching { Uri.parse(url) }.getOrNull()
         if (uri == null || (uri.scheme != "https" && uri.scheme != "http") || uri.host.isNullOrBlank()) {
             Toast.makeText(getApplication(), "This download URL isn't supported", Toast.LENGTH_SHORT).show()
