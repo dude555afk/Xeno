@@ -19,6 +19,9 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.Bookmarks
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Workspaces
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -40,13 +43,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.model.Bookmark
+import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.ui.theme.StrokeSubtle
 import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE }
+enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE, SPACES }
 
 data class BrowserDownload(
     val id: Long,
@@ -65,6 +69,8 @@ fun BrowserToolsSheet(
     panel: BrowserPanel?,
     history: List<HistoryEntity>,
     bookmarks: List<Bookmark>,
+    spaces: List<Space>,
+    activeSpaceId: Long?,
     currentTitle: String,
     currentUrl: String,
     downloads: List<BrowserDownload>,
@@ -79,6 +85,10 @@ fun BrowserToolsSheet(
     onHistoryClick: (HistoryEntity) -> Unit,
     onBookmarkClick: (Bookmark) -> Unit,
     onRemoveBookmark: (Bookmark) -> Unit,
+    onSelectSpace: (Space) -> Unit,
+    onCreateSpace: (String) -> Unit,
+    onRenameSpace: (Space, String) -> Unit,
+    onDeleteSpace: (Space) -> Unit,
     onAddBookmark: () -> Unit,
     onClearHistory: () -> Unit,
     onClearBrowsingData: () -> Unit,
@@ -135,6 +145,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.PRIVACY -> "Privacy"
                                     BrowserPanel.SETTINGS -> "Settings"
                                     BrowserPanel.TRANSLATE -> "Translate page"
+                                    BrowserPanel.SPACES -> "Spaces"
                                     null -> "Xeno"
                                 },
                                 style = MaterialTheme.typography.titleLarge,
@@ -150,6 +161,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.PRIVACY -> "Protection and local data"
                                     BrowserPanel.SETTINGS -> "AI provider and preferences"
                                     BrowserPanel.TRANSLATE -> "Choose a target language"
+                                    BrowserPanel.SPACES -> "Organize your workspaces"
                                     null -> ""
                                 },
                                 style = MaterialTheme.typography.bodySmall,
@@ -174,6 +186,7 @@ fun BrowserToolsSheet(
                                 )
                             }
                             MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                            MenuAction("Spaces", "${spaces.size} workspaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
                             MenuAction("History", "Recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
                             MenuAction("Downloads", "Files and download status", Icons.Rounded.Download) {
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
@@ -297,6 +310,46 @@ fun BrowserToolsSheet(
                                 Text("Clear history, cookies and cache")
                             }
                         }
+                        BrowserPanel.SPACES -> {
+                            var newSpaceName by remember(panel) { mutableStateOf("") }
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = newSpaceName,
+                                    onValueChange = { newSpaceName = it.take(32) },
+                                    label = { Text("New space name") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        onCreateSpace(newSpaceName)
+                                        newSpaceName = ""
+                                    },
+                                    enabled = newSpaceName.isNotBlank()
+                                ) { Text("Add") }
+                            }
+                            if (spaces.isEmpty()) EmptyState("No spaces available")
+                            else LazyColumn(
+                                Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(spaces, key = { it.id }) { space ->
+                                    SpaceManagementRow(
+                                        space = space,
+                                        active = space.id == activeSpaceId,
+                                        canDelete = spaces.size > 1,
+                                        onSelect = { onSelectSpace(space) },
+                                        onRename = { name -> onRenameSpace(space, name) },
+                                        onDelete = { onDeleteSpace(space) }
+                                    )
+                                }
+                            }
+                        }
                         BrowserPanel.TRANSLATE -> Column(
                             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -356,6 +409,68 @@ fun BrowserToolsSheet(
                             }
                         }
                         null -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpaceManagementRow(
+    space: Space,
+    active: Boolean,
+    canDelete: Boolean,
+    onSelect: () -> Unit,
+    onRename: (String) -> Unit,
+    onDelete: () -> Unit
+) {
+    var editing by remember(space.id, space.name) { mutableStateOf(false) }
+    var draft by remember(space.id, space.name) { mutableStateOf(space.name) }
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (active) space.accent.copy(alpha = 0.11f) else Color.White.copy(alpha = 0.035f),
+        border = BorderStroke(1.dp, if (active) space.accent.copy(alpha = 0.45f) else StrokeSubtle)
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier.size(9.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(space.accent)
+            )
+            if (editing) {
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it.take(32) },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp)
+                )
+                IconButton(
+                    onClick = {
+                        if (draft.isNotBlank()) onRename(draft.trim())
+                        editing = false
+                    }
+                ) {
+                    Icon(Icons.Rounded.Check, "Save space name", tint = space.accent)
+                }
+                IconButton(onClick = { draft = space.name; editing = false }) {
+                    Icon(Icons.Rounded.Close, "Cancel rename", tint = TextSecondary)
+                }
+            } else {
+                Column(
+                    Modifier.weight(1f).clickable(onClick = onSelect).padding(start = 10.dp, top = 5.dp, bottom = 5.dp)
+                ) {
+                    Text(space.name, color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(if (active) "Current space" else "Switch to space", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                }
+                IconButton(onClick = { draft = space.name; editing = true }) {
+                    Icon(Icons.Rounded.Edit, "Rename space", tint = TextSecondary)
+                }
+                if (canDelete) {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Rounded.DeleteOutline, "Delete space", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
