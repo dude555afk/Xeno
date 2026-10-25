@@ -26,11 +26,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,15 +54,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import com.dude555afk.xeno.core.model.Tab
-import com.dude555afk.xeno.ui.theme.Dimens
-
-/**
- * Touch-first tab switcher inspired by Arc Search's page-preview carousel.
- * Tall cards make each tab feel like a page, not a row in a settings list.
- */
-@Composable
+imp@Composable
 fun TabStackSheet(
     visible: Boolean,
     tabs: List<Tab>,
@@ -71,123 +68,125 @@ fun TabStackSheet(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(180)) +
-            slideInVertically(
-                initialOffsetY = { it / 3 },
-                animationSpec = tween(240)
-            ),
-        exit = fadeOut(tween(140)) +
-            slideOutVertically(tween(180))
+        enter = fadeIn(tween(180)) + slideInVertically(
+            initialOffsetY = { it / 12 },
+            animationSpec = tween(220)
+        ),
+        exit = fadeOut(tween(140)) + slideOutVertically(tween(160))
     ) {
-        Box(
+        Surface(
+            shape = RoundedCornerShape(0.dp),
+            color = Color(0xF209090B),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
+                ) { /* The carousel owns the full surface. Back closes it. */ }
         ) {
-            Surface(
-                shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = Color(0xFF0A0A0A),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.72f)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { /* swallow */ }
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
             ) {
-                Column(Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "Tabs",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.94f)
+                        )
+                        Text(
+                            text = if (tabs.size == 1) "1 open page" else "${tabs.size} open pages",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.48f)
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Close tab switcher",
+                            tint = Color.White.copy(alpha = 0.72f)
+                        )
+                    }
+                }
+
+                if (tabs.isEmpty()) {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(vertical = Dimens.spaceM)
-                            .size(width = 36.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Color.White.copy(alpha = 0.2f))
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = Dimens.spaceL, end = Dimens.spaceS, bottom = Dimens.spaceM),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                text = "Your tabs",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${tabs.size} open",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                imageVector = Icons.Rounded.Close,
-                                contentDescription = "Close tab switcher",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    if (tabs.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .padding(Dimens.spaceXl),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No tabs open yet",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        LazyRow(
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(
-                                horizontal = Dimens.spaceL,
-                                vertical = Dimens.spaceM
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            items(tabs, key = { it.id }) { tab ->
-                                TabCard(
-                                    tab = tab,
-                                    preview = previews[tab.id],
-                                    active = tab.id == activeTabId,
-                                    accent = accent,
-                                    onSelect = { onSelect(tab) },
-                                    onClose = { onClose(tab) }
-                                )
-                            }
-                        }
-                    }
-
-                    // New tab — a pill, exactly like everything else.
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = accent,
-                        onClick = onNewTab,
-                        modifier = Modifier
-                            .padding(Dimens.spaceL)
-                            .align(Alignment.CenterHorizontally)
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "New tab",
-                            style = MaterialTheme.typography.labelLarge,
+                            text = "No open pages",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.56f)
+                        )
+                    }
+                } else {
+                    LazyRow(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentPadding = PaddingValues(
+                            horizontal = 30.dp,
+                            vertical = 12.dp
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items(tabs, key = { it.id }) { tab ->
+                            TabCard(
+                                tab = tab,
+                                preview = previews[tab.id],
+                                active = tab.id == activeTabId,
+                                accent = accent,
+                                onSelect = { onSelect(tab) },
+                                onClose = { onClose(tab) }
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 18.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFF2C2C2E),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        onClick = onNewTab,
+                        modifier = Modifier.size(width = 58.dp, height = 48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = "New tab",
+                                tint = Color.White,
+                                modifier = Modifier.size(25.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+graphy.labelLarge,
                             color = Color.Black,
                             modifier = Modifier.padding(horizontal = Dimens.spaceXl, vertical = Dimens.spaceM)
                         )
@@ -219,8 +218,8 @@ private fun TabCard(
         shape = RoundedCornerShape(26.dp),
         color = Color(0xFF111111),
         border = BorderStroke(
-            if (active) 2.dp else 1.dp,
-            if (active) accent.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.09f)
+            if (active) 1.5.dp else 1.dp,
+            if (active) Color.White.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.08f)
         ),
         onClick = onSelect,
         modifier = Modifier
