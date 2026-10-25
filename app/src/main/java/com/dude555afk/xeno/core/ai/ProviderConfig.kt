@@ -24,10 +24,18 @@ data class ProviderConfig(
     val allowsAnonymousFreeModel: Boolean
         get() {
             if (id == "kilo") {
-                return baseUrl.trimEnd('/').equals(
+                val supportedGateway = baseUrl.trimEnd('/').equals(
                     "https://ai-gateway.kilo.ai/api/v1",
                     ignoreCase = true
-                ) && model.endsWith(":free", ignoreCase = true)
+                ) || baseUrl.trimEnd('/').equals(
+                    "https://api.kilo.ai/api/gateway",
+                    ignoreCase = true
+                )
+                // Kilo documents both explicit :free models and its virtual
+                // kilo-auto/free router as available without authentication.
+                val freeModel = model.endsWith(":free", ignoreCase = true) ||
+                    model.equals("kilo-auto/free", ignoreCase = true)
+                return supportedGateway && freeModel
             }
             if (id != "local" || !baseUrl.startsWith("http://", ignoreCase = true)) return false
             val host = runCatching { java.net.URI(baseUrl).host?.lowercase() }.getOrNull().orEmpty()
