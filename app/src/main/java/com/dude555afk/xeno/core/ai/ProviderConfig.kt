@@ -3,7 +3,7 @@ package com.dude555afk.xeno.core.ai
 /**
  * A single OpenAI-compatible endpoint.
  *
- * Kilo is the default because it is OpenAI-compatible and has a free tier, but
+ * OpenRouter Free is the default provider; Kilo remains available as an alternative, but
  * because the shape is the standard one, anything else (Groq, OpenRouter, a
  * local llama.cpp server) works by changing three strings. No provider-specific
  * code anywhere in the client.
@@ -51,7 +51,7 @@ object ProviderPresets {
         displayName = "Kilo Gateway",
         baseUrl = "https://ai-gateway.kilo.ai/api/v1",
         apiKey = "",
-        model = "z-ai/glm-5:free"
+        model = "z-ai/glm-4.5-air:free"
     )
 
     val Groq = ProviderConfig(
@@ -81,5 +81,5 @@ object ProviderPresets {
 
     val all = listOf(Kilo, Groq, OpenRouter, Local)
 
-    fun byId(id: String): ProviderConfig = all.firstOrNull { it.id == id } ?: Kilo
+    fun byId(id: String): ProviderConfig = all.firstOrNull { it.id == id } ?: OpenRouter
 }
