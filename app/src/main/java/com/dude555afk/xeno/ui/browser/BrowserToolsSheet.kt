@@ -72,6 +72,7 @@ fun BrowserToolsSheet(
     bookmarks: List<Bookmark>,
     spaces: List<Space>,
     activeSpaceId: Long?,
+    isPrivateMode: Boolean,
     currentTitle: String,
     currentUrl: String,
     downloads: List<BrowserDownload>,
@@ -84,6 +85,7 @@ fun BrowserToolsSheet(
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
+    onTogglePrivateMode: () -> Unit,
     onHistoryClick: (HistoryEntity) -> Unit,
     onBookmarkClick: (Bookmark) -> Unit,
     onRemoveBookmark: (Bookmark) -> Unit,
@@ -189,6 +191,12 @@ fun BrowserToolsSheet(
                             }
                             MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
                             MenuAction("Spaces", "${spaces.size} workspaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
+                            MenuAction(
+                                if (isPrivateMode) "Close private session" else "New private session",
+                                if (isPrivateMode) "Exit and clear temporary browsing data" else "Separate WebView profile, no saved history",
+                                Icons.Rounded.Shield,
+                                onTogglePrivateMode
+                            )
                             MenuAction("History", "Recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
                             MenuAction("Downloads", "Files and download status", Icons.Rounded.Download) {
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
