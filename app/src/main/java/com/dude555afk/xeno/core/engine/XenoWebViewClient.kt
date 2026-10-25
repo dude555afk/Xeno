@@ -110,7 +110,11 @@ class XenoWebViewClient(
         // true means "handled"; http/https falls through to false, which lets
         // the WebView navigate normally.
         if (scheme != "http" && scheme != "https" && scheme != "about" && scheme != "data") {
-            return listener.onExternalNavigation(url)
+            // Consume unsupported schemes even when the OS has no handler.
+            // Returning false would send tel:, mailto:, intent:, etc. back into
+            // WebView, where they become confusing blank/error navigations.
+            listener.onExternalNavigation(url)
+            return true
         }
 
         return false
