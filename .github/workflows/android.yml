@@ -53,10 +53,10 @@ jobs:
       # Plain `set -e` semantics. No continue-on-error, no EXIT_CODE dance,
       # no hand-rolled pipefail. GitHub already runs `run:` blocks under
       # `bash -eo pipefail`; adding to that only creates new ways to be wrong.
-      - name: Build debug APK
+      - name: Run unit tests and build debug APK
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
+          gradle testDebugUnitTest assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
 
       # ---------------------------------------------------------------------
       # DiAGNOSTICS: dump everything into the *console* first.
