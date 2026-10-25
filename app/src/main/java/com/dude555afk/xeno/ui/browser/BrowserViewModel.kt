@@ -533,6 +533,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         )
                     }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
