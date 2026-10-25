@@ -66,11 +66,12 @@ fun BrowserScreen(
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
         enabled = state.paletteVisible || state.tabStackVisible ||
-            state.panel != null || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
+            state.panel != null || state.readerVisible || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
     ) {
         when {
             state.paletteVisible -> viewModel.closePalette()
             state.tabStackVisible -> viewModel.toggleTabStack()
+            state.readerVisible -> viewModel.closeReaderMode()
             state.panel != null -> viewModel.closePanel()
             state.summaryConsentVisible -> viewModel.cancelSummaryConsent()
             state.summaryVisible -> viewModel.dismissSummary()
@@ -232,6 +233,7 @@ fun BrowserScreen(
             provider = viewModel.providerConfig(),
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
+            onOpenReader = viewModel::openReaderMode,
             onHistoryClick = viewModel::openHistoryEntry,
             onClearHistory = viewModel::clearHistory,
             onClearBrowsingData = viewModel::clearBrowsingData,
@@ -240,6 +242,14 @@ fun BrowserScreen(
             onRefreshDownloads = viewModel::refreshDownloads,
             onOpenDownload = viewModel::openDownloadedFile,
             onRemoveDownload = viewModel::removeDownload
+        )
+
+        ReaderSheet(
+            visible = state.readerVisible,
+            loading = state.readerLoading,
+            content = state.readerContent,
+            error = state.readerError,
+            onDismiss = viewModel::closeReaderMode
         )
 
         if (state.summaryConsentVisible) {
