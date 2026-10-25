@@ -41,8 +41,15 @@ class XenoWebViewClient(
     private val fingerprintingProtection: () -> Boolean = { false }
 ) : WebViewClient() {
 
+    // WebView commonly calls onPageFinished after a main-frame network error
+    // because it has finished loading its internal error document. Remember
+    // the failed URL so the ViewModel cannot accidentally mark that navigation
+    // as successful and clear the error banner.
+    private var failedMainFrameUrl: String? = null
+
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
         val target = url.orEmpty()
+        failedMainFrameUrl = null
         listener.onPageStarted(target)
 
         // Cosmetic stripping has to happen inside the page, before its own
@@ -71,7 +78,9 @@ class XenoWebViewClient(
     }
 
     override fun onPageFinished(view: WebView?, url: String?) {
-        listener.onPageFinished(url.orEmpty(), view?.title.orEmpty())
+        val finishedUrl = url.orEmpty()
+        if (failedMainFrameUrl == finishedUrl) return
+        listener.onPageFinished(finishedUrl, view?.title.orEmpty())
     }
 
     override fun onReceivedError(
@@ -80,8 +89,10 @@ class XenoWebViewClient(
         error: android.webkit.WebResourceError?
     ) {
         if (request?.isForMainFrame == true) {
+            val failedUrl = request.url.toString()
+            failedMainFrameUrl = failedUrl
             listener.onPageError(
-                request.url.toString(),
+                failedUrl,
                 error?.description?.toString().orEmpty()
             )
         }
