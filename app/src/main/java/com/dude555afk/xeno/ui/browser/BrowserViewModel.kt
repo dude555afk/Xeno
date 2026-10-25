@@ -1032,15 +1032,57 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * first-run experience never depends on the network at all.
      */
     fun refreshFilterLists() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                com.dude555afk.xeno.core.blocking.FilterListSources.remote.forEach { spec ->
-                    runCatching {
-                        val text = java.net.URL(spec.url).readText()
+        viewModelScope.launch(Dispatchers.IO) {
+            val directory = java.io.File(getApplication<Application>().filesDir, "filter-lists")
+            if (!directory.exists() && !directory.mkdirs()) return@launch
+
+            // Load last-known-good remote lists immediately. Remote refresh is
+            // rate-limited so opening the browser doesn't redownload several
+            // large lists on every process start.
+            com.dude555afk.xeno.core.blocking.FilterListSources.remote.forEach { spec ->
+                val cached = java.io.File(directory, "${spec.id}.txt")
+                if (cached.isFile) runCatching { filters.load(cached.readText(Charsets.UTF_8)) }
+            }
+
+            val marker = java.io.File(directory, "last-refresh")
+            val now = System.currentTimeMillis()
+            if (marker.exists() && now - marker.lastModified() < FILTER_REFRESH_INTERVAL_MS) return@launch
+
+            var fetchedAny = false
+            com.dude555afk.xeno.core.blocking.FilterListSources.remote.forEach { spec ->
+                runCatching {
+                    val connection = java.net.URL(spec.url).openConnection().apply {
+                        connectTimeout = FILTER_CONNECT_TIMEOUT_MS
+                        readTimeout = FILTER_READ_TIMEOUT_MS
+                        useCaches = true
+                    }
+                    val text = connection.getInputStream().buffered().use { input ->
+                        val output = java.io.ByteArrayOutputStream()
+                        val buffer = ByteArray(16 * 1024)
+                        var total = 0
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            total += count
+                            require(total <= MAX_FILTER_LIST_BYTES) { "Filter list exceeds size limit" }
+                            output.write(buffer, 0, count)
+                        }
+                        output.toString(Charsets.UTF_8.name())
+                    }
+                    if (text.isNotBlank()) {
+                        val target = java.io.File(directory, "${spec.id}.txt")
+                        val temp = java.io.File(directory, "${spec.id}.tmp")
+                        temp.writeText(text, Charsets.UTF_8)
+                        if (!temp.renameTo(target)) {
+                            target.writeText(text, Charsets.UTF_8)
+                            temp.delete()
+                        }
                         filters.load(text)
+                        fetchedAny = true
                     }
                 }
             }
+            if (fetchedAny) marker.writeText(now.toString())
         }
     }
 
@@ -1050,7 +1092,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
-        /** The active tab's session key. */
         const val SESSION_KEY = "tab-active"
+        private const val FILTER_CONNECT_TIMEOUT_MS = 7_000
+        private const val FILTER_READ_TIMEOUT_MS = 10_000
+        private const val FILTER_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000L
+        private const val MAX_FILTER_LIST_BYTES = 12 * 1024 * 1024
     }
 }
