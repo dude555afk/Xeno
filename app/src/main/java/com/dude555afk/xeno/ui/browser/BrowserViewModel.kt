@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.ui.browser
 
+import android.Manifest
 import android.app.Application
 import android.app.DownloadManager
 import android.app.DownloadManager.Query
@@ -488,6 +489,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 CookieManager.getInstance().setAcceptThirdPartyCookies(view, allowed)
             }
         }
+        val activeUrl = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
+        applySitePermissions(activeSessionKey?.let(pool::peek), activeUrl, activeSessionKey)
     }
 
     fun openSiteSettings() {
@@ -531,15 +534,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         return sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
     }
 
-    private fun applySitePermissions(view: WebView, url: String) {
+    private fun applySitePermissions(view: WebView?, url: String, key: String?) {
         val host = Uri.parse(url).host.orEmpty().lowercase()
         val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
-        view.settings.javaScriptEnabled = permissions.javaScriptEnabled
-        CookieManager.getInstance().setAcceptThirdPartyCookies(view, permissions.thirdPartyCookiesEnabled)
-        if (activeSessionKey != null && activeSessionKey == view.tag as? String) {
+        view?.let {
+            it.settings.javaScriptEnabled = permissions.javaScriptEnabled
+            CookieManager.getInstance().setAcceptThirdPartyCookies(it, permissions.thirdPartyCookiesEnabled)
+        }
+        if (key == null || key == activeSessionKey) {
             _state.update { it.copy(currentSiteHost = host, sitePermissions = permissions) }
         }
     }
+
+    private fun hasAndroidPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(getApplication(), permission) == PackageManager.PERMISSION_GRANTED
 
     fun openHistoryEntry(entry: HistoryEntity) {
         closePanel()
@@ -1140,7 +1148,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
-        CookieManager.getInstance().setAcceptThirdPartyCookies(view, _state.value.thirdPartyCookiesEnabled)
+        applySitePermissions(view, tab.url.ifBlank { view.url.orEmpty() }, key)
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(tab.id, key),
             blocker = { request ->
@@ -1178,17 +1186,39 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            // Site camera/microphone and other WebView permissions are denied
-            // until Xeno has an explicit per-site permission manager.
             override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.deny()
+                if (request == null) return
+                val host = Uri.parse(request.origin.toString()).host.orEmpty().lowercase()
+                val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
+                val granted = request.resources.filter { resource ->
+                    when (resource) {
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE ->
+                            permissions.allowCamera && hasAndroidPermission(Manifest.permission.CAMERA)
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE ->
+                            permissions.allowMicrophone && hasAndroidPermission(Manifest.permission.RECORD_AUDIO)
+                        else -> false
+                    }
+                }
+                if (granted.isNotEmpty() && granted.size == request.resources.size) {
+                    request.grant(granted.toTypedArray())
+                } else {
+                    request.deny()
+                }
             }
 
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
             ) {
-                if (origin != null) callback?.invoke(origin, false, false)
+                val host = Uri.parse(origin.orEmpty()).host.orEmpty().lowercase()
+                val allowed = sitePermissionStore.isAllowed(
+                    host,
+                    SiteCapability.LOCATION
+                ) && (
+                    hasAndroidPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                        hasAndroidPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    )
+                callback?.invoke(origin.orEmpty(), allowed, false)
             }
 
             override fun onCreateWindow(
