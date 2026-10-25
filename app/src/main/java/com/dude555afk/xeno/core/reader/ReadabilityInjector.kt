@@ -66,7 +66,7 @@ class ReadabilityInjector(
                   byline: author ? (author.content || '') : '',
                   text: t,
                   excerpt: description ? (description.content || '') : '',
-                  wordCount: t.trim() ? t.trim().split(/\\s+/).length : 0
+                  wordCount: t.trim() ? t.trim().split(/\s+/).length : 0
                 });
               } catch(e) {
                 return JSON.stringify({url: location.href, title: document.title || '', text: '', excerpt: '', wordCount: 0});
