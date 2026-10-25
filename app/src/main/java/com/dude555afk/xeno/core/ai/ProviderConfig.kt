@@ -16,11 +16,26 @@ data class ProviderConfig(
     val model: String,
     val enabled: Boolean = true
 ) {
-    /** Kilo permits anonymous calls only for explicitly free models. */
+    /**
+     * Anonymous requests are limited to Kilo's explicit free models or an
+     * explicitly selected local provider on loopback/private LAN. Arbitrary
+     * public endpoints never qualify for the no-key path.
+     */
     val allowsAnonymousFreeModel: Boolean
-        get() = id == "kilo" &&
-            baseUrl.trimEnd('/').equals("https://ai-gateway.kilo.ai/api/v1", ignoreCase = true) &&
-            model.endsWith(":free", ignoreCase = true)
+        get() {
+            if (id == "kilo") {
+                return baseUrl.trimEnd('/').equals(
+                    "https://ai-gateway.kilo.ai/api/v1",
+                    ignoreCase = true
+                ) && model.endsWith(":free", ignoreCase = true)
+            }
+            if (id != "local" || !baseUrl.startsWith("http://", ignoreCase = true)) return false
+            val host = runCatching { java.net.URI(baseUrl).host?.lowercase() }.getOrNull().orEmpty()
+            return host == "localhost" || host == "127.0.0.1" || host == "::1" ||
+                host == "10.0.2.2" || host.endsWith(".local") ||
+                host.startsWith("10.") || host.startsWith("192.168.") ||
+                Regex("^172\\.(1[6-9]|2[0-9]|3[01])\\.").containsMatchIn(host)
+        }
 }
 /**
  * Built-in presets. The user can override every field.
@@ -60,7 +75,7 @@ object ProviderPresets {
         id = "local",
         displayName = "Local (OpenAI-compatible)",
         baseUrl = "http://127.0.0.1:8080/v1",
-        apiKey = "not-needed",
+        apiKey = "",
         model = "local-model"
     )
 
