@@ -89,6 +89,7 @@ fun BrowserToolsSheet(
     thirdPartyCookiesEnabled: Boolean,
     fingerprintingProtectionEnabled: Boolean,
     provider: ProviderConfig,
+    onProviderSelected: (String) -> ProviderConfig,
     translationLanguage: String,
     settingsError: String?,
     onDismiss: () -> Unit,
@@ -488,10 +489,11 @@ fun BrowserToolsSheet(
                                             FilterChip(
                                                 selected = selectedProviderId == preset.id,
                                                 onClick = {
-                                                    if (selectedProviderId != preset.id) apiKey = ""
-                                                    selectedProviderId = preset.id
-                                                    baseUrl = preset.baseUrl
-                                                    model = preset.model
+                                                    val selectedConfig = onProviderSelected(preset.id)
+                                                    selectedProviderId = selectedConfig.id
+                                                    baseUrl = selectedConfig.baseUrl
+                                                    model = selectedConfig.model
+                                                    apiKey = selectedConfig.apiKey
                                                 },
                                                 enabled = !isPrivateMode,
                                                 label = {
