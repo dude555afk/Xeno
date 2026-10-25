@@ -100,13 +100,9 @@ class PrivateBrowserActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (browserContentInstalled) {
-            if (isFinishing && !isChangingConfigurations) {
-                viewModel.clearPrivateSessionData()
-            } else {
-                viewModel.detachHost()
-            }
-        }
+        // On a final close, ViewModel.onCleared performs profile/database cleanup
+        // after cancelling its collectors. On recreation, detach but retain state.
+        if (browserContentInstalled && !isFinishing) viewModel.detachHost()
         super.onDestroy()
     }
 }
