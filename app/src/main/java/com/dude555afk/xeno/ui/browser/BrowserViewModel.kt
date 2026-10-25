@@ -2,6 +2,9 @@ package com.dude555afk.xeno.ui.browser
 
 import android.Manifest
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color as AndroidColor
 import android.app.DownloadManager
 import android.app.DownloadManager.Query
 import android.content.Intent
@@ -86,6 +89,8 @@ data class BrowserUiState(
     val spaces: List<Space> = emptyList(),
     val activeSpace: Space? = null,
     val tabs: List<Tab> = emptyList(),
+    /** In-memory page thumbnails used by the Arc-style tab carousel. */
+    val tabPreviews: Map<Long, Bitmap> = emptyMap(),
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
     val pageError: String? = null,
@@ -849,6 +854,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
+        if (_state.value.activeTab?.id != tab.id) captureActiveTabPreview()
         closeFindInPage()
         if (!isPrivateMode) settings.setActiveTabId(tab.spaceId, tab.id)
         _state.update {
@@ -888,6 +894,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closeTab(tab: Tab) {
+        _state.update { it.copy(tabPreviews = it.tabPreviews - tab.id) }
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
             desktopSiteTabIds.remove(tab.id)
@@ -903,7 +910,49 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleTabStack() {
+        if (!_state.value.tabStackVisible) captureActiveTabPreview()
         _state.update { it.copy(tabStackVisible = !it.tabStackVisible) }
+    }
+
+    /**
+     * Capture a small real WebView snapshot before the current page is detached.
+     * These thumbnails are memory-only and capped, so they never create a trail
+     * of saved browsing screenshots on disk.
+     */
+    private fun captureActiveTabPreview() {
+        val tab = _state.value.activeTab ?: return
+        if (tab.url.isBlank()) return
+        val key = activeSessionKey ?: return
+        val view = pool.peek(key) ?: return
+        val sourceWidth = view.width
+        val sourceHeight = view.height
+        if (sourceWidth <= 0 || sourceHeight <= 0) return
+
+        val targetWidth = minOf(240, sourceWidth)
+        val targetHeight = ((sourceHeight.toFloat() * targetWidth) / sourceWidth)
+            .toInt().coerceIn(1, 720)
+        val thumbnail = runCatching {
+            Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.RGB_565).also { bitmap ->
+                val canvas = Canvas(bitmap)
+                canvas.drawColor(AndroidColor.WHITE)
+                canvas.scale(
+                    targetWidth.toFloat() / sourceWidth,
+                    targetHeight.toFloat() / sourceHeight
+                )
+                view.draw(canvas)
+            }
+        }.getOrNull() ?: return
+
+        _state.update { current ->
+            val cache = java.util.LinkedHashMap(current.tabPreviews)
+            cache.remove(tab.id)
+            cache[tab.id] = thumbnail
+            while (cache.size > 12) {
+                val oldest = cache.keys.firstOrNull() ?: break
+                cache.remove(oldest)
+            }
+            current.copy(tabPreviews = cache)
+        }
     }
 
     /** Called from the Activity. See [SessionPool.onTrimMemory]. */
