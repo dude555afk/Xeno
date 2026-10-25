@@ -191,7 +191,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val desktopSiteTabIds = mutableSetOf<Long>()
     private val defaultUserAgent = WebSettings.getDefaultUserAgent(app)
     private val desktopUserAgent = defaultUserAgent
-        .replace(Regex("\\\\(Linux; Android [^)]+\\\\)"), "(X11; Linux x86_64)")
+        .replace(Regex("\\(Linux; Android [^)]+\\)"), "(X11; Linux x86_64)")
         .replace(" Mobile", "")
 
     /** A lightweight WebView is retained per recently used tab (pool cap: two). */
