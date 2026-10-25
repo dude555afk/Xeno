@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -65,6 +66,7 @@ fun BrowserToolsSheet(
     provider: ProviderConfig,
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
+    onOpenReader: () -> Unit,
     onHistoryClick: (HistoryEntity) -> Unit,
     onClearHistory: () -> Unit,
     onClearBrowsingData: () -> Unit,
@@ -149,6 +151,7 @@ fun BrowserToolsSheet(
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
                                 onRefreshDownloads()
                             }
+                            MenuAction("Reader mode", "A quiet, readable article view", Icons.Rounded.Article, onOpenReader)
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
                         }
