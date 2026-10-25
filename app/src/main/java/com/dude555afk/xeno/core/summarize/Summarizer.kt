@@ -62,7 +62,7 @@ class Summarizer(private val ai: AiClient) {
         val fallback = localSummary(content)
 
         // No key, no network path. Go straight to the local summary.
-        if (config.apiKey.isBlank()) return SummaryOutcome.Offline(fallback)
+        if (config.apiKey.isBlank() && !config.allowsAnonymousFreeModel) return SummaryOutcome.Offline(fallback)
 
         val upstream = if (content.text.length <= SINGLE_SHOT_CHARS) {
             singleShot(config, content.text, tone)
