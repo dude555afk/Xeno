@@ -1,11 +1,10 @@
 package com.dude555afk.xeno.core.ai
 
-import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,8 +16,6 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * The only thing in Xeno that talks to an AI provider.
@@ -71,7 +68,7 @@ class AiClient(
      * Throws [AiException] when the gateway answers with an error body rather
      * than a stream — the caller's job is to degrade, not to crash.
      */
-    fun stream(config: ProviderConfig, request: ChatRequest): Flow<String> = flow {
+    fun stream(config: ProviderConfig, request: ChatRequest): Flow<String> = callbackFlow {
         require(config.baseUrl.isNotBlank()) { "provider baseUrl is blank" }
         require(config.model.isNotBlank()) { "provider model is blank" }
 
@@ -91,75 +88,52 @@ class AiClient(
             }
             .build()
 
-        val buffer = StringBuilder()
+        val factory = EventSources.createFactory(http)
+        val source = factory.newEventSource(call, object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) = Unit
 
-        suspendCancellableCoroutine<Unit> { cont ->
-            val factory = EventSources.createFactory(http)
-            val listener = object : EventSourceListener() {
-
-                override fun onOpen(eventSource: EventSource, response: Response) {
-                    // Nothing to do — events carry the payload.
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                if (data == "[DONE]") {
+                    close()
+                    return
                 }
+                if (data.isBlank()) return
 
-                override fun onEvent(
-                    eventSource: EventSource,
-                    id: String?,
-                    type: String?,
-                    data: String
-                ) {
-                    if (data.isBlank()) return
-                    if (data == "[DONE]") {
-                        // Normal end of stream. The socket close usually follows
-                        // immediately, but do not depend on it.
-                        if (cont.isActive) cont.resume(Unit)
-                        return
-                    }
-
-                    val chunk = runCatching {
-                        json.decodeFromString(StreamChunk.serializer(), data)
-                    }.getOrNull()
-
-                    // `chunk` is StreamChunk? — the safe call is required.
-                    // This was the entire compile error: `chunk.text` on a
-                    // nullable receiver.
-                    val text = chunk?.text.orEmpty()
-                    if (text.isNotEmpty()) buffer.append(text)
-                }
-
-                override fun onFailure(
-                    eventSource: EventSource,
-                    t: Throwable?,
-                    response: Response?
-                ) {
-                    if (!cont.isActive) return
-                    val code = response?.code ?: 0
-                    val snippet = runCatching {
-                        response?.body?.string().orEmpty()
-                    }.getOrDefault("")
-
-                    // A 4xx/5xx with a body is a gateway rejection, which is a
-                    // different failure from a dropped socket. The caller shows
-                    // a different message for each.
-                    val error = when {
-                        code in 400..599 && snippet.isNotBlank() -> AiException(code, snippet)
-                        t != null -> t
-                        else -> AiException(code, snippet.ifBlank { "stream failed with no body" })
-                    }
-                    cont.resumeWithException(error)
-                }
-
-                override fun onClosed(eventSource: EventSource) {
-                    // Normal termination without an explicit [DONE]. Plenty of
-                    // gateways just close the socket.
-                    if (cont.isActive) cont.resume(Unit)
-                }
+                val chunk = runCatching {
+                    json.decodeFromString(StreamChunk.serializer(), data)
+                }.getOrNull()
+                val delta = chunk?.text.orEmpty()
+                if (delta.isNotEmpty()) trySend(delta)
             }
 
-            val source = factory.newEventSource(call, listener)
-            cont.invokeOnCancellation { runCatching { source.cancel() } }
-        }
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                if (isClosedForSend) return
+                val code = response?.code ?: 0
+                val snippet = runCatching { response?.body?.string().orEmpty() }
+                    .getOrDefault("")
+                val error = when {
+                    code in 400..599 && snippet.isNotBlank() -> AiException(code, snippet)
+                    t != null -> t
+                    else -> AiException(code, snippet.ifBlank { "stream failed with no body" })
+                }
+                close(error)
+            }
 
-        if (buffer.isNotEmpty()) emit(buffer.toString())
+            override fun onClosed(eventSource: EventSource) {
+                close()
+            }
+        })
+
+        awaitClose { runCatching { source.cancel() } }
     }.flowOn(Dispatchers.IO)
 
     /**
