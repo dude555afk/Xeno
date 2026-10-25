@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
@@ -65,11 +66,13 @@ fun BrowserScreen(
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
         enabled = state.paletteVisible || state.tabStackVisible ||
-            state.summaryVisible || state.answer != null || state.canGoBack
+            state.panel != null || state.summaryConsentVisible || state.summaryVisible || state.answer != null || state.canGoBack
     ) {
         when {
             state.paletteVisible -> viewModel.closePalette()
             state.tabStackVisible -> viewModel.toggleTabStack()
+            state.panel != null -> viewModel.closePanel()
+            state.summaryConsentVisible -> viewModel.cancelSummaryConsent()
             state.summaryVisible -> viewModel.dismissSummary()
             state.answer != null -> viewModel.dismissAnswer()
             state.canGoBack -> viewModel.goBack()
@@ -114,12 +117,23 @@ fun BrowserScreen(
         // Tab stack — top right.
         IconButton(
             onClick = viewModel::toggleTabStack,
-            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = Dimens.spaceM)
+            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = 56.dp)
         ) {
             Icon(
                 imageVector = Icons.Rounded.Layers,
                 contentDescription = "Tabs",
                 tint = Color.White.copy(alpha = 0.7f)
+            )
+        }
+
+        IconButton(
+            onClick = { viewModel.openPanel(BrowserPanel.MENU) },
+            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(top = Dimens.spaceS, end = Dimens.spaceM)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.MoreHoriz,
+                contentDescription = "Browser menu",
+                tint = Color.White.copy(alpha = 0.82f)
             )
         }
 
@@ -191,6 +205,49 @@ fun BrowserScreen(
             onCopy = { viewModel.copySummary() },
             onDismiss = viewModel::dismissSummary
         )
+
+        BrowserToolsSheet(
+            panel = state.panel,
+            history = state.historyEntries,
+            downloads = state.downloads,
+            blockingEnabled = state.blockingEnabled,
+            provider = viewModel.providerConfig(),
+            onDismiss = viewModel::closePanel,
+            onOpenPanel = viewModel::openPanel,
+            onHistoryClick = viewModel::openHistoryEntry,
+            onClearHistory = viewModel::clearHistory,
+            onClearBrowsingData = viewModel::clearBrowsingData,
+            onBlockingChange = viewModel::setBlockingEnabled,
+            onSaveProvider = viewModel::saveProviderConfig,
+            onRefreshDownloads = viewModel::refreshDownloads,
+            onOpenDownload = viewModel::openDownloadedFile,
+            onRemoveDownload = viewModel::removeDownload
+        )
+
+        if (state.summaryConsentVisible) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = viewModel::cancelSummaryConsent,
+                title = { Text("Send this page to AI?") },
+                text = {
+                    Text(
+                        "Xeno will extract readable text from \"${state.summaryConsentTitle}\" and send it to \"${viewModel.providerConfig().displayName}\" to create a summary. Cookies, passwords, browsing history, and unrelated tabs are not included. The provider's own data policies apply."
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = viewModel::confirmSummaryConsent) {
+                        Text("Continue")
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = viewModel::cancelSummaryConsent) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color(0xFF171717),
+                titleContentColor = Color.White,
+                textContentColor = Color.White.copy(alpha = 0.8f)
+            )
+        }
     }
 }
 
