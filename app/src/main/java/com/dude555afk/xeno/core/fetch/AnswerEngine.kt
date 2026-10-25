@@ -111,20 +111,40 @@ class AnswerEngine(
         )
 
         val buffer = StringBuilder()
+        var charsSinceEmission = 0
         ai.stream(config, request).collect { delta ->
             buffer.append(delta)
+            charsSinceEmission += delta.length
+            // Emit often enough to feel live, but don't reparse the entire
+            // Markdown response on every tiny SSE token.
+            if (charsSinceEmission >= UI_EMIT_CHAR_BATCH) {
+                val markdown = buffer.toString()
+                emit(
+                    AnswerResult(
+                        query = query,
+                        sources = usable,
+                        markdown = markdown,
+                        citations = parseCitations(markdown)
+                    )
+                )
+                charsSinceEmission = 0
+            }
+        }
+        if (charsSinceEmission > 0) {
+            val markdown = buffer.toString()
             emit(
                 AnswerResult(
                     query = query,
                     sources = usable,
-                    markdown = buffer.toString(),
-                    citations = parseCitations(buffer.toString())
+                    markdown = markdown,
+                    citations = parseCitations(markdown)
                 )
             )
         }
     }.flowOn(Dispatchers.Default)
 
     companion object {
+        private const val UI_EMIT_CHAR_BATCH = 28
         private const val MAX_SOURCES = 4
         private const val CHARS_PER_SOURCE = 2_000
 
