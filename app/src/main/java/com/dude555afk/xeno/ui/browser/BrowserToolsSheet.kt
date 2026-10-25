@@ -43,7 +43,7 @@ import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, DOWNLOADS, PRIVACY, SETTINGS }
+enum class BrowserPanel { MENU, HISTORY, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE }
 
 data class BrowserDownload(
     val id: Long,
@@ -65,6 +65,7 @@ fun BrowserToolsSheet(
     blockingEnabled: Boolean,
     thirdPartyCookiesEnabled: Boolean,
     provider: ProviderConfig,
+    translationLanguage: String,
     settingsError: String?,
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
@@ -75,6 +76,8 @@ fun BrowserToolsSheet(
     onBlockingChange: (Boolean) -> Unit,
     onThirdPartyCookiesChange: (Boolean) -> Unit,
     onSaveProvider: (ProviderConfig) -> Unit,
+    onTranslationLanguageChange: (String) -> Unit,
+    onTranslate: () -> Unit,
     onRefreshDownloads: () -> Unit,
     onOpenDownload: (BrowserDownload) -> Unit,
     onRemoveDownload: (BrowserDownload) -> Unit
@@ -121,6 +124,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.DOWNLOADS -> "Downloads"
                                     BrowserPanel.PRIVACY -> "Privacy"
                                     BrowserPanel.SETTINGS -> "Settings"
+                                    BrowserPanel.TRANSLATE -> "Translate page"
                                     null -> "Xeno"
                                 },
                                 style = MaterialTheme.typography.titleLarge,
@@ -134,6 +138,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
                                     BrowserPanel.SETTINGS -> "AI provider and preferences"
+                                    BrowserPanel.TRANSLATE -> "Choose a target language"
                                     null -> ""
                                 },
                                 style = MaterialTheme.typography.bodySmall,
@@ -155,6 +160,7 @@ fun BrowserToolsSheet(
                                 onRefreshDownloads()
                             }
                             MenuAction("Reader mode", "A quiet, readable article view", Icons.Rounded.Article, onOpenReader)
+                            MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
                         }
@@ -242,6 +248,25 @@ fun BrowserToolsSheet(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Clear history, cookies and cache")
                             }
+                        }
+                        BrowserPanel.TRANSLATE -> Column(
+                            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Text("Translate the readable article text into:", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
+                            listOf("English", "Hindi", "Bengali", "Spanish", "French", "Japanese", "Chinese", "German", "Portuguese").chunked(3).forEach { rowLanguages ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    rowLanguages.forEach { language ->
+                                        FilterChip(
+                                            selected = translationLanguage == language,
+                                            onClick = { onTranslationLanguageChange(language) },
+                                            label = { Text(language) }
+                                        )
+                                    }
+                                }
+                            }
+                            InfoCard("Privacy", "Xeno extracts article text locally first. It asks before sending that text to your AI provider.")
+                            Button(onClick = onTranslate, modifier = Modifier.fillMaxWidth()) { Text("Translate page") }
                         }
                         BrowserPanel.SETTINGS -> {
                             var baseUrl by remember(provider.baseUrl, panel) { mutableStateOf(provider.baseUrl) }
