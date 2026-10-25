@@ -18,6 +18,7 @@ import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.URLUtil
 import android.webkit.WebStorage
+import android.webkit.WebSettings
 import android.webkit.WebViewDatabase
 import android.webkit.WebView
 import android.widget.Toast
@@ -89,6 +90,7 @@ data class BrowserUiState(
     val pageError: String? = null,
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
+    val desktopSiteEnabled: Boolean = false,
     val isPrivateMode: Boolean = false,
     val currentSiteHost: String = "",
     val sitePermissions: SitePermissions = SitePermissions(),
@@ -185,6 +187,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var hintsJob: Job? = null
     private var readerJob: Job? = null
     private var translationJob: Job? = null
+    private val desktopSiteTabIds = mutableSetOf<Long>()
+    private val defaultUserAgent = WebSettings.getDefaultUserAgent(app)
+    private val desktopUserAgent = defaultUserAgent
+        .replace(Regex("\\\\(Linux; Android [^)]+\\\\)"), "(X11; Linux x86_64)")
+        .replace(" Mobile", "")
 
     /** A lightweight WebView is retained per recently used tab (pool cap: two). */
     private var activeSessionKey: String? = null
@@ -313,6 +320,47 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun closeFindInPage() {
         activeSessionKey?.let(pool::peek)?.clearMatches()
         _state.update { it.copy(findVisible = false, findQuery = "", findMatches = 0, findActiveMatch = 0) }
+    }
+
+    fun toggleDesktopSite() {
+        val tab = _state.value.activeTab ?: return
+        if (!tab.hasContent) return
+        if (desktopSiteTabIds.contains(tab.id)) desktopSiteTabIds.remove(tab.id)
+        else desktopSiteTabIds.add(tab.id)
+        val enabled = tab.id in desktopSiteTabIds
+        _state.update { it.copy(desktopSiteEnabled = enabled) }
+        activeSessionKey?.let(pool::peek)?.let { view ->
+            view.settings.userAgentString = if (enabled) desktopUserAgent else defaultUserAgent
+            view.reload()
+        }
+        closePanel()
+    }
+
+    fun copyCurrentUrl() {
+        val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
+        if (url.isBlank() || url == "about:blank") return
+        val manager = getApplication<Application>()
+            .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+        manager.setPrimaryClip(ClipData.newPlainText("Xeno link", url))
+        Toast.makeText(getApplication(), "Link copied", Toast.LENGTH_SHORT).show()
+        closePanel()
+    }
+
+    fun shareCurrentUrl() {
+        val state = _state.value
+        val url = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
+        if (url.isBlank() || url == "about:blank") return
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching {
+            getApplication<Application>().startActivity(Intent.createChooser(intent, "Share page"))
+        }.onFailure {
+            Toast.makeText(getApplication(), "Couldn't share this page", Toast.LENGTH_SHORT).show()
+        }
+        closePanel()
     }
 
     fun openPanel(panel: BrowserPanel) {
@@ -781,7 +829,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 activeTab = tab,
                 load = PageLoadState(url = tab.url),
-                canGoBack = false
+                canGoBack = false,
+                desktopSiteEnabled = tab.id in desktopSiteTabIds
             )
         }
         syncSessionToTab(tab)
@@ -1157,6 +1206,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
+        view.settings.userAgentString = if (tab.id in desktopSiteTabIds) desktopUserAgent else defaultUserAgent
         applySitePermissions(view, tab.url.ifBlank { view.url.orEmpty() }, key)
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(tab.id, key),
