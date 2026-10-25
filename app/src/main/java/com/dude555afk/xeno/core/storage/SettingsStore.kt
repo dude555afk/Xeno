@@ -87,6 +87,12 @@ class SettingsStore(context: Context) {
     /** Return false rather than persisting a secret in plaintext if encryption fails. */
     @Synchronized
     fun saveProvider(config: ProviderConfig): Boolean {
+        val previousProviderId = providerId
+        // Migrate any single-provider settings before changing the active ID.
+        baseUrlFor(previousProviderId)
+        modelFor(previousProviderId)
+        apiKeyFor(previousProviderId)
+
         val encrypted = if (config.apiKey.isBlank()) null else
             runCatching { encryptSecret(config.apiKey) }.getOrElse { return false }
 
@@ -98,14 +104,12 @@ class SettingsStore(context: Context) {
             val providerKeyName = providerApiKeyKey(config.id)
             if (encrypted == null) remove(providerKeyName) else putString(providerKeyName, encrypted)
 
-            // The previous app version stored one shared endpoint/model/key.
-            // Remove the old plaintext/encrypted key after migrating it below.
+            // Old single-provider fields are now either migrated under the
+            // previous provider ID or replaced by the selected provider's values.
             remove(KEY_API_KEY_LEGACY)
             remove(KEY_API_KEY_ENCRYPTED_LEGACY)
-            if (config.id == legacyProviderId()) {
-                remove(KEY_BASE_URL_LEGACY)
-                remove(KEY_MODEL_LEGACY)
-            }
+            remove(KEY_BASE_URL_LEGACY)
+            remove(KEY_MODEL_LEGACY)
         }
         cachedApiKeys[config.id] = config.apiKey
         return true
