@@ -1,9 +1,11 @@
 package com.dude555afk.xeno.core.ai
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -38,35 +40,10 @@ class AiClient(
 ) {
 
     /**
-     * Stream a chat completion, emitting the text of each delta.
-     *
-     * Built on `flow {}` + `suspendCancellableCoroutine` rather than `channelFlow`
-     * for a specific reason. `channelFlow` is the idiomatic answer for bridging a
-     * callback into a Flow, and it was tried first, but it requires
-     * `awaitClose`, which is an extension on ProducerScope — confirming exactly
-     * what the compiler already reported: `Unresolved reference 'awaitClose'`
-     * inside `channelFlow { ... }`. `awaitClose` is a member of `channelFlow`'s
-     * block, so it was never missing; what was missing was realising that the
-     * entire shape was wrong for this problem.
-     *
-     * The real problem: `channelFlow` puts the producer on another dispatcher,
-     * which is exactly what makes it unsuitable as an SSE bridge here. OkHttp's
-     * EventSourceListener callbacks arrive on the OkHttp dispatcher already, so
-     * `channelFlow` adds a hop for nothing and forces the emission ordering
-     * through a channel we do not need.
-     *
-     * `flow {}` + `suspendCancellableCoroutine` keeps the bridge on the
-     * requesting coroutine. Deltas accumulate in a StringBuilder and the whole
-     * thing is emitted once — which looks like the "instant answer feels like a
-     * bug" failure this was supposed to fix, but is in fact the correct
-     * rendering behaviour for this architecture: AnswerEngine's `answer()`
-     * re-emits a partial AnswerResult per collected item, and the answer sheet's
-     * `AnswerText.parse()` is a full re-parse of the markdown each time. With a
-     * per-delta flow that is a re-parse on every token, i.e. O(n²) over the
-     * response length for a summary that arrives in a few seconds anyway.
-     *
-     * Throws [AiException] when the gateway answers with an error body rather
-     * than a stream — the caller's job is to degrade, not to crash.
+     * Stream a chat completion as incremental text deltas. The callback bridge
+     * uses an unlimited channel so a temporarily slow UI collector cannot cause
+     * trySend to drop tokens. Consumers should batch UI updates to avoid
+     * repeatedly reparsing entire Markdown documents.
      */
     fun stream(config: ProviderConfig, request: ChatRequest): Flow<String> = callbackFlow {
         require(config.baseUrl.isNotBlank()) { "provider baseUrl is blank" }
@@ -134,7 +111,7 @@ class AiClient(
         })
 
         awaitClose { runCatching { source.cancel() } }
-    }.flowOn(Dispatchers.IO)
+    }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 
     /**
      * Non-streaming one-shot call. Used for cheap decisions where round-tripping
