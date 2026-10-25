@@ -114,6 +114,7 @@ data class BrowserUiState(
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
     val thirdPartyCookiesEnabled: Boolean = false,
+    val fingerprintingProtectionEnabled: Boolean = true,
     val hasApiKey: Boolean = false,
     val panel: BrowserPanel? = null,
     val historyEntries: List<HistoryEntity> = emptyList(),
@@ -176,6 +177,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
             thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
+            fingerprintingProtectionEnabled = settings.fingerprintingProtectionEnabled,
             hasApiKey = settings.hasApiKey,
             bookmarks = if (isPrivateMode) emptyList() else bookmarkStore.all(),
             isPrivateMode = isPrivateMode
@@ -556,6 +558,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
         val activeUrl = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
         applySitePermissions(activeSessionKey?.let(pool::peek), activeUrl, activeSessionKey)
+    }
+
+    fun setFingerprintingProtectionEnabled(enabled: Boolean) {
+        if (!isPrivateMode) settings.fingerprintingProtectionEnabled = enabled
+        _state.update { it.copy(fingerprintingProtectionEnabled = enabled) }
+        activeSessionKey?.let(pool::peek)?.let { view ->
+            view.evaluateJavascript(
+                com.dude555afk.xeno.core.engine.XenoInjector.script(
+                    documentUrl = view.url.orEmpty(),
+                    cosmeticSelectors = emptyList(),
+                    redirectPopups = false,
+                    fingerprintingProtection = enabled
+                ) ?: "void(0)",
+                null
+            )
+        }
     }
 
     fun openSiteSettings() {
@@ -1257,7 +1275,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }.getOrDefault(false)
             },
             assetLoader = assetLoader,
-            cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
+            cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") },
+            fingerprintingProtection = { _state.value.fingerprintingProtectionEnabled }
         )
         view.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(webView: WebView?, newProgress: Int) {
