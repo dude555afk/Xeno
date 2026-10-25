@@ -11,6 +11,9 @@ import android.net.Uri
 import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.URLUtil
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -71,6 +74,7 @@ data class BrowserUiState(
     val tabs: List<Tab> = emptyList(),
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
+    val pageError: String? = null,
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
     val paletteVisible: Boolean = false,
@@ -759,6 +763,41 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             assetLoader = assetLoader,
             cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
         )
+        view.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(webView: WebView?, newProgress: Int) {
+                if (activeSessionKey != key || _state.value.activeTab?.id != tab.id) return
+                _state.update {
+                    it.copy(
+                        load = it.load.copy(
+                            progress = (newProgress.coerceIn(0, 100) / 100f),
+                            url = webView?.url ?: it.load.url
+                        ),
+                        pageError = if (newProgress > 0) null else it.pageError
+                    )
+                }
+            }
+
+            // Site camera/microphone and other WebView permissions are denied
+            // until Xeno has an explicit per-site permission manager.
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                request?.deny()
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                if (origin != null) callback?.invoke(origin, false, false)
+            }
+
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: android.os.Message?
+            ): Boolean = false
+        }
+
         view.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             enqueueDownload(url, userAgent, contentDisposition, mimeType)
         }
@@ -852,7 +891,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         override fun onPageStarted(url: String) {
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
-                it.copy(load = PageLoadState(loading = true, progress = 0.05f, url = url))
+                it.copy(load = PageLoadState(loading = true, progress = 0.05f, url = url), pageError = null)
             }
             refreshBackState()
         }
@@ -893,10 +932,21 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
                 it.copy(
-                    load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
+                    load = PageLoadState(progress = 1f, loading = false, url = url, title = title),
+                    pageError = null
                 )
             }
             refreshBackState()
+        }
+
+        override fun onPageError(url: String, description: String) {
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            _state.update {
+                it.copy(
+                    load = it.load.copy(loading = false, progress = 1f, url = url),
+                    pageError = "This page couldn't load. Check your connection or try again."
+                )
+            }
         }
 
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
