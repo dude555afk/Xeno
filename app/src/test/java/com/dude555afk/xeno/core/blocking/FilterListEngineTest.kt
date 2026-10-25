@@ -47,8 +47,7 @@ class FilterListEngineTest {
     @Test
     fun allowExceptionOverridesMatchingNetworkBlock() {
         val engine = FilterListEngine()
-        engine.load("||ads.example^
-@@||ads.example/allowed.js")
+        engine.load("||ads.example^\n@@||ads.example/allowed.js")
 
         assertTrue(engine.shouldBlock(
             "https://ads.example/blocked.js",
@@ -67,9 +66,7 @@ class FilterListEngineTest {
     @Test
     fun cosmeticExceptionsRemoveSelectorsOnlyOnTheirDomain() {
         val engine = FilterListEngine()
-        engine.load("##.ad
-example.com##.sponsor
-example.com#@#.ad")
+        engine.load("##.ad\nexample.com##.sponsor\nexample.com#@#.ad")
 
         val onExample = engine.cosmeticFor("https://www.example.com/article")
         assertFalse(".ad should be excepted for example.com", ".ad" in onExample)
@@ -82,8 +79,7 @@ example.com#@#.ad")
     @Test
     fun identicalFilterTextIsNotLoadedTwice() {
         val engine = FilterListEngine()
-        val rules = "||ads.example^
-||track.example^"
+        val rules = "||ads.example^\n||track.example^"
         engine.load(rules)
         val firstCount = engine.ruleCount
 
