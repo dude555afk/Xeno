@@ -2,6 +2,7 @@ package com.dude555afk.xeno.ui.browser
 
 import android.app.Application
 import android.app.DownloadManager
+import android.content.Intent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -10,6 +11,7 @@ import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import android.webkit.WebStorage
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
@@ -17,6 +19,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
+import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.blocking.FilterListEngine
 import com.dude555afk.xeno.core.blocking.HostsList
 import com.dude555afk.xeno.core.blocking.ResourceType
@@ -32,6 +35,7 @@ import com.dude555afk.xeno.core.model.PageLoadState
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.Tab
+import com.dude555afk.xeno.core.model.ExtractedContent
 import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.model.toEntity
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
@@ -82,7 +86,17 @@ data class BrowserUiState(
     val summaryError: String? = null,
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
-    val hasApiKey: Boolean = false
+    val hasApiKey: Boolean = false,
+    val panel: BrowserPanel? = null,
+    val historyEntries: List<HistoryEntity> = emptyList(),
+    val downloads: List<BrowserDownload> = emptyList(),
+    val summaryConsentVisible: Boolean = false,
+    val summaryConsentUrl: String = "",
+    val summaryConsentTitle: String = "",
+    val readerVisible: Boolean = false,
+    val readerContent: ExtractedContent? = null,
+    val readerLoading: Boolean = false,
+    val readerError: String? = null
 )
 
 /**
@@ -165,6 +179,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        viewModelScope.launch {
+            db.historyDao().observeRecent(120).collect { entries ->
+                _state.update { it.copy(historyEntries = entries) }
+            }
+        }
         // Switch the observed tab stream when the active Space changes. The
         // previous nested collect never returned, so selecting another Space
         // kept observing the old one forever.
