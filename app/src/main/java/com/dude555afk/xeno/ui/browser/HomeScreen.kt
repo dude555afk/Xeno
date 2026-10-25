@@ -162,7 +162,7 @@ fun HomeScreen(
         }
 
         Text(
-            text = "PRIVATE BY DEFAULT",
+            text = "LOCAL-FIRST  ·  NO TELEMETRY",
             modifier = Modifier.align(Alignment.BottomCenter),
             color = TextSecondary.copy(alpha = 0.45f),
             style = MaterialTheme.typography.labelSmall,
