@@ -64,6 +64,7 @@ fun BrowserToolsSheet(
     downloads: List<BrowserDownload>,
     blockingEnabled: Boolean,
     provider: ProviderConfig,
+    settingsError: String?,
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
@@ -266,6 +267,9 @@ fun BrowserToolsSheet(
                                         }
                                     }
                                 ) { Text("Save AI settings") }
+                                settingsError?.let { message ->
+                                    Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                         null -> Unit
