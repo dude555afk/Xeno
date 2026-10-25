@@ -1,5 +1,7 @@
 package com.dude555afk.xeno.ui.tabstack
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -43,6 +45,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Tab
@@ -56,6 +61,7 @@ import com.dude555afk.xeno.ui.theme.Dimens
 fun TabStackSheet(
     visible: Boolean,
     tabs: List<Tab>,
+    previews: Map<Long, Bitmap>,
     activeTabId: Long?,
     accent: Color,
     onSelect: (Tab) -> Unit,
@@ -160,6 +166,7 @@ fun TabStackSheet(
                             items(tabs, key = { it.id }) { tab ->
                                 TabCard(
                                     tab = tab,
+                                    preview = previews[tab.id],
                                     active = tab.id == activeTabId,
                                     accent = accent,
                                     onSelect = { onSelect(tab) },
@@ -194,6 +201,7 @@ fun TabStackSheet(
 @Composable
 private fun TabCard(
     tab: Tab,
+    preview: Bitmap?,
     active: Boolean,
     accent: Color,
     onSelect: () -> Unit,
@@ -221,67 +229,37 @@ private fun TabCard(
             .scale(scale)
     ) {
         Column(Modifier.fillMaxSize()) {
-            // Abstract page preview until the browser exposes real per-tab thumbnails.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(19.dp))
-                    .background(Color(0xFFF2F0EB))
+                    .background(Color(0xFF171717)),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(0.42f)
-                            .height(7.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF252525).copy(alpha = 0.75f))
+                if (preview != null && !preview.isRecycled) {
+                    Image(
+                        bitmap = preview.asImageBitmap(),
+                        contentDescription = "Preview of ${tab.displayTitle}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    Box(
-                        Modifier
-                            .fillMaxWidth(0.82f)
-                            .height(18.dp)
-                            .clip(RoundedCornerShape(5.dp))
-                            .background(Color(0xFF252525).copy(alpha = 0.88f))
-                    )
-                    Box(
-                        Modifier
-                            .fillMaxWidth(0.66f)
-                            .height(18.dp)
-                            .clip(RoundedCornerShape(5.dp))
-                            .background(Color(0xFF252525).copy(alpha = 0.88f))
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    repeat(4) { index ->
-                        Box(
-                            Modifier
-                                .fillMaxWidth(if (index == 3) 0.62f else 1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF666666).copy(alpha = 0.20f))
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(76.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFDBD8D0))
-                    )
-                }
-                if (tab.url.isBlank()) {
+                } else {
                     Text(
-                        "New tab",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF252525),
-                        style = MaterialTheme.typography.titleMedium
+                        text = if (tab.url.isBlank()) {
+                            "New tab"
+                        } else {
+                            "${tab.displayTitle}\n\n${host.ifBlank { tab.url }}"
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 22.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.76f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 5,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
