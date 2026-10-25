@@ -76,3 +76,18 @@ class AiException(
     val code: Int,
     val body: String
 ) : Exception("AI gateway returned $code: ${body.take(300)}")
+
+
+/** Provider model catalogue response for OpenAI-compatible /models endpoints. */
+@Serializable
+data class ModelsResponse(
+    val data: List<ModelInfo> = emptyList()
+)
+
+@Serializable
+data class ModelInfo(
+    val id: String,
+    val name: String? = null,
+    val description: String? = null,
+    val context_length: Int? = null
+)
