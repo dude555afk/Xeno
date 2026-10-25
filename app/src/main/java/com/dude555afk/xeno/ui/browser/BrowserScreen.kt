@@ -6,6 +6,12 @@ import android.content.Intent
 import android.os.Build
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -166,25 +172,39 @@ fun BrowserScreen(
         }
 
         // Arc Search's defining control layout: tabs left, new search center,
-        // and conventional browser controls behind the upward chevron.
-        FloatingBar(
-            loadProgress = state.load.progress,
-            loading = state.load.loading,
-            accent = accent,
-            canGoBack = state.canGoBack,
-            canGoForward = state.canGoForward,
-            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
-            onOpenPalette = viewModel::openPalette,
-            onNewTab = viewModel::newTab,
-            onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
-            onOpenTabs = viewModel::toggleTabStack,
-            onOpenReader = viewModel::openReaderMode,
-            onOpenFind = viewModel::openFindInPage,
-            onBack = viewModel::goBack,
-            onForward = viewModel::goForward,
-            onReloadOrStop = viewModel::refreshOrStop,
+        // and conventional browser controls behind the upward chevron. The bar
+        // follows page scroll direction and stays out of the keyboard workflow.
+        AnimatedVisibility(
+            visible = state.chromeVisible && !state.paletteVisible,
+            enter = slideInVertically(
+                initialOffsetY = { it / 3 },
+                animationSpec = tween(170)
+            ) + fadeIn(tween(150)),
+            exit = slideOutVertically(
+                targetOffsetY = { it / 3 },
+                animationSpec = tween(140)
+            ) + fadeOut(tween(110)),
             modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
-        )
+        ) {
+            FloatingBar(
+                loadProgress = state.load.progress,
+                loading = state.load.loading,
+                accent = accent,
+                canGoBack = state.canGoBack,
+                canGoForward = state.canGoForward,
+                displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
+                onOpenPalette = viewModel::openPalette,
+                onNewTab = viewModel::newTab,
+                onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
+                onOpenTabs = viewModel::toggleTabStack,
+                onOpenReader = viewModel::openReaderMode,
+                onOpenFind = viewModel::openFindInPage,
+                onBack = viewModel::goBack,
+                onForward = viewModel::goForward,
+                onReloadOrStop = viewModel::refreshOrStop,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         if (state.pageError != null) {
             Surface(
