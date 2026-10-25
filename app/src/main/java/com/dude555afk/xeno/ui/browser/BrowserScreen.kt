@@ -32,6 +32,10 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.FindInPage
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Refresh
@@ -44,6 +48,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -204,6 +212,9 @@ fun BrowserScreen(
                 displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
                 onOpenPalette = viewModel::openPalette,
                 onSummarize = { viewModel.summarizeCurrentPage() },
+                onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
+                onOpenReader = viewModel::openReaderMode,
+                onOpenFind = viewModel::openFindInPage,
                 onBack = viewModel::goBack,
                 onForward = viewModel::goForward,
                 onReloadOrStop = viewModel::refreshOrStop,
@@ -460,11 +471,15 @@ private fun FloatingBar(
     displayUrl: String,
     onOpenPalette: () -> Unit,
     onSummarize: () -> Unit,
+    onOpenMenu: () -> Unit,
+    onOpenReader: () -> Unit,
+    onOpenFind: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
     onReloadOrStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var expanded by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -536,6 +551,31 @@ private fun FloatingBar(
                             Icon(Icons.Rounded.AutoAwesome, contentDescription = "Ask Xeno about this page", tint = Color.Black, modifier = Modifier.size(18.dp))
                         }
                     }
+                    IconButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                            contentDescription = if (expanded) "Collapse browser controls" else "Expand browser controls",
+                            tint = Color.White.copy(alpha = 0.68f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                if (expanded) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ExpandedTool(Icons.Rounded.MenuBook, "Reader", onOpenReader)
+                        ExpandedTool(Icons.Rounded.FindInPage, "Find", onOpenFind)
+                        ExpandedTool(Icons.Rounded.Layers, "Tabs", onOpenMenu)
+                        ExpandedTool(Icons.Rounded.MoreHoriz, "Menu", onOpenMenu)
+                    }
                 }
                 if (loading) {
                     LinearProgressIndicator(
@@ -547,5 +587,25 @@ private fun FloatingBar(
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun ExpandedTool(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clip(PillShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = 0.82f), modifier = Modifier.size(19.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f))
     }
 }
