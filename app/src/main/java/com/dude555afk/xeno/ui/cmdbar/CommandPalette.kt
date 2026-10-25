@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -118,6 +119,7 @@ fun CommandPalette(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceXl)
+                    .imePadding()
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
