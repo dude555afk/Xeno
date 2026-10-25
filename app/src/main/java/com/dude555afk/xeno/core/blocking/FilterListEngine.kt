@@ -140,6 +140,25 @@ class FilterListEngine {
         return head.lowercase().removePrefix("www.")
     }
     /**
+     * Approximate site context for $third-party rules. Use the registrable
+     * domain instead of raw host equality so sibling subdomains aren't
+     * accidentally treated as unrelated sites.
+     */
+    fun isThirdPartyRequest(resourceUrl: String, initiatingUrl: String): Boolean {
+        val resourceHost = hostOf(resourceUrl)
+        val initiatingHost = hostOf(initiatingUrl)
+        if (resourceHost.isBlank() || initiatingHost.isBlank()) return true
+        return registrableDomain(resourceHost) != registrableDomain(initiatingHost)
+    }
+
+    private fun registrableDomain(host: String): String {
+        val labels = host.lowercase().trimEnd('.').split('.').filter { it.isNotBlank() }
+        if (labels.size <= 2) return labels.joinToString(".")
+        val suffix = labels.takeLast(2).joinToString(".")
+        val count = if (suffix in MULTI_LABEL_PUBLIC_SUFFIXES) 3 else 2
+        return labels.takeLast(count).joinToString(".")
+    }
+    /**
      * Should this request be blocked?
      *
      * Precedence follows uBO: an `important` block beats everything, then any
@@ -302,6 +321,15 @@ class FilterListEngine {
     }
 
     companion object {
+        private val MULTI_LABEL_PUBLIC_SUFFIXES = setOf(
+            "ac.uk", "co.uk", "gov.uk", "org.uk",
+            "com.au", "net.au", "org.au", "edu.au",
+            "co.in", "firm.in", "net.in", "org.in", "gen.in", "ind.in",
+            "co.jp", "ne.jp", "or.jp", "com.br", "com.cn", "com.sg",
+            "com.mx", "com.tr", "com.tw", "com.hk", "com.my", "com.ph",
+            "co.za", "com.za", "co.nz"
+        )
+
         /**
          * Translate an Adblock pattern into a Kotlin [Regex].
          *
