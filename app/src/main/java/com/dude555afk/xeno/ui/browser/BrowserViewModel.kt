@@ -92,6 +92,7 @@ data class BrowserUiState(
     /** In-memory page thumbnails used by the Arc-style tab carousel. */
     val tabPreviews: Map<Long, Bitmap> = emptyMap(),
     val activeTab: Tab? = null,
+    val chromeVisible: Boolean = true,
     val load: PageLoadState = PageLoadState(),
     val pageError: String? = null,
     val canGoBack: Boolean = false,
@@ -861,6 +862,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 activeTab = tab,
                 load = PageLoadState(url = tab.url),
+                chromeVisible = true,
                 canGoBack = false,
                 desktopSiteEnabled = tab.id in desktopSiteTabIds
             )
@@ -1296,6 +1298,23 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
+        view.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            val delta = scrollY - oldScrollY
+            val showChrome = when {
+                scrollY <= 2 -> true
+                delta >= 6 -> false
+                delta <= -6 -> true
+                else -> null
+            }
+            if (showChrome != null) {
+                _state.update { current ->
+                    if (current.activeTab?.id != tab.id ||
+                        activeSessionKey != key ||
+                        current.chromeVisible == showChrome
+                    ) current else current.copy(chromeVisible = showChrome)
+                }
+            }
+        }
         view.settings.userAgentString = if (tab.id in desktopSiteTabIds) desktopUserAgent else defaultUserAgent
         applySitePermissions(view, tab.url.ifBlank { view.url.orEmpty() }, key)
         view.webViewClient = XenoWebViewClient(
