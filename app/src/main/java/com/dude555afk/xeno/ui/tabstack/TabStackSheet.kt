@@ -4,6 +4,10 @@ import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -72,11 +76,17 @@ fun TabStackSheet(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(180)) + slideInVertically(
-            initialOffsetY = { it / 12 },
-            animationSpec = tween(220)
+        enter = fadeIn(tween(190)) + scaleIn(
+            initialScale = 0.94f,
+            animationSpec = spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow)
+        ) + slideInVertically(
+            initialOffsetY = { it / 18 },
+            animationSpec = spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)
         ),
-        exit = fadeOut(tween(140)) + slideOutVertically(tween(160))
+        exit = fadeOut(tween(130)) + scaleOut(
+            targetScale = 0.97f,
+            animationSpec = tween(150)
+        ) + slideOutVertically(targetOffsetY = { it / 24 }, animationSpec = tween(150))
     ) {
         Surface(
             shape = RoundedCornerShape(0.dp),
@@ -196,7 +206,7 @@ private fun TabCard(
 ) {
     val scale by animateFloatAsState(
         targetValue = if (active) 1f else 0.96f,
-        animationSpec = tween(180),
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium),
         label = "tabScale"
     )
     val host = runCatching {
