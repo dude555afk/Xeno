@@ -1,11 +1,14 @@
 package com.dude555afk.xeno.ui.browser
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
+import com.dude555afk.xeno.core.model.SiteCapability
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
 import com.dude555afk.xeno.ui.spaces.SpacesBar
 import com.dude555afk.xeno.ui.summary.SummarySheet
@@ -71,6 +75,21 @@ fun BrowserScreen(
     accent: Color
 ) {
     val context = LocalContext.current
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) viewModel.setSitePermission(SiteCapability.CAMERA, false)
+    }
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) viewModel.setSitePermission(SiteCapability.MICROPHONE, false)
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.none { it }) viewModel.setSitePermission(SiteCapability.LOCATION, false)
+    }
 
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
@@ -279,6 +298,8 @@ fun BrowserScreen(
             spaces = state.spaces,
             activeSpaceId = state.activeSpace?.id,
             isPrivateMode = state.isPrivateMode,
+            currentSiteHost = state.currentSiteHost,
+            sitePermissions = state.sitePermissions,
             currentTitle = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
             currentUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
             downloads = state.downloads,
@@ -291,6 +312,23 @@ fun BrowserScreen(
             onOpenPanel = viewModel::openPanel,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
+            onOpenSiteSettings = viewModel::openSiteSettings,
+            onSitePermissionChange = { capability, enabled ->
+                viewModel.setSitePermission(capability, enabled)
+                if (enabled) {
+                    when (capability) {
+                        SiteCapability.CAMERA -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        SiteCapability.MICROPHONE -> microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        SiteCapability.LOCATION -> locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                        SiteCapability.JAVASCRIPT, SiteCapability.THIRD_PARTY_COOKIES -> Unit
+                    }
+                }
+            },
             onTogglePrivateMode = {
                 if (state.isPrivateMode) {
                     (context as? Activity)?.finish()
