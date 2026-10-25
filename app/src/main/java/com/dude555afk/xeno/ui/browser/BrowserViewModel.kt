@@ -37,6 +37,7 @@ import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.SearchEngine
 import com.dude555afk.xeno.core.model.AnswerResult
+import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.model.PageLoadState
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Space
@@ -45,6 +46,7 @@ import com.dude555afk.xeno.core.model.ExtractedContent
 import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.model.toEntity
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
+import com.dude555afk.xeno.core.storage.BookmarkStore
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
 import com.dude555afk.xeno.core.storage.SpaceEntity
@@ -97,6 +99,7 @@ data class BrowserUiState(
     val hasApiKey: Boolean = false,
     val panel: BrowserPanel? = null,
     val historyEntries: List<HistoryEntity> = emptyList(),
+    val bookmarks: List<Bookmark> = emptyList(),
     val downloads: List<BrowserDownload> = emptyList(),
     val summaryConsentVisible: Boolean = false,
     val summaryConsentUrl: String = "",
@@ -128,6 +131,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = XenoDatabase.get(app)
     private val settings = SettingsStore(app)
+    private val bookmarkStore = BookmarkStore(app)
 
     /**
      * Reuse the filter engine the Application built rather than making a second
@@ -152,7 +156,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
             thirdPartyCookiesEnabled = settings.thirdPartyCookiesEnabled,
-            hasApiKey = settings.hasApiKey
+            hasApiKey = settings.hasApiKey,
+            bookmarks = bookmarkStore.all()
         )
     )
     val state: StateFlow<BrowserUiState> = _state.asStateFlow()
@@ -427,6 +432,26 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun openHistoryEntry(entry: HistoryEntity) {
         closePanel()
         navigate(entry.url)
+    }
+
+    fun addCurrentBookmark() {
+        val snapshot = _state.value
+        val tab = snapshot.activeTab ?: return
+        val url = snapshot.load.url.ifBlank { tab.url }
+        if (url.isBlank() || url == "about:blank") return
+        val title = snapshot.load.title.ifBlank { tab.displayTitle }
+        val bookmarks = bookmarkStore.add(url, title)
+        _state.update { it.copy(bookmarks = bookmarks, panel = BrowserPanel.BOOKMARKS) }
+    }
+
+    fun openBookmark(bookmark: Bookmark) {
+        closePanel()
+        navigate(bookmark.url)
+    }
+
+    fun removeBookmark(bookmark: Bookmark) {
+        val bookmarks = bookmarkStore.remove(bookmark.url)
+        _state.update { it.copy(bookmarks = bookmarks) }
     }
 
     fun clearHistory() {
