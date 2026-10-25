@@ -53,7 +53,7 @@ class ReadabilityInjector(
 
         // Readability can be blocked by a site's CSP or fail on unusual markup.
         // Fall back to visible DOM text only; never attempt to bypass a paywall.
-        private const val FALLBACK_CALL = """
+        private val FALLBACK_CALL = """
             (function(){
               try {
                 var b = document.body;
