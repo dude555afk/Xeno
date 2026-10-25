@@ -242,7 +242,6 @@ fun BrowserScreen(
             tabs = state.tabs,
             previews = state.tabPreviews,
             activeTabId = state.activeTab?.id,
-            accent = accent,
             onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
             onClose = viewModel::closeTab,
             onNewTab = viewModel::newTab,
