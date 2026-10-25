@@ -213,6 +213,7 @@ fun BrowserScreen(
                 onOpenPalette = viewModel::openPalette,
                 onSummarize = { viewModel.summarizeCurrentPage() },
                 onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
+                onOpenTabs = viewModel::toggleTabStack,
                 onOpenReader = viewModel::openReaderMode,
                 onOpenFind = viewModel::openFindInPage,
                 onBack = viewModel::goBack,
@@ -472,6 +473,7 @@ private fun FloatingBar(
     onOpenPalette: () -> Unit,
     onSummarize: () -> Unit,
     onOpenMenu: () -> Unit,
+    onOpenTabs: () -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onBack: () -> Unit,
@@ -556,7 +558,7 @@ private fun FloatingBar(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                            imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                             contentDescription = if (expanded) "Collapse browser controls" else "Expand browser controls",
                             tint = Color.White.copy(alpha = 0.68f),
                             modifier = Modifier.size(20.dp)
@@ -573,7 +575,7 @@ private fun FloatingBar(
                     ) {
                         ExpandedTool(Icons.Rounded.MenuBook, "Reader", onOpenReader)
                         ExpandedTool(Icons.Rounded.FindInPage, "Find", onOpenFind)
-                        ExpandedTool(Icons.Rounded.Layers, "Tabs", onOpenMenu)
+                        ExpandedTool(Icons.Rounded.Layers, "Tabs", onOpenTabs)
                         ExpandedTool(Icons.Rounded.MoreHoriz, "Menu", onOpenMenu)
                     }
                 }
