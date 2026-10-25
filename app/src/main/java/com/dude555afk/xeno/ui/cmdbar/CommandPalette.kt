@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.History
@@ -90,8 +91,15 @@ fun CommandPalette(
     // when the palette becomes visible so the keyboard does not flash on startup.
     LaunchedEffect(visible) {
         if (visible) {
-            focusRequester.requestFocus()
+            // Wait until the overlay and its text field have been laid out.
+            // Requesting focus during the enter transition can race the IME on
+            // some Android keyboards, leaving the search bar visible but inert.
+            withFrameNanos { }
+            runCatching { focusRequester.requestFocus() }
+            withFrameNanos { }
             keyboard?.show()
+        } else {
+            keyboard?.hide()
         }
     }
 
@@ -112,7 +120,10 @@ fun CommandPalette(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { onDismiss() },
+                ) {
+                    keyboard?.hide()
+                    onDismiss()
+                },
             contentAlignment = Alignment.BottomCenter
         ) {
             Column(
@@ -219,7 +230,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.Article,
                                     title = tab.displayTitle,
                                     subtitle = tab.url,
-                                    onClick = { onOpenTab(tab) }
+                                    onClick = { keyboard?.hide(); onOpenTab(tab) }
                                 )
                             }
                             items(historyHints, key = { "hist-${it.url}" }) { hit ->
@@ -227,7 +238,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.History,
                                     title = hit.title.ifBlank { hit.url },
                                     subtitle = hit.url,
-                                    onClick = { onNavigate(hit.url) }
+                                    onClick = { keyboard?.hide(); onNavigate(hit.url) }
                                 )
                             }
                         }
