@@ -920,10 +920,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * of saved browsing screenshots on disk.
      */
     private fun captureActiveTabPreview() {
-        val tab = _state.value.activeTab ?: return
-        if (tab.url.isBlank()) return
+        val current = _state.value
+        val tab = current.activeTab ?: return
         val key = activeSessionKey ?: return
         val view = pool.peek(key) ?: return
+        if (current.load.url.isBlank() && tab.url.isBlank() && view.url.isNullOrBlank()) return
         val sourceWidth = view.width
         val sourceHeight = view.height
         if (sourceWidth <= 0 || sourceHeight <= 0) return
