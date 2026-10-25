@@ -40,6 +40,7 @@ import com.dude555afk.xeno.core.engine.XenoAssetLoader
 import com.dude555afk.xeno.core.engine.XenoWebViewClient
 import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
+import com.dude555afk.xeno.core.fetch.NavigationResolver
 import com.dude555afk.xeno.core.fetch.SearchEngine
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.Bookmark
@@ -1004,16 +1005,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val q = raw.trim()
         if (q.isEmpty()) return
 
-        val url = when {
-            q.equals("about:blank", ignoreCase = true) -> "about:blank"
-            q.startsWith("http://", ignoreCase = true) || q.startsWith("https://", ignoreCase = true) -> q
-            q.matches(
-                Regex("^(?:[\\w-]+\\.)+[a-z]{2,}(?::[0-9]{1,5})?(?:[/?#].*)?$", RegexOption.IGNORE_CASE)
-            ) || q.matches(Regex("^localhost(?::[0-9]{1,5})?(?:[/?#].*)?$", RegexOption.IGNORE_CASE)) ||
-                q.matches(Regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?::[0-9]{1,5})?(?:[/?#].*)?$")) ->
-                "https://$q"
-            else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
-        }
+        val url = NavigationResolver.resolve(q) ?: return
 
         closePalette()
         closeFindInPage()
