@@ -17,6 +17,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.Bookmarks
+import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -37,13 +39,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.ai.ProviderConfig
+import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.ui.theme.StrokeSubtle
 import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE }
+enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE }
 
 data class BrowserDownload(
     val id: Long,
@@ -61,6 +64,9 @@ data class BrowserDownload(
 fun BrowserToolsSheet(
     panel: BrowserPanel?,
     history: List<HistoryEntity>,
+    bookmarks: List<Bookmark>,
+    currentTitle: String,
+    currentUrl: String,
     downloads: List<BrowserDownload>,
     blockingEnabled: Boolean,
     thirdPartyCookiesEnabled: Boolean,
@@ -71,6 +77,9 @@ fun BrowserToolsSheet(
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
     onHistoryClick: (HistoryEntity) -> Unit,
+    onBookmarkClick: (Bookmark) -> Unit,
+    onRemoveBookmark: (Bookmark) -> Unit,
+    onAddBookmark: () -> Unit,
     onClearHistory: () -> Unit,
     onClearBrowsingData: () -> Unit,
     onBlockingChange: (Boolean) -> Unit,
@@ -96,7 +105,7 @@ fun BrowserToolsSheet(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth().fillMaxHeight(
-                    if (panel == BrowserPanel.MENU) 0.54f else 0.84f
+                    if (panel == BrowserPanel.MENU) 0.82f else 0.84f
                 ).clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -121,6 +130,7 @@ fun BrowserToolsSheet(
                                 when (panel) {
                                     BrowserPanel.MENU -> "Xeno"
                                     BrowserPanel.HISTORY -> "History"
+                                    BrowserPanel.BOOKMARKS -> "Bookmarks"
                                     BrowserPanel.DOWNLOADS -> "Downloads"
                                     BrowserPanel.PRIVACY -> "Privacy"
                                     BrowserPanel.SETTINGS -> "Settings"
@@ -135,6 +145,7 @@ fun BrowserToolsSheet(
                                 when (panel) {
                                     BrowserPanel.MENU -> "Your browser, your rules."
                                     BrowserPanel.HISTORY -> "Stored on this device"
+                                    BrowserPanel.BOOKMARKS -> "Your saved pages"
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
                                     BrowserPanel.SETTINGS -> "AI provider and preferences"
@@ -151,9 +162,18 @@ fun BrowserToolsSheet(
                     }
                     when (panel) {
                         BrowserPanel.MENU -> Column(
-                            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            if (currentUrl.startsWith("http://") || currentUrl.startsWith("https://")) {
+                                MenuAction(
+                                    "Bookmark current page",
+                                    currentTitle.ifBlank { currentUrl },
+                                    Icons.Rounded.BookmarkAdd,
+                                    onAddBookmark
+                                )
+                            }
+                            MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
                             MenuAction("History", "Recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
                             MenuAction("Downloads", "Files and download status", Icons.Rounded.Download) {
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
@@ -163,6 +183,34 @@ fun BrowserToolsSheet(
                             MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
+                        }
+                        BrowserPanel.BOOKMARKS -> {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("${bookmarks.size} saved pages", color = TextSecondary, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (bookmarks.isEmpty()) EmptyState("No bookmarks yet")
+                            else LazyColumn(
+                                Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(bookmarks, key = { it.url }) { bookmark ->
+                                    Row(
+                                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { onBookmarkClick(bookmark) }
+                                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Rounded.Bookmarks, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                            Text(bookmark.title.ifBlank { bookmark.url }, color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(bookmark.url, color = TextSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        IconButton(onClick = { onRemoveBookmark(bookmark) }) {
+                                            Icon(Icons.Rounded.DeleteOutline, "Remove bookmark", tint = TextSecondary)
+                                        }
+                                    }
+                                }
+                            }
                         }
                         BrowserPanel.HISTORY -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
