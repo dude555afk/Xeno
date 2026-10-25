@@ -59,7 +59,7 @@ object ProviderPresets {
         displayName = "Kilo Gateway",
         baseUrl = "https://ai-gateway.kilo.ai/api/v1",
         apiKey = "",
-        model = "z-ai/glm-5:free"
+        model = "kilo-auto/free"
     )
 
     val Groq = ProviderConfig(
