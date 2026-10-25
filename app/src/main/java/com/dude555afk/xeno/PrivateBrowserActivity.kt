@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.dude555afk.xeno.core.storage.SitePermissionStore
 import com.dude555afk.xeno.core.storage.XenoDatabase
 import com.dude555afk.xeno.ui.browser.BrowserScreen
 import com.dude555afk.xeno.ui.browser.BrowserViewModel
@@ -57,6 +58,8 @@ class PrivateBrowserActivity : ComponentActivity() {
         // The process-specific DB is safe to delete before this Activity lazily
         // creates its ViewModel. This also recovers from a previous force-stop.
         XenoDatabase.clearPrivateDatabase(this)
+        // A crash/force-stop may skip onDestroy; every private window starts fresh.
+        SitePermissionStore(this, privateMode = true).clear()
         clearStalePrivateWebData()
     }
 
