@@ -26,7 +26,7 @@ class SettingsStore(context: Context) {
     private val cachedApiKeys = mutableMapOf<String, String>()
 
     var providerId: String
-        get() = prefs.getString(KEY_PROVIDER, ProviderPresets.OpenRouter.id) ?: ProviderPresets.OpenRouter.id
+        get() = prefs.getString(KEY_PROVIDER, ProviderPresets.Kilo.id) ?: ProviderPresets.Kilo.id
         set(value) {
             prefs.edit { putString(KEY_PROVIDER, value) }
         }
