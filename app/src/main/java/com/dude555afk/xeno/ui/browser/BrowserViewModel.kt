@@ -229,6 +229,120 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // MARK: browser panels
+
+    fun openPanel(panel: BrowserPanel) {
+        _state.update { it.copy(panel = panel) }
+        if (panel == BrowserPanel.DOWNLOADS) refreshDownloads()
+    }
+
+    fun closePanel() { _state.update { it.copy(panel = null) } }
+
+    fun providerConfig(): ProviderConfig = settings.providerConfig
+
+    fun saveProviderConfig(config: ProviderConfig) {
+        settings.saveProvider(config)
+        _state.update { it.copy(hasApiKey = settings.hasApiKey) }
+        closePanel()
+    }
+
+    fun setBlockingEnabled(enabled: Boolean) {
+        settings.blockingEnabled = enabled
+        _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    fun openHistoryEntry(entry: HistoryEntity) {
+        closePanel()
+        navigate(entry.url)
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch(Dispatchers.IO) { db.historyDao().clear() }
+    }
+
+    /** Clear local browsing data while preserving open tab rows. */
+    fun clearBrowsingData() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { db.historyDao().clear() }
+            CookieManager.getInstance().removeAllCookies(null)
+            CookieManager.getInstance().flush()
+            WebStorage.getInstance().deleteAllData()
+            pool.liveKeys().forEach { key ->
+                pool.peek(key)?.let { view ->
+                    view.clearCache(true)
+                    view.clearFormData()
+                }
+            }
+            _state.update { it.copy(panel = null, historyHints = emptyList()) }
+        }
+    }
+
+    fun refreshDownloads() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val manager = getApplication<Application>()
+                .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+            val items = if (manager == null) emptyList() else runCatching {
+                manager.query(Query()).use { cursor ->
+                    val found = mutableListOf<BrowserDownload>()
+                    while (cursor.moveToNext()) {
+                        fun stringColumn(name: String): String {
+                            val index = cursor.getColumnIndex(name)
+                            return if (index >= 0 && !cursor.isNull(index)) cursor.getString(index).orEmpty() else ""
+                        }
+                        fun longColumn(name: String): Long {
+                            val index = cursor.getColumnIndex(name)
+                            return if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else 0L
+                        }
+                        fun intColumn(name: String): Int {
+                            val index = cursor.getColumnIndex(name)
+                            return if (index >= 0 && !cursor.isNull(index)) cursor.getInt(index) else 0
+                        }
+                        val code = intColumn(DownloadManager.COLUMN_STATUS)
+                        val status = when (code) {
+                            DownloadManager.STATUS_SUCCESSFUL -> "Completed"
+                            DownloadManager.STATUS_FAILED -> "Failed"
+                            DownloadManager.STATUS_PAUSED -> "Paused"
+                            DownloadManager.STATUS_RUNNING -> "Downloading"
+                            DownloadManager.STATUS_PENDING -> "Queued"
+                            else -> "Unknown"
+                        }
+                        found += BrowserDownload(
+                            id = longColumn(DownloadManager.COLUMN_ID),
+                            title = stringColumn(DownloadManager.COLUMN_TITLE).ifBlank { "Download" },
+                            sourceUrl = stringColumn(DownloadManager.COLUMN_URI),
+                            localUri = stringColumn(DownloadManager.COLUMN_LOCAL_URI),
+                            mimeType = stringColumn(DownloadManager.COLUMN_MEDIA_TYPE),
+                            status = status,
+                            downloadedBytes = longColumn(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR),
+                            totalBytes = longColumn(DownloadManager.COLUMN_TOTAL_SIZE_BYTES),
+                            reason = intColumn(DownloadManager.COLUMN_REASON)
+                        )
+                    }
+                    found.sortedByDescending { it.id }
+                }
+            }.getOrDefault(emptyList())
+            _state.update { it.copy(downloads = items) }
+        }
+    }
+
+    fun openDownloadedFile(download: BrowserDownload) {
+        if (download.status != "Completed") return
+        val manager = getApplication<Application>()
+            .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager ?: return
+        val uri = runCatching { manager.getUriForDownloadedFile(download.id) }.getOrNull() ?: return
+        val mime = manager.getMimeTypeForDownloadedFile(download.id) ?: "*/*"
+        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { getApplication<Application>().startActivity(intent) }
+    }
+
+    fun removeDownload(download: BrowserDownload) {
+        val manager = getApplication<Application>()
+            .getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager ?: return
+        manager.remove(download.id)
+        refreshDownloads()
+    }
+
     // MARK: spaces & tabs
 
     fun selectSpace(space: Space) {
