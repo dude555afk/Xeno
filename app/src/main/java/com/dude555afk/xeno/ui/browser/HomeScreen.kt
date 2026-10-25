@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.ui.browser
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,11 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dude555afk.xeno.ui.theme.Dimens
+import com.dude555afk.xeno.R
 import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.SurfaceCard
 import com.dude555afk.xeno.ui.theme.SurfaceCardHigh
@@ -40,8 +40,8 @@ import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 
 /**
- * The empty-tab landing screen. Keep it deliberately quiet: one strong action,
- * clear hierarchy, and no fake widgets or made-up activity metrics.
+ * Minimal new-tab surface: quiet hierarchy, one primary action, real Xeno mark.
+ * No invented activity cards or decorative stats.
  */
 @Composable
 fun HomeScreen(
@@ -53,51 +53,42 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 28.dp, vertical = 32.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 24.dp, vertical = 28.dp)
     ) {
         Column(
             modifier = Modifier
+                .align(Alignment.Center)
                 .fillMaxWidth()
-                .padding(bottom = 84.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(bottom = 52.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(accent.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
+            androidx.compose.foundation.Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = "Xeno",
+                modifier = Modifier.size(76.dp)
+            )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
                 text = "xeno",
                 color = TextPrimary,
-                style = MaterialTheme.typography.headlineLarge,
+                fontSize = 32.sp,
+                lineHeight = 36.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-1.5).sp
+                letterSpacing = (-1.8).sp
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(7.dp))
 
             Text(
-                text = "The web, without the noise.",
+                text = "A little more room to think.",
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(34.dp))
+            Spacer(Modifier.height(30.dp))
 
             Surface(
                 modifier = Modifier
@@ -106,23 +97,20 @@ fun HomeScreen(
                     .clickable(onClick = onSearch),
                 shape = PillShape,
                 color = SurfaceCardHigh,
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 1.dp,
-                    color = accent.copy(alpha = 0.38f)
-                )
+                border = BorderStroke(1.dp, StrokeSubtle)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp),
+                    modifier = Modifier.padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Search,
                         contentDescription = null,
                         tint = TextSecondary,
-                        modifier = Modifier.size(21.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Search or ask anything",
+                        text = "Search the web",
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 12.dp),
@@ -131,16 +119,16 @@ fun HomeScreen(
                     )
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(accent),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.ArrowForward,
-                            contentDescription = "Start searching",
+                            imageVector = Icons.Rounded.ArrowUpward,
+                            contentDescription = "Search",
                             tint = Color.Black,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }
@@ -152,7 +140,9 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(PillShape)
                     .background(SurfaceCard)
-                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                    .clickable(onClick = onSearch)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -162,23 +152,21 @@ fun HomeScreen(
                         .background(accent)
                 )
                 Text(
-                    text = "WEB SEARCH  ·  AI ANSWERS",
+                    text = "ASK XENO",
                     modifier = Modifier.padding(start = 8.dp),
                     color = TextSecondary,
                     style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 1.1.sp
+                    letterSpacing = 1.2.sp
                 )
             }
         }
 
         Text(
-            text = "BUILT FOR YOUR FLOW",
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp),
-            color = TextSecondary.copy(alpha = 0.55f),
+            text = "PRIVATE BY DEFAULT",
+            modifier = Modifier.align(Alignment.BottomCenter),
+            color = TextSecondary.copy(alpha = 0.45f),
             style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.6.sp
+            letterSpacing = 1.4.sp
         )
     }
 }
