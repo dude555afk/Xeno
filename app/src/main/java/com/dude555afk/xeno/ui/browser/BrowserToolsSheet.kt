@@ -45,13 +45,15 @@ import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.model.Bookmark
 import com.dude555afk.xeno.core.model.Space
+import com.dude555afk.xeno.core.model.SiteCapability
+import com.dude555afk.xeno.core.model.SitePermissions
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.ui.theme.StrokeSubtle
 import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE, SPACES }
+enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE, SPACES, SITE_SETTINGS }
 
 data class BrowserDownload(
     val id: Long,
@@ -73,6 +75,8 @@ fun BrowserToolsSheet(
     spaces: List<Space>,
     activeSpaceId: Long?,
     isPrivateMode: Boolean,
+    currentSiteHost: String,
+    sitePermissions: SitePermissions,
     currentTitle: String,
     currentUrl: String,
     downloads: List<BrowserDownload>,
@@ -85,6 +89,8 @@ fun BrowserToolsSheet(
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
+    onOpenSiteSettings: () -> Unit,
+    onSitePermissionChange: (SiteCapability, Boolean) -> Unit,
     onTogglePrivateMode: () -> Unit,
     onHistoryClick: (HistoryEntity) -> Unit,
     onBookmarkClick: (Bookmark) -> Unit,
@@ -150,6 +156,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.SETTINGS -> "Settings"
                                     BrowserPanel.TRANSLATE -> "Translate page"
                                     BrowserPanel.SPACES -> "Spaces"
+                                    BrowserPanel.SITE_SETTINGS -> "Site settings"
                                     null -> "Xeno"
                                 },
                                 style = MaterialTheme.typography.titleLarge,
@@ -166,6 +173,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.SETTINGS -> "AI provider and preferences"
                                     BrowserPanel.TRANSLATE -> "Choose a target language"
                                     BrowserPanel.SPACES -> "Organize your workspaces"
+                                    BrowserPanel.SITE_SETTINGS -> currentSiteHost
                                     null -> ""
                                 },
                                 style = MaterialTheme.typography.bodySmall,
@@ -204,6 +212,9 @@ fun BrowserToolsSheet(
                             }
                             MenuAction("Reader mode", "A quiet, readable article view", Icons.Rounded.Article, onOpenReader)
                             MenuAction("Find in page", "Search text on the current page", Icons.Rounded.Search, onOpenFind)
+                            if (currentUrl.startsWith("http://") || currentUrl.startsWith("https://")) {
+                                MenuAction("Site settings", "Permissions for " + currentSiteHost, Icons.Rounded.Settings, onOpenSiteSettings)
+                            }
                             MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
