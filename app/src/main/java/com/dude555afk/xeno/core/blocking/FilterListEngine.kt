@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class FilterListEngine {
 
+    private val loadedFingerprints = mutableSetOf<String>()
     private val networkRules = mutableListOf<FilterRule.Network>()
     private val cosmeticRules = mutableListOf<FilterRule.Cosmetic>()
 
@@ -59,7 +60,13 @@ class FilterListEngine {
      * loading on a single dispatcher, which is what
      * [com.dude555afk.xeno.XenoApplication] does.
      */
+    @Synchronized
     fun load(listText: String) {
+        val fingerprint = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(listText.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte) }
+        if (!loadedFingerprints.add(fingerprint)) return
+
         listText.lineSequence().forEach { raw ->
             val line = raw.trim()
             if (line.isEmpty()) return@forEach
@@ -123,19 +130,15 @@ class FilterListEngine {
      */
     private fun indexedHost(pattern: String): String? {
         if (!pattern.startsWith("||")) return null
-
-        val slash = pattern.indexOf('/', 2)
-        val head = if (slash < 0) pattern.substring(2) else pattern.substring(2, slash)
-
-        // Anchors are `||host^` or `||host^/path`. Anything with a wildcard in
-        // the host is skipped — it can match hosts that are not suffixes of
-        // itself, so filing it under its literal host would be wrong.
-        if (head.isEmpty() || head.contains('*') || head.any { it in "?|" }) return null
-        if (slash >= 0 && slash + 1 < pattern.length && pattern[slash + 1] != '^') return null
-
-        return head.removePrefix("*").lowercase().removePrefix("www.")
+        val boundary = pattern.indexOfAny(charArrayOf('/', '?', '#'), startIndex = 2)
+        val rawHead = if (boundary < 0) pattern.substring(2) else pattern.substring(2, boundary)
+        val head = rawHead.removeSuffix("^")
+        // Strip the common trailing separator before indexing. Otherwise
+        // ||example.com^ rules are filed under example.com^ and never match.
+        if (head.isEmpty() || head.contains('*') || head.any { it in "?|^" }) return null
+        if (rawHead.any { it in "*?|" }) return null
+        return head.lowercase().removePrefix("www.")
     }
-
     /**
      * Should this request be blocked?
      *
@@ -144,6 +147,7 @@ class FilterListEngine {
      * it. Important is rare but load-bearing — it is how a list says "always
      * hide this, even if another list re-allowed it".
      */
+    @Synchronized
     fun shouldBlock(
         url: String,
         documentUrl: String,
@@ -223,11 +227,11 @@ class FilterListEngine {
         if (o.notTypes.isNotEmpty() && type in o.notTypes) return false
 
         if (o.domains.isNotEmpty()) {
-            val hit = o.domains.any { domainMatches(docHost, it) || domainMatches(urlHost, it) }
+            val hit = o.domains.any { domainMatches(docHost, it) }
             if (!hit) return false
         }
         if (o.notDomains.isNotEmpty()) {
-            val hit = o.notDomains.any { domainMatches(docHost, it) || domainMatches(urlHost, it) }
+            val hit = o.notDomains.any { domainMatches(docHost, it) }
             if (hit) return false
         }
         return true
@@ -240,14 +244,24 @@ class FilterListEngine {
      * Cosmetic selectors that apply to [documentUrl], minus the `#@#`
      * exceptions that re-allow any of them on that document.
      */
+    @Synchronized
     fun cosmeticFor(documentUrl: String): List<String> {
         val host = hostOf(documentUrl).removePrefix("www.")
-        val scoped = domainCosmetic.entries
-            .filter { (ruleHost, _) -> host == ruleHost || host.endsWith(".$ruleHost") }
-            .flatMap { it.value }
-        return (globalCosmetic + scoped).distinct()
+        val matching = cosmeticRules.filter { rule ->
+            rule.domains.isEmpty() || rule.domains.any { domain ->
+                host == domain || host.endsWith(".$domain")
+            }
+        }
+        val exceptions = matching.filter { it.isException }.flatMap { it.selectors }.toSet()
+        return matching.asSequence()
+            .filterNot { it.isException }
+            .flatMap { it.selectors.asSequence() }
+            .filterNot { it in exceptions }
+            .distinct()
+            .toList()
     }
 
+    @Synchronized
     fun clear() {
         networkRules.clear()
         cosmeticRules.clear()
@@ -256,6 +270,7 @@ class FilterListEngine {
         indexed.clear()
         unindexed.clear()
         ruleCount = 0
+        loadedFingerprints.clear()
     }
 
     private fun hostOf(url: String): String =
@@ -271,13 +286,9 @@ class FilterListEngine {
         val domainsPart = line.substring(0, hash)
         val rest = line.substring(hash)
 
-        val isException =
-            rest.startsWith("#@#") || rest.startsWith("##^") || rest.startsWith("##+js")
-        val selector = rest
-            .removePrefix("#@#")
-            .removePrefix("##")
-            .removePrefix("^")
-            .removePrefix("+js")
+        if (rest.startsWith("##^") || rest.startsWith("##+js")) return null
+        val isException = rest.startsWith("#@#")
+        val selector = if (isException) rest.removePrefix("#@#") else rest.removePrefix("##")
 
         if (selector.isBlank()) return null
 
