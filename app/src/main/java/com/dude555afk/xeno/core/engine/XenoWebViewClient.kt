@@ -15,6 +15,7 @@ interface SessionListener {
     fun onPageStarted(url: String)
     fun onPageProgress(url: String, progress: Int)
     fun onPageFinished(url: String, title: String)
+    fun onPageError(url: String, description: String) = Unit
     fun onFavicon(url: String, icon: Bitmap?)
     fun onExternalNavigation(requestedUrl: String): Boolean = false
 }
@@ -69,6 +70,19 @@ class XenoWebViewClient(
 
     override fun onPageFinished(view: WebView?, url: String?) {
         listener.onPageFinished(url.orEmpty(), view?.title.orEmpty())
+    }
+
+    override fun onReceivedError(
+        view: WebView?,
+        request: WebResourceRequest?,
+        error: android.webkit.WebResourceError?
+    ) {
+        if (request?.isForMainFrame == true) {
+            listener.onPageError(
+                request.url.toString(),
+                error?.description?.toString().orEmpty()
+            )
+        }
     }
 
     override fun shouldInterceptRequest(
