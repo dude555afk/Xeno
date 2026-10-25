@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
+import com.dude555afk.xeno.core.ai.ModelInfo
 import com.dude555afk.xeno.core.ai.ChatMessage
 import com.dude555afk.xeno.core.ai.ChatRequest
 import com.dude555afk.xeno.core.ai.ProviderConfig
@@ -134,6 +135,8 @@ data class BrowserUiState(
     val readerLoading: Boolean = false,
     val readerError: String? = null,
     val settingsError: String? = null,
+    val availableModels: List<ModelInfo> = emptyList(),
+    val modelsLoading: Boolean = false,
     val translationLanguage: String = "English",
     val translationConsentVisible: Boolean = false,
     val translationConsentUrl: String = "",
@@ -543,6 +546,32 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
     fun providerConfigFor(id: String): ProviderConfig = settings.providerConfigFor(id)
+
+    fun fetchProviderModels(config: ProviderConfig = settings.providerConfig) {
+        if (isPrivateMode) return
+        _state.update { it.copy(modelsLoading = true, settingsError = null, availableModels = emptyList()) }
+        viewModelScope.launch {
+            runCatching { ai.fetchModels(config) }
+                .onSuccess { models ->
+                    _state.update {
+                        it.copy(
+                            modelsLoading = false,
+                            availableModels = models,
+                            settingsError = if (models.isEmpty()) "The provider returned no models." else null
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    _state.update {
+                        it.copy(
+                            modelsLoading = false,
+                            settingsError = error.message?.take(240) ?: "Couldn't fetch models."
+                        )
+                    }
+                }
+        }
+    }
 
     fun saveProviderConfig(config: ProviderConfig) {
         if (isPrivateMode) {
