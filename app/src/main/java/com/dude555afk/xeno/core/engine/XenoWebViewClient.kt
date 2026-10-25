@@ -66,7 +66,7 @@ class XenoWebViewClient(
             val script = XenoInjector.script(
                 documentUrl = target,
                 cosmeticSelectors = cosmeticSelectors(),
-                redirectPopups = true,
+                // Preserve native window.open so sign-in, checkout and other user-gesture\n                // popups reach WebChromeClient.onCreateWindow and become tabs.\n                redirectPopups = false,
                 fingerprintingProtection = fingerprintingProtection()
             )
             if (script != null) runCatching { view.evaluateJavascript(script, null) }
