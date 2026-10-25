@@ -11,6 +11,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.tween
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -147,7 +149,17 @@ fun BrowserScreen(
 
         // The new-tab surface owns its own bottom search control, like Arc Search.
         val isHome = state.activeTab?.url.isNullOrBlank() && state.load.url.isBlank()
-        if (isHome) {
+        AnimatedVisibility(
+            visible = isHome,
+            enter = fadeIn(tween(260)) + scaleIn(
+                initialScale = 0.965f,
+                animationSpec = tween(320)
+            ),
+            exit = fadeOut(tween(150)) + scaleOut(
+                targetScale = 0.985f,
+                animationSpec = tween(150)
+            )
+        ) {
             HomeScreen()
         }
 
