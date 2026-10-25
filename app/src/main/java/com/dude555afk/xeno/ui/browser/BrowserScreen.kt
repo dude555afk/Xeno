@@ -309,6 +309,7 @@ fun BrowserScreen(
             thirdPartyCookiesEnabled = state.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = state.fingerprintingProtectionEnabled,
             provider = viewModel.providerConfig(),
+            onProviderSelected = viewModel::providerConfigFor,
             translationLanguage = state.translationLanguage,
             settingsError = state.settingsError,
             onDismiss = viewModel::closePanel,
