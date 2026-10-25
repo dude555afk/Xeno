@@ -16,46 +16,34 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Small local preference store. Provider keys are encrypted using an Android
- * Keystore AES-GCM key before being written to SharedPreferences.
+ * Lightweight local preferences. Each provider has its own endpoint, model and
+ * Android-Keystore-encrypted API key, so switching providers never overwrites
+ * another provider's credentials.
  */
 class SettingsStore(context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    @Volatile
-    private var cachedApiKey: String? = null
+    private val cachedApiKeys = mutableMapOf<String, String>()
 
     var providerId: String
         get() = prefs.getString(KEY_PROVIDER, ProviderPresets.Kilo.id) ?: ProviderPresets.Kilo.id
-        set(value) = prefs.edit { putString(KEY_PROVIDER, value) }
+        set(value) {
+            prefs.edit { putString(KEY_PROVIDER, value) }
+        }
 
     var apiKey: String
-        get() = cachedApiKey ?: readApiKey().also { cachedApiKey = it }
+        get() = apiKeyFor(providerId)
         set(value) {
-            if (value.isBlank()) {
-                prefs.edit {
-                    remove(KEY_API_KEY_ENCRYPTED)
-                    remove(KEY_API_KEY_LEGACY)
-                }
-                cachedApiKey = ""
-                return
-            }
-            val encrypted = runCatching { encryptSecret(value) }.getOrNull() ?: return
-            prefs.edit {
-                putString(KEY_API_KEY_ENCRYPTED, encrypted)
-                remove(KEY_API_KEY_LEGACY)
-            }
-            cachedApiKey = value
+            setApiKeyFor(providerId, value)
         }
 
     var baseUrl: String
-        get() = prefs.getString(KEY_BASE_URL, ProviderPresets.Kilo.baseUrl) ?: ProviderPresets.Kilo.baseUrl
-        set(value) = prefs.edit { putString(KEY_BASE_URL, value) }
+        get() = baseUrlFor(providerId)
+        set(value) = prefs.edit { putString(providerBaseUrlKey(providerId), value) }
 
     var model: String
-        get() = prefs.getString(KEY_MODEL, ProviderPresets.Kilo.model) ?: ProviderPresets.Kilo.model
-        set(value) = prefs.edit { putString(KEY_MODEL, value) }
+        get() = modelFor(providerId)
+        set(value) = prefs.edit { putString(providerModelKey(providerId), value) }
 
     var blockingEnabled: Boolean
         get() = prefs.getBoolean(KEY_BLOCKING, true)
@@ -76,9 +64,7 @@ class SettingsStore(context: Context) {
     fun activeTabId(spaceId: Long): Long? =
         if (prefs.contains(activeTabKey(spaceId))) {
             prefs.getLong(activeTabKey(spaceId), -1L).takeIf { it > 0L }
-        } else {
-            null
-        }
+        } else null
 
     fun setActiveTabId(spaceId: Long, tabId: Long) {
         if (tabId > 0L) prefs.edit { putLong(activeTabKey(spaceId), tabId) }
@@ -87,47 +73,121 @@ class SettingsStore(context: Context) {
     private fun activeTabKey(spaceId: Long): String = KEY_ACTIVE_TAB_PREFIX + spaceId
 
     val providerConfig: ProviderConfig
-        get() = ProviderConfig(
-            id = providerId,
-            displayName = ProviderPresets.byId(providerId).displayName,
-            baseUrl = baseUrl,
-            apiKey = apiKey,
-            model = model
-        )
+        get() = providerConfigFor(providerId)
 
-    /** Return false rather than saving a key in plaintext if encryption fails. */
+    fun providerConfigFor(id: String): ProviderConfig {
+        val preset = ProviderPresets.byId(id)
+        return preset.copy(
+            baseUrl = baseUrlFor(id),
+            apiKey = apiKeyFor(id),
+            model = modelFor(id)
+        )
+    }
+
+    /** Return false rather than persisting a secret in plaintext if encryption fails. */
+    @Synchronized
     fun saveProvider(config: ProviderConfig): Boolean {
         val encrypted = if (config.apiKey.isBlank()) null else
             runCatching { encryptSecret(config.apiKey) }.getOrElse { return false }
 
         prefs.edit {
             putString(KEY_PROVIDER, config.id)
-            if (encrypted == null) remove(KEY_API_KEY_ENCRYPTED)
-            else putString(KEY_API_KEY_ENCRYPTED, encrypted)
+            putString(providerBaseUrlKey(config.id), config.baseUrl)
+            putString(providerModelKey(config.id), config.model)
+
+            val providerKeyName = providerApiKeyKey(config.id)
+            if (encrypted == null) remove(providerKeyName) else putString(providerKeyName, encrypted)
+
+            // The previous app version stored one shared endpoint/model/key.
+            // Remove the old plaintext/encrypted key after migrating it below.
             remove(KEY_API_KEY_LEGACY)
-            putString(KEY_BASE_URL, config.baseUrl)
-            putString(KEY_MODEL, config.model)
+            remove(KEY_API_KEY_ENCRYPTED_LEGACY)
+            if (config.id == legacyProviderId()) {
+                remove(KEY_BASE_URL_LEGACY)
+                remove(KEY_MODEL_LEGACY)
+            }
         }
-        cachedApiKey = config.apiKey
+        cachedApiKeys[config.id] = config.apiKey
         return true
     }
 
-    private fun readApiKey(): String {
-        val encrypted = prefs.getString(KEY_API_KEY_ENCRYPTED, null)
-        if (!encrypted.isNullOrBlank()) {
-            return runCatching { decryptSecret(encrypted) }.getOrDefault("")
+    private fun legacyProviderId(): String =
+        prefs.getString(KEY_PROVIDER, ProviderPresets.Kilo.id) ?: ProviderPresets.Kilo.id
+
+    private fun baseUrlFor(id: String): String {
+        prefs.getString(providerBaseUrlKey(id), null)?.let { return it }
+        val preset = ProviderPresets.byId(id)
+        val legacy = if (id == legacyProviderId()) prefs.getString(KEY_BASE_URL_LEGACY, null) else null
+        val value = legacy ?: preset.baseUrl
+        if (legacy != null) prefs.edit { putString(providerBaseUrlKey(id), legacy) }
+        return value
+    }
+
+    private fun modelFor(id: String): String {
+        prefs.getString(providerModelKey(id), null)?.let { return it }
+        val preset = ProviderPresets.byId(id)
+        val legacy = if (id == legacyProviderId()) prefs.getString(KEY_MODEL_LEGACY, null) else null
+        val value = legacy ?: preset.model
+        if (legacy != null) prefs.edit { putString(providerModelKey(id), legacy) }
+        return value
+    }
+
+    @Synchronized
+    private fun apiKeyFor(id: String): String {
+        cachedApiKeys[id]?.let { return it }
+        val newKey = prefs.getString(providerApiKeyKey(id), null)
+        if (!newKey.isNullOrBlank()) {
+            return runCatching { decryptSecret(newKey) }.getOrDefault("").also { cachedApiKeys[id] = it }
         }
 
-        // One-time migration from the plaintext setting used by older builds.
-        val legacy = prefs.getString(KEY_API_KEY_LEGACY, "").orEmpty()
-        if (legacy.isBlank()) return ""
-        val migrated = runCatching { encryptSecret(legacy) }.getOrNull()
-        prefs.edit {
-            if (migrated != null) putString(KEY_API_KEY_ENCRYPTED, migrated)
-            remove(KEY_API_KEY_LEGACY)
+        // One-time migration from the single key written by earlier versions.
+        if (id == legacyProviderId()) {
+            val legacyEncrypted = prefs.getString(KEY_API_KEY_ENCRYPTED_LEGACY, null)
+            val legacyPlain = prefs.getString(KEY_API_KEY_LEGACY, "").orEmpty()
+            val previous = when {
+                !legacyEncrypted.isNullOrBlank() -> runCatching { decryptSecret(legacyEncrypted) }.getOrDefault("")
+                legacyPlain.isNotBlank() -> legacyPlain
+                else -> ""
+            }
+            if (previous.isNotBlank()) {
+                val encrypted = runCatching { encryptSecret(previous) }.getOrNull()
+                if (encrypted != null) {
+                    prefs.edit {
+                        putString(providerApiKeyKey(id), encrypted)
+                        remove(KEY_API_KEY_LEGACY)
+                        remove(KEY_API_KEY_ENCRYPTED_LEGACY)
+                    }
+                    cachedApiKeys[id] = previous
+                    return previous
+                }
+            } else {
+                prefs.edit {
+                    remove(KEY_API_KEY_LEGACY)
+                    remove(KEY_API_KEY_ENCRYPTED_LEGACY)
+                }
+            }
         }
-        return if (migrated != null) legacy else ""
+
+        cachedApiKeys[id] = ""
+        return ""
     }
+
+    @Synchronized
+    private fun setApiKeyFor(id: String, value: String) {
+        if (value.isBlank()) {
+            prefs.edit { remove(providerApiKeyKey(id)) }
+            cachedApiKeys[id] = ""
+            return
+        }
+
+        val encrypted = runCatching { encryptSecret(value) }.getOrNull() ?: return
+        prefs.edit { putString(providerApiKeyKey(id), encrypted) }
+        cachedApiKeys[id] = value
+    }
+
+    private fun providerBaseUrlKey(id: String) = KEY_BASE_URL_PREFIX + id
+    private fun providerModelKey(id: String) = KEY_MODEL_PREFIX + id
+    private fun providerApiKeyKey(id: String) = KEY_API_KEY_ENCRYPTED_PREFIX + id
 
     private fun encryptSecret(value: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -175,10 +235,17 @@ class SettingsStore(context: Context) {
     private companion object {
         const val PREFS = "xeno_prefs"
         const val KEY_PROVIDER = "provider_id"
+
+        // Legacy single-provider keys, migrated lazily.
         const val KEY_API_KEY_LEGACY = "api_key"
-        const val KEY_API_KEY_ENCRYPTED = "api_key_encrypted"
-        const val KEY_BASE_URL = "base_url"
-        const val KEY_MODEL = "model"
+        const val KEY_API_KEY_ENCRYPTED_LEGACY = "api_key_encrypted"
+        const val KEY_BASE_URL_LEGACY = "base_url"
+        const val KEY_MODEL_LEGACY = "model"
+
+        const val KEY_API_KEY_ENCRYPTED_PREFIX = "api_key_encrypted_provider_"
+        const val KEY_BASE_URL_PREFIX = "base_url_provider_"
+        const val KEY_MODEL_PREFIX = "model_provider_"
+
         const val KEY_BLOCKING = "blocking_enabled"
         const val KEY_THIRD_PARTY_COOKIES = "third_party_cookies_enabled"
         const val KEY_FINGERPRINTING_PROTECTION = "fingerprinting_protection_enabled"
