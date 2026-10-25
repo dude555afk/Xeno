@@ -30,6 +30,9 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,6 +82,7 @@ fun BrowserToolsSheet(
     sitePermissions: SitePermissions,
     currentTitle: String,
     currentUrl: String,
+    desktopSiteEnabled: Boolean,
     downloads: List<BrowserDownload>,
     blockingEnabled: Boolean,
     thirdPartyCookiesEnabled: Boolean,
@@ -89,6 +93,9 @@ fun BrowserToolsSheet(
     onOpenPanel: (BrowserPanel) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
+    onCopyCurrentUrl: () -> Unit,
+    onShareCurrentUrl: () -> Unit,
+    onToggleDesktopSite: () -> Unit,
     onOpenSiteSettings: () -> Unit,
     onSitePermissionChange: (SiteCapability, Boolean) -> Unit,
     onTogglePrivateMode: () -> Unit,
@@ -190,6 +197,14 @@ fun BrowserToolsSheet(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (currentUrl.startsWith("http://") || currentUrl.startsWith("https://")) {
+                                MenuAction("Copy link", "Copy the current address", Icons.Rounded.ContentCopy, onCopyCurrentUrl)
+                                MenuAction("Share page", "Send this link to another app", Icons.Rounded.Share, onShareCurrentUrl)
+                                MenuAction(
+                                    if (desktopSiteEnabled) "Desktop site enabled" else "Request desktop site",
+                                    "Reload this tab using a desktop user agent",
+                                    Icons.Rounded.Computer,
+                                    onToggleDesktopSite
+                                )
                                 MenuAction(
                                     "Bookmark current page",
                                     currentTitle.ifBlank { currentUrl },
