@@ -166,7 +166,7 @@ fun BrowserToolsSheet(
                             Text(
                                 when (panel) {
                                     BrowserPanel.MENU -> "Your browser, your rules."
-                                    BrowserPanel.HISTORY -> "Stored on this device"
+                                    BrowserPanel.HISTORY -> if (isPrivateMode) "Temporary private history" else "Stored on this device"
                                     BrowserPanel.BOOKMARKS -> "Your saved pages"
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
@@ -279,7 +279,8 @@ fun BrowserToolsSheet(
                                 Text("${downloads.size} downloads", color = TextSecondary, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                                 TextButton(onClick = onRefreshDownloads) { Text("Refresh") }
                             }
-                            if (downloads.isEmpty()) EmptyState("No downloads yet")
+                            if (isPrivateMode) EmptyState("Downloads are disabled in private mode to avoid leaving a system download record.")
+                            else if (downloads.isEmpty()) EmptyState("No downloads yet")
                             else LazyColumn(
                                 Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -438,25 +439,28 @@ fun BrowserToolsSheet(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                InfoCard("Kilo AI Gateway", "Use a key for paid models or a supported model ending in :free for keyless access.")
+                                InfoCard("Kilo AI Gateway", if (isPrivateMode) "AI provider settings are read-only in private mode." else "Use a key for paid models or a supported model ending in :free for keyless access.")
                                 OutlinedTextField(
                                     baseUrl, { baseUrl = it }, label = { Text("OpenAI-compatible base URL") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                                    readOnly = isPrivateMode,
                                     singleLine = true, modifier = Modifier.fillMaxWidth()
                                 )
                                 OutlinedTextField(
                                     model, { model = it }, label = { Text("Model ID") },
+                                    readOnly = isPrivateMode,
                                     singleLine = true, modifier = Modifier.fillMaxWidth()
                                 )
                                 OutlinedTextField(
                                     apiKey, { apiKey = it }, label = { Text("API key (optional for free models)") },
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    readOnly = isPrivateMode,
                                     singleLine = true, modifier = Modifier.fillMaxWidth()
                                 )
                                 Button(
                                     modifier = Modifier.fillMaxWidth(),
-                                    enabled = baseUrl.isNotBlank() && model.isNotBlank(),
+                                    enabled = !isPrivateMode && baseUrl.isNotBlank() && model.isNotBlank(),
                                     onClick = {
                                         val url = baseUrl.trim().trimEnd('/')
                                         if (url.startsWith("https://") || (provider.id == "local" && url.startsWith("http://"))) {
