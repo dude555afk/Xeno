@@ -94,7 +94,10 @@ class XenoWebViewClient(
         // Our own injected assets always go through, whatever the page tries.
         if (request.url.host == XenoAssetLoader.DOMAIN) return null
 
-        if (blocker(request)) return emptyResponse()
+        // Never let a content filter cancel a top-level navigation. Some filter lists
+        // contain broad document rules; applying those here can make ordinary sites
+        // appear completely unreachable. Keep aggressive filtering for subresources.
+        if (!request.isForMainFrame && blocker(request)) return emptyResponse()
 
         return assetLoader.shouldInterceptRequest(request.url)
     }
