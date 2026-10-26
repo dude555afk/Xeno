@@ -5,6 +5,7 @@ import com.dude555afk.xeno.core.ai.ChatMessage
 import com.dude555afk.xeno.core.ai.ChatRequest
 import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.model.ExtractedContent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -62,7 +63,7 @@ class Summarizer(private val ai: AiClient) {
         val fallback = localSummary(content)
 
         // No key, no network path. Go straight to the local summary.
-        if (config.apiKey.isBlank()) return SummaryOutcome.Offline(fallback)
+        if (config.apiKey.isBlank() && !config.allowsAnonymousFreeModel) return SummaryOutcome.Offline(fallback)
 
         val upstream = if (content.text.length <= SINGLE_SHOT_CHARS) {
             singleShot(config, content.text, tone)
@@ -119,7 +120,7 @@ class Summarizer(private val ai: AiClient) {
         var anyChunkSucceeded = false
 
         pieces.forEachIndexed { index, piece ->
-            val summary = runCatching {
+            val summary = try {
                 val request = ChatRequest(
                     model = config.model,
                     messages = listOf(
@@ -131,7 +132,11 @@ class Summarizer(private val ai: AiClient) {
                     maxTokens = 400
                 )
                 ai.stream(config, request).collectDirect()
-            }.getOrElse { "" }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                ""
+            }
 
             if (summary.isBlank()) {
                 // Per-chunk degradation, same guarantee as the whole page.
@@ -193,9 +198,11 @@ class Summarizer(private val ai: AiClient) {
                 producedAnything = true
                 emit(delta)
             }
-        } catch (t: Throwable) {
-            // Swallowed on purpose. A raw socket error must never reach the
-            // summary sheet — that is what the fallback is for.
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            // A raw socket error must never reach the summary sheet — that is
+            // what the fallback is for.
         }
 
         if (!producedAnything && fallback.isNotBlank()) {

@@ -1,5 +1,6 @@
 package com.dude555afk.xeno
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,12 +24,12 @@ class MainActivity : ComponentActivity() {
     private val viewModel: BrowserViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        // Deep links from other apps open in the active tab.
-        val incoming = intent?.data?.toString()
-        if (!incoming.isNullOrBlank()) viewModel.navigate(incoming)
+        // A cold-start deep link opens in the active tab. Restored Activities
+        // already recover their durable tab state, so don't replay the same link.
+        if (savedInstanceState == null) handleIncomingLink(intent)
 
         setContent {
             val state by viewModel.state.collectAsState()
@@ -45,6 +46,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingLink(intent)
+    }
+
+    private fun handleIncomingLink(incomingIntent: Intent?) {
+        val incoming = incomingIntent?.data?.toString()
+        if (!incoming.isNullOrBlank()) viewModel.navigate(incoming)
     }
 
     override fun onTrimMemory(level: Int) {

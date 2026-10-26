@@ -75,29 +75,45 @@ class AnswerEngine(
         emit(AnswerResult(query, sources))
 
         val read = fetcher.fetch(sources, maxSources = MAX_SOURCES)
-        val usable = read.filter { it.extracted != null }
+        val hitByIndex = hits.mapIndexed { index, hit -> (index + 1) to hit }.toMap()
+        val displaySources = read
 
-        emit(AnswerResult(query, usable))
+        emit(AnswerResult(query, displaySources))
 
-        if (usable.isEmpty()) {
+        // Prefer extracted article text. For any page that fails individually,
+        // retain the search engine's snippet as limited evidence. This keeps a
+        // single broken site from suppressing useful text from other sources.
+        // Snippets are labelled as previews; paywalls are never bypassed.
+        val promptSources = displaySources.mapNotNull { source ->
+            val content = source.extracted
+            if (content != null && !content.isJunk) {
+                Prompts.IndexedSourceText(
+                    index = source.index,
+                    url = source.url,
+                    title = source.title.ifBlank { content.title },
+                    text = content.text.take(CHARS_PER_SOURCE)
+                )
+            } else {
+                val hit = hitByIndex[source.index] ?: return@mapNotNull null
+                if (hit.snippet.isBlank()) return@mapNotNull null
+                Prompts.IndexedSourceText(
+                    index = source.index,
+                    url = source.url,
+                    title = source.title.ifBlank { hit.title },
+                    text = "Search-result snippet only; full page could not be extracted. " + hit.snippet.take(600)
+                )
+            }
+        }
+
+        if (promptSources.isEmpty()) {
             emit(AnswerResult(query, read, markdown = UNREADABLE))
             return@flow
         }
 
-        if (config.apiKey.isBlank()) {
+        if (config.apiKey.isBlank() && !config.allowsAnonymousFreeModel) {
             // No key configured — hand back the sources rather than nothing.
-            emit(AnswerResult(query, usable, markdown = NO_KEY))
+            emit(AnswerResult(query, displaySources, markdown = NO_KEY))
             return@flow
-        }
-
-        val promptSources = usable.mapNotNull { s ->
-            val content = s.extracted ?: return@mapNotNull null
-            Prompts.IndexedSourceText(
-                index = s.index,
-                url = s.url,
-                title = s.title.ifBlank { content.title },
-                text = content.text.take(CHARS_PER_SOURCE)
-            )
         }
 
         val request = ChatRequest(
@@ -111,26 +127,47 @@ class AnswerEngine(
         )
 
         val buffer = StringBuilder()
+        var charsSinceEmission = 0
         ai.stream(config, request).collect { delta ->
             buffer.append(delta)
+            charsSinceEmission += delta.length
+            // Emit often enough to feel live, but don't reparse the entire
+            // Markdown response on every tiny SSE token.
+            if (charsSinceEmission >= UI_EMIT_CHAR_BATCH) {
+                val markdown = buffer.toString()
+                emit(
+                    AnswerResult(
+                        query = query,
+                        sources = displaySources,
+                        markdown = markdown,
+                        citations = parseCitations(markdown)
+                    )
+                )
+                charsSinceEmission = 0
+            }
+        }
+        if (charsSinceEmission > 0) {
+            val markdown = buffer.toString()
             emit(
                 AnswerResult(
                     query = query,
-                    sources = usable,
-                    markdown = buffer.toString(),
-                    citations = parseCitations(buffer.toString())
+                    sources = displaySources,
+                    markdown = markdown,
+                    citations = parseCitations(markdown)
                 )
             )
         }
     }.flowOn(Dispatchers.Default)
 
     companion object {
+        private const val UI_EMIT_CHAR_BATCH = 28
         private const val MAX_SOURCES = 4
         private const val CHARS_PER_SOURCE = 2_000
 
         const val NO_SOURCES = "No sources found for that query."
-        const val UNREADABLE = "Found sources but couldn't read any of them — they may be paywalled or JavaScript-only."
-        const val NO_KEY = "Add an AI provider key in settings to get a synthesized answer."
+        const val UNREADABLE = "Found sources, but Xeno couldn't extract enough readable page text. Open a source directly or retry; this does not necessarily mean the page is paywalled."
+        const val NO_KEY = "Add an AI provider key in settings or select a supported anonymous free model to get a synthesized answer."
+        const val PIPELINE_ERROR = "Ask couldn't complete. Check your connection or AI provider settings, then retry."
 
         /** Pulls `[1][2][12]` markers out of streamed text. */
         fun parseCitations(markdown: String): List<Citation> {

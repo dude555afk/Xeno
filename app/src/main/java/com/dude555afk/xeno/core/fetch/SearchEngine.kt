@@ -3,6 +3,7 @@ package com.dude555afk.xeno.core.fetch
 import android.content.Context
 import android.webkit.WebView
 import com.dude555afk.xeno.core.model.SearchHit
+import java.net.URI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -65,17 +66,29 @@ class SearchEngine(private val context: Context) {
     /** Try each engine in turn until one yields usable hits. */
     suspend fun search(query: String, limit: Int = 8): List<SearchHit> =
         withContext(Dispatchers.Main) {
-            for (engine in engines) {
-                val view = createWebView()
-                val hits = try {
-                    scrape(engine, view, query, limit)
-                } finally {
-                    runCatching { view.destroy() }
+            withTimeoutOrNull(SEARCH_TOTAL_TIMEOUT_MS) {
+                for (engine in engines) {
+                    val view = createWebView()
+                    val hits = try {
+                        scrape(engine, view, query, limit)
+                    } finally {
+                        runCatching {
+                            view.stopLoading()
+                            view.destroy()
+                        }
+                    }
+                    val clean = hits.filter { hit ->
+                        runCatching {
+                            val uri = URI(hit.url)
+                            (uri.scheme.equals("https", true) || uri.scheme.equals("http", true)) &&
+                                !uri.host.isNullOrBlank() &&
+                                !uri.host.equals("duckduckgo.com", true)
+                        }.getOrDefault(false)
+                    }
+                    if (clean.isNotEmpty()) return@withTimeoutOrNull clean
                 }
-                val clean = hits.filter { it.url.startsWith("http") }
-                if (clean.isNotEmpty()) return@withContext clean
-            }
-            emptyList()
+                emptyList()
+            } ?: emptyList()
         }
 
     private fun createWebView(): WebView = WebView(context).apply {
@@ -150,23 +163,46 @@ class SearchEngine(private val context: Context) {
         if (isString) content else null
 
     companion object {
-        private const val ENGINE_TIMEOUT_MS = 15_000L
+        private const val ENGINE_TIMEOUT_MS = 10_000L
+        private const val SEARCH_TOTAL_TIMEOUT_MS = 24_000L
 
         /** DDG's result containers. `data-testid` is the stable one. */
         private val SCRAPE_DDG = """
             (function(){
               var out = [];
+              var seen = {};
+              function clean(s) { return (s || '').replace(/\\s+/g, ' ').trim(); }
+              function destination(href) {
+                try {
+                  var u = new URL(href, location.href);
+                  if (u.hostname.toLowerCase() === 'duckduckgo.com' && u.pathname === '/l/') {
+                    var target = u.searchParams.get('uddg');
+                    if (target) href = decodeURIComponent(target);
+                  }
+                } catch (e) {}
+                return href;
+              }
               var nodes = document.querySelectorAll(
-                '[data-testid="result"], article[data-testid="result"], .result__body, .result');
+                '[data-testid="result"], article[data-testid="result"], .result, .result__body');
               for (var i = 0; i < nodes.length && out.length < 12; i++) {
                 var n = nodes[i];
-                var a = n.querySelector('a[href]');
+                var a = n.querySelector('a[data-testid="result-title-a"], a.result__a, h2 a[href], a[href]');
                 if (!a) continue;
-                var href = a.href || '';
-                if (href.indexOf('http') !== 0) continue;
-                if (href.indexOf('duckduckgo.com') !== -1) continue;
-                var s = n.querySelector('.result__snippet, [data-result="snippet"]');
-                out.push({u: href, t: (a.innerText || '').trim().slice(0,120), s: s ? (s.innerText||'').trim().slice(0,220) : ''});
+                var href = destination(a.href || '');
+                if (!/^https?:\\/\\//i.test(href)) continue;
+                try { if (new URL(href).hostname.toLowerCase() === 'duckduckgo.com') continue; } catch(e) { continue; }
+                if (seen[href]) continue;
+                var title = clean(a.innerText || a.textContent).slice(0, 160);
+                if (!title) continue;
+                var s = n.querySelector('[data-testid="result-snippet"], [data-result="snippet"], .result__snippet, .result-snippet, .result__body');
+                var snippet = clean(s && (s.innerText || s.textContent));
+                if (!snippet || snippet === title) {
+                  var clone = n.cloneNode(true);
+                  clone.querySelectorAll('a,button,svg,script,style').forEach(function(el) { el.remove(); });
+                  snippet = clean(clone.innerText || clone.textContent).replace(title, '').trim();
+                }
+                seen[href] = true;
+                out.push({u: href, t: title, s: snippet.slice(0, 420)});
               }
               return JSON.stringify(out);
             })()
@@ -175,12 +211,24 @@ class SearchEngine(private val context: Context) {
         private val SCRAPE_DDG_LITE = """
             (function(){
               var out = [];
-              var links = document.querySelectorAll('a.result-link');
-              var snips = document.querySelectorAll('.result-snippet');
+              var links = document.querySelectorAll('a.result-link, a.result__a, h2 a[href]');
+              function clean(s) { return (s || '').replace(/\\s+/g, ' ').trim(); }
               for (var i = 0; i < links.length && out.length < 12; i++) {
                 var a = links[i];
-                if (!a.href || a.href.indexOf('http') !== 0) continue;
-                out.push({u: a.href, t: (a.innerText||'').trim().slice(0,120), s: snips[i] ? (snips[i].innerText||'').trim().slice(0,220) : ''});
+                if (!a.href || !/^https?:\\/\\//i.test(a.href)) continue;
+                var host = '';
+                try { host = new URL(a.href).hostname.toLowerCase(); } catch(e) { continue; }
+                if (host === 'duckduckgo.com' || host.endsWith('.duckduckgo.com')) continue;
+                var box = a.closest('tr, .result, li') || a.parentElement;
+                var title = clean(a.innerText || a.textContent).slice(0,160);
+                var snippetNode = box && box.querySelector('.result-snippet, .result__snippet, [data-testid="result-snippet"]');
+                var snippet = clean(snippetNode && (snippetNode.innerText || snippetNode.textContent));
+                if (!snippet && box) {
+                  var clone = box.cloneNode(true);
+                  clone.querySelectorAll('a,button,svg,script,style').forEach(function(el) { el.remove(); });
+                  snippet = clean(clone.innerText || clone.textContent);
+                }
+                out.push({u: a.href, t: title, s: snippet.slice(0,420)});
               }
               return JSON.stringify(out);
             })()
