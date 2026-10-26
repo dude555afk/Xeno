@@ -156,7 +156,7 @@ fun BrowserToolsSheet(
             contentAlignment = Alignment.BottomCenter
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(
+                modifier = Modifier.fillMaxWidth().imePadding().fillMaxHeight(
                     if (panel == BrowserPanel.MENU) 0.82f else 0.84f
                 ).clickable(
                     indication = null,
