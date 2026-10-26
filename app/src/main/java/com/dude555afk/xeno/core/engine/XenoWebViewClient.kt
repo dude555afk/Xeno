@@ -18,6 +18,7 @@ interface SessionListener {
     fun onPageError(url: String, description: String) = Unit
     fun onFavicon(url: String, icon: Bitmap?)
     fun onExternalNavigation(requestedUrl: String): Boolean = false
+    fun onRenderProcessGone(view: WebView, didCrash: Boolean) = Unit
 }
 
 /**
@@ -97,6 +98,16 @@ class XenoWebViewClient(
                 error?.description?.toString().orEmpty()
             )
         }
+    }
+
+    override fun onRenderProcessGone(
+        view: WebView,
+        detail: android.webkit.RenderProcessGoneDetail
+    ): Boolean {
+        // Android requires the host to remove references to a dead WebView and
+        // return true; returning false can terminate the entire app.
+        listener.onRenderProcessGone(view, detail.didCrash())
+        return true
     }
 
     override fun shouldInterceptRequest(
