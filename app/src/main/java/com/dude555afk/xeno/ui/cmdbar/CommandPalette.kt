@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,10 +49,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -88,6 +96,19 @@ fun CommandPalette(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
+    // Slow, low-amplitude motion keeps the acrylic glow premium without
+    // running a frantic animation behind the search content.
+    val glowMotion = rememberInfiniteTransition(label = "xeno-acrylic-glow")
+    val glowProgress by glowMotion.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 11000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "xeno-glow-progress"
+    )
+
     LaunchedEffect(visible) {
         if (visible) {
             withFrameNanos { }
@@ -119,23 +140,56 @@ fun CommandPalette(
                 },
             contentAlignment = Alignment.BottomCenter
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp, vertical = 8.dp)
                     .imePadding()
-                    .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF202022), Color(0xFF111113), Color(0xFF09090A))
-                        )
-                    )
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { }
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
             ) {
+                // Blurred, drifting color fields sit behind the translucent
+                // surface; only these decorative layers are blurred.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(
+                            x = (glowProgress * 92f - 46f).dp,
+                            y = (-24).dp
+                        )
+                        .fillMaxWidth(0.88f)
+                        .height(190.dp)
+                        .blur(42.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0x665D4BFF),
+                                    Color(0x6650DDB8),
+                                    Color(0x77B8FF3D),
+                                    Color(0x665D4BFF)
+                                ),
+                                start = androidx.compose.ui.geometry.Offset(
+                                    x = glowProgress * 420f,
+                                    y = 0f
+                                ),
+                                end = androidx.compose.ui.geometry.Offset(
+                                    x = 780f - glowProgress * 360f,
+                                    y = 500f
+                                )
+                            ),
+                            shape = RoundedCornerShape(100.dp)
+                        )
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                        .background(Color(0xD9101014))
+                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { }
+                ) {
                 // Small grabber gives the sheet a native, tactile feel.
                 Box(
                     Modifier
@@ -328,6 +382,7 @@ fun CommandPalette(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.26f)
                 )
+                }
             }
         }
     }
