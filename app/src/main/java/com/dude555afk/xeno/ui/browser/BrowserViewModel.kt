@@ -1699,16 +1699,47 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onExternalNavigation(requestedUrl: String): Boolean {
             val uri = Uri.parse(requestedUrl)
-            if (uri.scheme != "http" && uri.scheme != "https" &&
-                uri.scheme != "mailto" && uri.scheme != "tel" &&
-                uri.scheme != "geo" && uri.scheme != "intent"
-            ) return true
+            val scheme = uri.scheme?.lowercase().orEmpty()
 
-            val intent = android.content.Intent(
-                android.content.Intent.ACTION_VIEW,
-                uri
-            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            runCatching { getApplication<Application>().startActivity(intent) }
+            if (scheme == "intent") {
+                // Android intent URLs need parsing, not ACTION_VIEW with a raw
+                // intent:// URI. This is a common hand-off used by sign-in and
+                // app links. Strip explicit components, resolve safely, and only
+                // navigate to a web fallback URL supplied by the destination.
+                val launch = runCatching {
+                    Intent.parseUri(requestedUrl, Intent.URI_INTENT_SCHEME)
+                }.getOrNull() ?: return true
+                val fallback = launch.getStringExtra("browser_fallback_url")
+                    ?.takeIf { candidate ->
+                        val fallbackScheme = Uri.parse(candidate).scheme?.lowercase()
+                        fallbackScheme == "http" || fallbackScheme == "https"
+                    }
+                launch.component = null
+                launch.selector = null
+                launch.addCategory(Intent.CATEGORY_BROWSABLE)
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+                val context = getApplication<Application>()
+                val resolved = runCatching {
+                    launch.resolveActivity(context.packageManager) != null
+                }.getOrDefault(false)
+                if (resolved) {
+                    runCatching { context.startActivity(launch) }
+                        .onFailure { if (fallback != null) navigate(fallback) }
+                } else if (fallback != null) {
+                    navigate(fallback)
+                }
+                return true
+            }
+
+            if (scheme !in setOf("mailto", "tel", "geo")) return true
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val context = getApplication<Application>()
+            val resolved = runCatching {
+                intent.resolveActivity(context.packageManager) != null
+            }.getOrDefault(false)
+            if (resolved) runCatching { context.startActivity(intent) }
             return true
         }
     }
