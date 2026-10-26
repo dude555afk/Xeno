@@ -1,34 +1,38 @@
 package com.dude555afk.xeno.ui.spaces
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Space
-import com.dude555afk.xeno.ui.theme.Dimens
+import com.dude555afk.xeno.ui.theme.PillShape
+import com.dude555afk.xeno.ui.theme.StrokeSubtle
+import com.dude555afk.xeno.ui.theme.TextPrimary
+import com.dude555afk.xeno.ui.theme.TextSecondary
 
 /**
- * The spaces bar — the identity switcher.
- *
- * Each space owns an accent that retints the entire UI. Tap one and the whole
- * app changes colour, which is Arc's single best trick and the thing almost
- * nobody copies.
+ * Compact, labeled workspace switcher. Color carries identity; the label keeps
+ * the switcher understandable without asking users to memorize colored dots.
  */
 @Composable
 fun SpacesBar(
@@ -37,32 +41,51 @@ fun SpacesBar(
     onSelect: (Space) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.padding(horizontal = Dimens.spaceL),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spaceS),
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth(0.78f)
+            .padding(start = 16.dp, top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        spaces.forEach { space ->
+        items(spaces, key = { it.id }) { space ->
             val active = space.id == activeSpaceId
-            val scale by animateFloatAsState(
-                targetValue = if (active) 1.15f else 1f,
-                animationSpec = tween(180),
-                label = "spaceScale"
-            )
-            val color by animateColorAsState(
+            val accent by animateColorAsState(
                 targetValue = space.accent,
-                animationSpec = tween(240),
+                animationSpec = tween(220),
                 label = "spaceAccent"
             )
 
-            Box(
+            Surface(
                 modifier = Modifier
-                    .size(if (active) 14.dp else 10.dp)
-                    .scale(scale)
-                    .clip(CircleShape)
-                    .background(if (active) color else color.copy(alpha = 0.35f))
-                    .clickable { onSelect(space) }
-            )
+                    .clip(PillShape)
+                    .clickable { onSelect(space) },
+                shape = PillShape,
+                color = if (active) accent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.055f),
+                border = BorderStroke(
+                    1.dp,
+                    if (active) accent.copy(alpha = 0.55f) else StrokeSubtle
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(accent)
+                    )
+                    Text(
+                        text = space.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (active) TextPrimary else TextSecondary,
+                        maxLines = 1
+                    )
+                }
+            }
         }
     }
 }

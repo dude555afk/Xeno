@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.History
@@ -80,6 +85,23 @@ fun CommandPalette(
     onDismiss: () -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+
+    // Arc Search opens directly into an active search field. Request focus only
+    // when the palette becomes visible so the keyboard does not flash on startup.
+    LaunchedEffect(visible) {
+        if (visible) {
+            // Wait until the overlay and its text field have been laid out.
+            // Requesting focus during the enter transition can race the IME on
+            // some Android keyboards, leaving the search bar visible but inert.
+            withFrameNanos { }
+            runCatching { focusRequester.requestFocus() }
+            withFrameNanos { }
+            keyboard?.show()
+        } else {
+            keyboard?.hide()
+        }
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -98,13 +120,17 @@ fun CommandPalette(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { onDismiss() },
+                ) {
+                    keyboard?.hide()
+                    onDismiss()
+                },
             contentAlignment = Alignment.BottomCenter
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceXl)
+                    .imePadding()
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
@@ -133,7 +159,7 @@ fun CommandPalette(
                         BasicTextField(
                             value = query,
                             onValueChange = onQueryChange,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).focusRequester(focusRequester),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurface
@@ -141,8 +167,14 @@ fun CommandPalette(
                             cursorBrush = SolidColor(accent),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
-                                onGo = { keyboard?.hide(); onNavigate(query.trim()) },
-                                onSearch = { keyboard?.hide(); onNavigate(query.trim()) }
+                                onGo = {
+                                    keyboard?.hide()
+                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
+                                },
+                                onSearch = {
+                                    keyboard?.hide()
+                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
+                                }
                             ),
                             decorationBox = { inner ->
                                 if (query.isEmpty()) {
@@ -198,7 +230,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.Article,
                                     title = tab.displayTitle,
                                     subtitle = tab.url,
-                                    onClick = { onOpenTab(tab) }
+                                    onClick = { keyboard?.hide(); onOpenTab(tab) }
                                 )
                             }
                             items(historyHints, key = { "hist-${it.url}" }) { hit ->
@@ -206,7 +238,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.History,
                                     title = hit.title.ifBlank { hit.url },
                                     subtitle = hit.url,
-                                    onClick = { onNavigate(hit.url) }
+                                    onClick = { keyboard?.hide(); onNavigate(hit.url) }
                                 )
                             }
                         }

@@ -1,11 +1,12 @@
 package com.dude555afk.xeno.core.ai
 
-import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,8 +18,6 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * The only thing in Xeno that talks to an AI provider.
@@ -39,43 +38,25 @@ class AiClient(
         explicitNulls = false
     }
 ) {
+    // Discovery is a settings action, not a generation request. Bound its wait
+    // so a stalled endpoint cannot leave the model picker spinning for minutes.
+    private val catalogHttp = http.newBuilder()
+        .callTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     /**
-     * Stream a chat completion, emitting the text of each delta.
-     *
-     * Built on `flow {}` + `suspendCancellableCoroutine` rather than `channelFlow`
-     * for a specific reason. `channelFlow` is the idiomatic answer for bridging a
-     * callback into a Flow, and it was tried first, but it requires
-     * `awaitClose`, which is an extension on ProducerScope — confirming exactly
-     * what the compiler already reported: `Unresolved reference 'awaitClose'`
-     * inside `channelFlow { ... }`. `awaitClose` is a member of `channelFlow`'s
-     * block, so it was never missing; what was missing was realising that the
-     * entire shape was wrong for this problem.
-     *
-     * The real problem: `channelFlow` puts the producer on another dispatcher,
-     * which is exactly what makes it unsuitable as an SSE bridge here. OkHttp's
-     * EventSourceListener callbacks arrive on the OkHttp dispatcher already, so
-     * `channelFlow` adds a hop for nothing and forces the emission ordering
-     * through a channel we do not need.
-     *
-     * `flow {}` + `suspendCancellableCoroutine` keeps the bridge on the
-     * requesting coroutine. Deltas accumulate in a StringBuilder and the whole
-     * thing is emitted once — which looks like the "instant answer feels like a
-     * bug" failure this was supposed to fix, but is in fact the correct
-     * rendering behaviour for this architecture: AnswerEngine's `answer()`
-     * re-emits a partial AnswerResult per collected item, and the answer sheet's
-     * `AnswerText.parse()` is a full re-parse of the markdown each time. With a
-     * per-delta flow that is a re-parse on every token, i.e. O(n²) over the
-     * response length for a summary that arrives in a few seconds anyway.
-     *
-     * Throws [AiException] when the gateway answers with an error body rather
-     * than a stream — the caller's job is to degrade, not to crash.
+     * Stream a chat completion as incremental text deltas. The callback bridge
+     * uses an unlimited channel so a temporarily slow UI collector cannot cause
+     * trySend to drop tokens. Consumers should batch UI updates to avoid
+     * repeatedly reparsing entire Markdown documents.
      */
-    fun stream(config: ProviderConfig, request: ChatRequest): Flow<String> = flow {
+    fun stream(config: ProviderConfig, request: ChatRequest): Flow<String> = callbackFlow {
         require(config.baseUrl.isNotBlank()) { "provider baseUrl is blank" }
         require(config.model.isNotBlank()) { "provider model is blank" }
 
-        val url = config.baseUrl.trimEnd('/') + "/chat/completions"
+        val url = endpoint(config) + "/chat/completions"
         val body = json.encodeToString(ChatRequest.serializer(), request.copy(stream = true))
             .toRequestBody(JSON)
 
@@ -91,84 +72,103 @@ class AiClient(
             }
             .build()
 
-        val buffer = StringBuilder()
+        val factory = EventSources.createFactory(http)
+        val source = factory.newEventSource(call, object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) = Unit
 
-        suspendCancellableCoroutine<Unit> { cont ->
-            val factory = EventSources.createFactory(http)
-            val listener = object : EventSourceListener() {
-
-                override fun onOpen(eventSource: EventSource, response: Response) {
-                    // Nothing to do — events carry the payload.
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                if (data == "[DONE]") {
+                    close()
+                    return
                 }
+                if (data.isBlank()) return
 
-                override fun onEvent(
-                    eventSource: EventSource,
-                    id: String?,
-                    type: String?,
-                    data: String
-                ) {
-                    if (data.isBlank()) return
-                    if (data == "[DONE]") {
-                        // Normal end of stream. The socket close usually follows
-                        // immediately, but do not depend on it.
-                        if (cont.isActive) cont.resume(Unit)
-                        return
-                    }
-
-                    val chunk = runCatching {
-                        json.decodeFromString(StreamChunk.serializer(), data)
-                    }.getOrNull()
-
-                    // `chunk` is StreamChunk? — the safe call is required.
-                    // This was the entire compile error: `chunk.text` on a
-                    // nullable receiver.
-                    val text = chunk?.text.orEmpty()
-                    if (text.isNotEmpty()) buffer.append(text)
-                }
-
-                override fun onFailure(
-                    eventSource: EventSource,
-                    t: Throwable?,
-                    response: Response?
-                ) {
-                    if (!cont.isActive) return
-                    val code = response?.code ?: 0
-                    val snippet = runCatching {
-                        response?.body?.string().orEmpty()
-                    }.getOrDefault("")
-
-                    // A 4xx/5xx with a body is a gateway rejection, which is a
-                    // different failure from a dropped socket. The caller shows
-                    // a different message for each.
-                    val error = when {
-                        code in 400..599 && snippet.isNotBlank() -> AiException(code, snippet)
-                        t != null -> t
-                        else -> AiException(code, snippet.ifBlank { "stream failed with no body" })
-                    }
-                    cont.resumeWithException(error)
-                }
-
-                override fun onClosed(eventSource: EventSource) {
-                    // Normal termination without an explicit [DONE]. Plenty of
-                    // gateways just close the socket.
-                    if (cont.isActive) cont.resume(Unit)
-                }
+                val chunk = runCatching {
+                    json.decodeFromString(StreamChunk.serializer(), data)
+                }.getOrNull()
+                val delta = chunk?.text.orEmpty()
+                if (delta.isNotEmpty()) trySend(delta)
             }
 
-            val source = factory.newEventSource(call, listener)
-            cont.invokeOnCancellation { runCatching { source.cancel() } }
-        }
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                if (isClosedForSend) return
+                val code = response?.code ?: 0
+                val snippet = runCatching { response?.body?.string().orEmpty() }
+                    .getOrDefault("")
+                val error = when {
+                    code in 400..599 && snippet.isNotBlank() -> AiException(code, snippet)
+                    t != null -> t
+                    else -> AiException(code, snippet.ifBlank { "stream failed with no body" })
+                }
+                close(error)
+            }
 
-        if (buffer.isNotEmpty()) emit(buffer.toString())
-    }.flowOn(Dispatchers.IO)
+            override fun onClosed(eventSource: EventSource) {
+                close()
+            }
+        })
+
+        awaitClose { runCatching { source.cancel() } }
+    }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 
     /**
      * Non-streaming one-shot call. Used for cheap decisions where round-tripping
      * deltas would be pure overhead.
      */
+    /** Fetch the provider's live catalogue instead of relying on stale hard-coded model names. */
+    suspend fun fetchModels(config: ProviderConfig): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url(endpoint(config) + "/models")
+            .get()
+            .header("Accept", "application/json")
+            .apply {
+                if (config.apiKey.isNotBlank()) header("Authorization", "Bearer ${config.apiKey}")
+            }
+            .build()
+
+        catalogHttp.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw AiException(response.code, body)
+            val fetched = runCatching {
+                json.decodeFromString(ModelsResponse.serializer(), body).data
+                    .filter { it.id.isNotBlank() }
+                    .distinctBy { it.id }
+            }.getOrElse {
+                throw AiException(response.code, "Invalid /models response: ${body.take(240)}")
+            }
+
+            // Kilo's virtual free router is documented but may not appear in
+            // the concrete /models response. Always keep it selectable.
+            val withKiloFreeRouter = if (
+                config.id == "kilo" &&
+                fetched.none { it.id.equals("kilo-auto/free", ignoreCase = true) }
+            ) {
+                fetched + ModelInfo(
+                    id = "kilo-auto/free",
+                    name = "Kilo Auto Free",
+                    description = "Anonymous free auto-router"
+                )
+            } else fetched
+
+            withKiloFreeRouter.sortedWith(
+                compareBy<ModelInfo> { if (config.id == "kilo" && it.isFree) 0 else 1 }
+                    .thenBy { (it.name ?: it.id).lowercase() }
+            )
+        }
+    }
+
     suspend fun complete(config: ProviderConfig, request: ChatRequest): String =
         withContext(Dispatchers.IO) {
-            val url = config.baseUrl.trimEnd('/') + "/chat/completions"
+            val url = endpoint(config) + "/chat/completions"
             val body = json.encodeToString(ChatRequest.serializer(), request.copy(stream = false))
                 .toRequestBody(JSON)
 
@@ -191,6 +191,25 @@ class AiClient(
                 }.getOrElse { throw AiException(response.code, text.take(300)) }
             }
         }
+
+    private fun endpoint(config: ProviderConfig): String {
+        val base = config.baseUrl.trim().trimEnd('/')
+        if (base.startsWith("https://", ignoreCase = true)) return base
+
+        // Never send a bearer key to a remote cleartext URL.
+        if (config.id != "local" || !base.startsWith("http://", ignoreCase = true)) {
+            throw IllegalArgumentException("Remote AI providers must use HTTPS.")
+        }
+        val host = runCatching { java.net.URI(base).host?.lowercase() }.getOrNull().orEmpty()
+        val isPrivateHost = host == "localhost" || host == "127.0.0.1" ||
+            host == "::1" || host == "10.0.2.2" || host.endsWith(".local") ||
+            host.startsWith("10.") || host.startsWith("192.168.") ||
+            host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[01])\\..*"))
+        if (!isPrivateHost) {
+            throw IllegalArgumentException("HTTP is allowed only for a local or private-LAN AI endpoint.")
+        }
+        return base
+    }
 
     companion object {
         private val JSON = "application/json; charset=utf-8".toMediaType()
