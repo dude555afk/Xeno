@@ -1669,6 +1669,21 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        override fun onRenderProcessGone(view: WebView, didCrash: Boolean) {
+            pool.discardCrashed(key, view)
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            _state.update {
+                it.copy(
+                    load = it.load.copy(loading = false, progress = 1f),
+                    pageError = if (didCrash) {
+                        "This page crashed. Tap to reload it."
+                    } else {
+                        "This page's renderer stopped. Tap to reload it."
+                    }
+                )
+            }
+        }
+
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
 
         override fun onExternalNavigation(requestedUrl: String): Boolean {
@@ -1697,9 +1712,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Reload the current page, or focus search when the active tab is empty. */
     fun refreshOrStop() {
-        val view = activeSessionKey?.let(pool::peek)
-        if (view == null || _state.value.activeTab?.url.isNullOrBlank()) {
+        val tab = _state.value.activeTab
+        if (tab?.url.isNullOrBlank()) {
             openPalette()
+            return
+        }
+
+        val view = activeSessionKey?.let(pool::peek)
+        if (view == null) {
+            // The renderer may have died or a memory trim may have evicted
+            // this session. Rebuild it from the durable tab URL, not search.
+            syncSessionToTab(tab)
             return
         }
 
