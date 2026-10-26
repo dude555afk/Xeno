@@ -46,10 +46,12 @@ class ReadabilityInjector(
 
     companion object {
         private const val EXTRACT_CALL = "JSON.stringify(window.__xenoReadability.extract())"
+        private const val READER_BOOTSTRAP_WAIT_MS = 3_000L
 
         private const val PROBE_CALL =
             "(function(){try{var b=document.body;var t=(b&&b.innerText)||'';" +
-                "return document.readyState+':'+t.length;}catch(e){return 'err:0';}})()"
+                "return document.readyState+':'+t.length+':'+(window.__xenoReadability?'ready':'pending');" +
+                "}catch(e){return 'err:0:pending';}})()"
 
         // Readability can be blocked by a site's CSP or fail on unusual markup.
         // Fall back to visible DOM text only; never attempt to bypass a paywall.
@@ -152,12 +154,17 @@ class ReadabilityInjector(
                 val snapshot = evalToString(webView, PROBE_CALL) ?: ""
                 val now = System.currentTimeMillis()
 
-                if (snapshot == last && snapshot.isNotBlank() && !snapshot.contains("loading")) {
+                val readerReady = snapshot.contains(":ready")
+                if (snapshot == last && snapshot.isNotBlank() && readerReady) {
                     if (quietSince == 0L) quietSince = now
                     if (now - quietSince >= quietForMs) break
                 } else {
                     last = snapshot
                     quietSince = 0L
+                    // The script asset can load later than the document on a
+                    // slow phone. Wait briefly for it, then use DOM-text fallback
+                    // instead of burning the entire page timeout.
+                    if (!readerReady && now - start >= minOf(timeoutMs, READER_BOOTSTRAP_WAIT_MS)) break
                 }
                 delay(220)
             }
