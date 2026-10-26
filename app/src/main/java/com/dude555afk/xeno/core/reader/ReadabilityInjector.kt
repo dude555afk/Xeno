@@ -47,6 +47,7 @@ class ReadabilityInjector(
     companion object {
         private const val EXTRACT_CALL = "JSON.stringify(window.__xenoReadability.extract())"
         private const val READER_BOOTSTRAP_WAIT_MS = 3_000L
+        private const val JS_CALLBACK_TIMEOUT_MS = 2_500L
 
         private const val PROBE_CALL =
             "(function(){try{var b=document.body;var t=(b&&b.innerText)||'';" +
@@ -194,9 +195,11 @@ class ReadabilityInjector(
     fun bootstrapScript(): String = BOOTSTRAP
 
     private suspend fun evalToString(webView: WebView, script: String): String? =
-        suspendCancellableCoroutine { cont ->
-            webView.evaluateJavascript(script) { value ->
-                if (cont.isActive) cont.resume(value)
+        withTimeoutOrNull(JS_CALLBACK_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                webView.evaluateJavascript(script) { value ->
+                    if (cont.isActive) cont.resume(value)
+                }
             }
         }
 
