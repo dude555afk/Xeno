@@ -219,12 +219,24 @@ class ReadabilityInjector(
      * always said "couldn't be read" and the answer engine always reported zero
      * readable sources. Neither symptom points at this line.
      */
-    private fun parse(raw: String?, fallbackUrl: String): ExtractedContent {
+    private fun parse(raw: String?, fallbackUrl: String): ExtractedContent =
+        ExtractionJsonParser.parse(raw, fallbackUrl, json)
+}
+}
+
+
+/**
+ * Pure parser separated from the WebView lifecycle so the tricky Android
+ * evaluateJavascript JSON shapes can be regression-tested on the JVM.
+ */
+internal object ExtractionJsonParser {
+    fun parse(
+        raw: String?,
+        fallbackUrl: String,
+        json: Json = Json { ignoreUnknownKeys = true }
+    ): ExtractedContent {
         if (raw.isNullOrBlank() || raw == "null") return ExtractedContent.junk(fallbackUrl)
         return runCatching {
-            // WebView implementations may return a JSON object directly or a
-            // JSON-encoded string when the JS expression uses JSON.stringify.
-            // Accept both forms instead of treating the object form as junk.
             val first = json.parseToJsonElement(raw)
             val obj = when (first) {
                 is JsonObject -> first
