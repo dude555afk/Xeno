@@ -83,7 +83,7 @@ class PageFetcher(
      */
     private fun effectiveConcurrency(): Int {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
-            ?: return 3
+            ?: return 2
         val info = android.app.ActivityManager.MemoryInfo()
         am.getMemoryInfo(info)
 
