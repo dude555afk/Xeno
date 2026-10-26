@@ -165,8 +165,9 @@ class AnswerEngine(
         private const val CHARS_PER_SOURCE = 2_000
 
         const val NO_SOURCES = "No sources found for that query."
-        const val UNREADABLE = "Found sources but couldn't read any of them — they may be paywalled or JavaScript-only."
-        const val NO_KEY = "Add an AI provider key in settings to get a synthesized answer."
+        const val UNREADABLE = "Found sources, but Xeno couldn't extract enough readable page text. Open a source directly or retry; this does not necessarily mean the page is paywalled."
+        const val NO_KEY = "Add an AI provider key in settings or select a supported anonymous free model to get a synthesized answer."
+        const val PIPELINE_ERROR = "Ask couldn't complete. Check your connection or AI provider settings, then retry."
 
         /** Pulls `[1][2][12]` markers out of streamed text. */
         fun parseCitations(markdown: String): List<Citation> {
