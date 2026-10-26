@@ -119,6 +119,18 @@ class SessionPool(
 
     fun peek(key: String): WebView? = sessions[key]
 
+    /**
+     * Remove a WebView whose renderer has exited. Android documents that a
+     * renderer-dead WebView must not be reused, so only detach it and drop all
+     * pool references; do not call stopLoading/loadUrl/destroy on it.
+     */
+    fun discardCrashed(key: String, crashedView: WebView) {
+        if (sessions[key] !== crashedView) return
+        (crashedView.parent as? ViewGroup)?.removeView(crashedView)
+        sessions.remove(key)
+        lastUsed.remove(key)
+    }
+
     fun liveKeys(): Set<String> = sessions.keys.toSet()
 
     fun liveCount(): Int = sessions.size
