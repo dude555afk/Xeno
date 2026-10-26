@@ -222,9 +222,6 @@ class ReadabilityInjector(
     private fun parse(raw: String?, fallbackUrl: String): ExtractedContent =
         ExtractionJsonParser.parse(raw, fallbackUrl, json)
 }
-}
-
-
 /**
  * Pure parser separated from the WebView lifecycle so the tricky Android
  * evaluateJavascript JSON shapes can be regression-tested on the JVM.
