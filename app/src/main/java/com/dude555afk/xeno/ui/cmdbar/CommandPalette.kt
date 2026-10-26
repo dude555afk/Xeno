@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -132,7 +133,7 @@ fun CommandPalette(
                     .padding(horizontal = 10.dp, vertical = 8.dp)
                     .imePadding()
             ) {
-                AcrylicGlow()
+                AcrylicGlow(modifier = Modifier.align(Alignment.BottomCenter))
 
                 Column(
                     modifier = Modifier
@@ -406,7 +407,7 @@ private fun SuggestionRow(
 
 
 @Composable
-private fun AcrylicGlow() {
+private fun AcrylicGlow(modifier: Modifier = Modifier) {
     // This composable is inside AnimatedVisibility, so its infinite animation
     // is disposed when the palette closes instead of running in the background.
     val glowMotion = rememberInfiniteTransition(label = "xeno-acrylic-glow")
@@ -421,8 +422,7 @@ private fun AcrylicGlow() {
     )
 
     Box(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
+        modifier = modifier
             .padding(horizontal = 22.dp)
             .padding(bottom = 4.dp)
             .fillMaxWidth(0.82f)
