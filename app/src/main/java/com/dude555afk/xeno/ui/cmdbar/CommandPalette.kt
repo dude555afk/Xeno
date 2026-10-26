@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -96,19 +95,6 @@ fun CommandPalette(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
-    // Slow, low-amplitude motion keeps the acrylic glow premium without
-    // running a frantic animation behind the search content.
-    val glowMotion = rememberInfiniteTransition(label = "xeno-acrylic-glow")
-    val glowProgress by glowMotion.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 11000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "xeno-glow-progress"
-    )
-
     LaunchedEffect(visible) {
         if (visible) {
             withFrameNanos { }
@@ -146,38 +132,7 @@ fun CommandPalette(
                     .padding(horizontal = 10.dp, vertical = 8.dp)
                     .imePadding()
             ) {
-                // Blurred, drifting color fields sit behind the translucent
-                // surface; only these decorative layers are blurred.
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .offset(
-                            x = (glowProgress * 92f - 46f).dp,
-                            y = (-24).dp
-                        )
-                        .fillMaxWidth(0.88f)
-                        .height(190.dp)
-                        .blur(42.dp)
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0x665D4BFF),
-                                    Color(0x6650DDB8),
-                                    Color(0x77B8FF3D),
-                                    Color(0x665D4BFF)
-                                ),
-                                start = androidx.compose.ui.geometry.Offset(
-                                    x = glowProgress * 420f,
-                                    y = 0f
-                                ),
-                                end = androidx.compose.ui.geometry.Offset(
-                                    x = 780f - glowProgress * 360f,
-                                    y = 500f
-                                )
-                            ),
-                            shape = RoundedCornerShape(100.dp)
-                        )
-                )
+                AcrylicGlow()
 
                 Column(
                     modifier = Modifier
@@ -447,4 +402,43 @@ private fun SuggestionRow(
             }
         }
     }
+}
+
+
+@Composable
+private fun AcrylicGlow() {
+    // This composable is inside AnimatedVisibility, so its infinite animation
+    // is disposed when the palette closes instead of running in the background.
+    val glowMotion = rememberInfiniteTransition(label = "xeno-acrylic-glow")
+    val glowOffset by glowMotion.animateFloat(
+        initialValue = -18f,
+        targetValue = 18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 12000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "xeno-glow-offset"
+    )
+
+    Box(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(horizontal = 22.dp)
+            .padding(bottom = 4.dp)
+            .fillMaxWidth(0.82f)
+            .height(104.dp)
+            .offset(x = glowOffset.dp)
+            .blur(18.dp)
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0x335D4BFF),
+                        Color(0x4450DDB8),
+                        Color(0x55B8FF3D),
+                        Color(0x335D4BFF)
+                    )
+                ),
+                shape = RoundedCornerShape(52.dp)
+            )
+    )
 }
