@@ -66,24 +66,29 @@ class SearchEngine(private val context: Context) {
     /** Try each engine in turn until one yields usable hits. */
     suspend fun search(query: String, limit: Int = 8): List<SearchHit> =
         withContext(Dispatchers.Main) {
-            for (engine in engines) {
-                val view = createWebView()
-                val hits = try {
-                    scrape(engine, view, query, limit)
-                } finally {
-                    runCatching { view.destroy() }
+            withTimeoutOrNull(SEARCH_TOTAL_TIMEOUT_MS) {
+                for (engine in engines) {
+                    val view = createWebView()
+                    val hits = try {
+                        scrape(engine, view, query, limit)
+                    } finally {
+                        runCatching {
+                            view.stopLoading()
+                            view.destroy()
+                        }
+                    }
+                    val clean = hits.filter { hit ->
+                        runCatching {
+                            val uri = URI(hit.url)
+                            (uri.scheme.equals("https", true) || uri.scheme.equals("http", true)) &&
+                                !uri.host.isNullOrBlank() &&
+                                !uri.host.equals("duckduckgo.com", true)
+                        }.getOrDefault(false)
+                    }
+                    if (clean.isNotEmpty()) return@withTimeoutOrNull clean
                 }
-                val clean = hits.filter { hit ->
-                    runCatching {
-                        val uri = URI(hit.url)
-                        (uri.scheme.equals("https", true) || uri.scheme.equals("http", true)) &&
-                            !uri.host.isNullOrBlank() &&
-                            !uri.host.equals("duckduckgo.com", true)
-                    }.getOrDefault(false)
-                }
-                if (clean.isNotEmpty()) return@withContext clean
-            }
-            emptyList()
+                emptyList()
+            } ?: emptyList()
         }
 
     private fun createWebView(): WebView = WebView(context).apply {
@@ -158,7 +163,8 @@ class SearchEngine(private val context: Context) {
         if (isString) content else null
 
     companion object {
-        private const val ENGINE_TIMEOUT_MS = 15_000L
+        private const val ENGINE_TIMEOUT_MS = 10_000L
+        private const val SEARCH_TOTAL_TIMEOUT_MS = 24_000L
 
         /** DDG's result containers. `data-testid` is the stable one. */
         private val SCRAPE_DDG = """
