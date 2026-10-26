@@ -1098,7 +1098,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update {
                     it.copy(
                         answer = (it.answer ?: AnswerResult(query, emptyList())).copy(
-                            markdown = AnswerEngine.UNREADABLE
+                            markdown = if (it.answer?.markdown.isNullOrBlank()) {
+                                AnswerEngine.PIPELINE_ERROR
+                            } else {
+                                it.answer!!.markdown + "\n\n" + AnswerEngine.PIPELINE_ERROR
+                            }
                         ),
                         answerStreaming = false,
                         answerError = e.message
@@ -1670,6 +1674,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         override fun onRenderProcessGone(view: WebView, didCrash: Boolean) {
+            // A late callback from an already-evicted view must not mark a newly
+            // recreated session as crashed.
+            if (pool.peek(key) !== view) return
             pool.discardCrashed(key, view)
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
