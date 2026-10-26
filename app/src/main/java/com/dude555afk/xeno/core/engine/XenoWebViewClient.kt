@@ -114,8 +114,12 @@ class XenoWebViewClient(
         view: WebView?,
         request: WebResourceRequest
     ): WebResourceResponse? {
-        // Our own injected assets always go through, whatever the page tries.
-        if (request.url.host == XenoAssetLoader.DOMAIN) return null
+        // Serve our bundled JS/CSS through WebViewAssetLoader. Returning null
+        // here would let WebView try the public network for this synthetic host,
+        // silently breaking Xeno's own reader/fingerprinting assets.
+        if (request.url.host == XenoAssetLoader.DOMAIN) {
+            return assetLoader.shouldInterceptRequest(request.url)
+        }
 
         // Never let a content filter cancel a top-level navigation. Some filter lists
         // contain broad document rules; applying those here can make ordinary sites
