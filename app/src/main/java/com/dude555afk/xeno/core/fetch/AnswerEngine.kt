@@ -75,33 +75,31 @@ class AnswerEngine(
         emit(AnswerResult(query, sources))
 
         val read = fetcher.fetch(sources, maxSources = MAX_SOURCES)
-        val usable = read.filter { it.extracted != null }
-        val displaySources = if (usable.isNotEmpty()) usable else read
+        val hitByIndex = hits.mapIndexed { index, hit -> (index + 1) to hit }.toMap()
+        val displaySources = read
 
         emit(AnswerResult(query, displaySources))
 
-        // Prefer full extracted articles. If a site blocks extraction or only
-        // exposes a short preview, use the search engine's own snippet as
-        // explicitly limited evidence instead of failing the entire Ask flow.
-        // This does not unlock paywalled content or invent text the page hides.
-        val promptSources = if (usable.isNotEmpty()) {
-            usable.mapNotNull { s ->
-                val content = s.extracted ?: return@mapNotNull null
+        // Prefer extracted article text. For any page that fails individually,
+        // retain the search engine's snippet as limited evidence. This keeps a
+        // single broken site from suppressing useful text from other sources.
+        // Snippets are labelled as previews; paywalls are never bypassed.
+        val promptSources = displaySources.mapNotNull { source ->
+            val content = source.extracted
+            if (content != null && !content.isJunk) {
                 Prompts.IndexedSourceText(
-                    index = s.index,
-                    url = s.url,
-                    title = s.title.ifBlank { content.title },
+                    index = source.index,
+                    url = source.url,
+                    title = source.title.ifBlank { content.title },
                     text = content.text.take(CHARS_PER_SOURCE)
                 )
-            }
-        } else {
-            hits.mapNotNull { hit ->
+            } else {
+                val hit = hitByIndex[source.index] ?: return@mapNotNull null
                 if (hit.snippet.isBlank()) return@mapNotNull null
-                val index = hits.indexOf(hit) + 1
                 Prompts.IndexedSourceText(
-                    index = index,
-                    url = hit.url,
-                    title = hit.title,
+                    index = source.index,
+                    url = source.url,
+                    title = source.title.ifBlank { hit.title },
                     text = "Search-result snippet only; full page could not be extracted. " + hit.snippet.take(600)
                 )
             }
