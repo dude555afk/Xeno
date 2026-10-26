@@ -201,6 +201,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var hintsJob: Job? = null
     private var readerJob: Job? = null
     private var translationJob: Job? = null
+    private var modelsJob: Job? = null
     private val desktopSiteTabIds = mutableSetOf<Long>()
     private val defaultUserAgent = WebSettings.getDefaultUserAgent(app)
     private val desktopUserAgent = defaultUserAgent
@@ -559,9 +560,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 availableModelsProviderId = config.id
             )
         }
-        viewModelScope.launch {
+        modelsJob?.cancel()
+        modelsJob = viewModelScope.launch {
             runCatching { ai.fetchModels(config) }
                 .onSuccess { models ->
+                    if (_state.value.availableModelsProviderId != config.id) return@onSuccess
                     _state.update {
                         it.copy(
                             modelsLoading = false,
@@ -572,6 +575,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 .onFailure { error ->
                     if (error is CancellationException) throw error
+                    if (_state.value.availableModelsProviderId != config.id) return@onFailure
                     _state.update {
                         it.copy(
                             modelsLoading = false,
