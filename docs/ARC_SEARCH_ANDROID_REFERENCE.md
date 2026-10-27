@@ -245,3 +245,20 @@ These are original portfolio assets linked by the Android designer's case study.
 - Site Settings exposes distinct controls for blocking ads, cookie banners and trackers. The panel's exact sizing, icon design, background, row height and toggle colors still need raw capture.
 - Onboarding and the in-app home background should not be conflated with the decorative gradients around marketing mockups. Sample colors only from the app pixels, not the surrounding promo art.
 - No exact coordinates or HEX values have been measured from these assets. The pixel-measurement section remains blocked on raw captures from the app or uncomposited screen recordings.
+
+
+## 11. Additional research leads captured in pass 1
+
+These sources expand the source set beyond the core specification. They are useful for triangulation and for locating more original captures:
+
+- **TechCrunch, Android open beta (2024-10-04):** https://techcrunch.com/2024/10/04/the-browser-company-launches-arc-search-on-android/ — notes that Browse for Me reads multiple pages and builds a new page, and reports the Android ad blocker and automatic archive at launch.
+- **Digital Trends, Android announcement (2024-10-03):** https://www.digitaltrends.com/phones/arc-search-iphone-app-now-available-on-android/ — launch-day images and first-use description; useful for identifying the initial Android home and query-entry design.
+- **9to5Google, Android arrival announcement (2024-08-26):** https://9to5google.com/2024/08/26/arc-search-browser-officially-coming-to-android/ — links to the brief official social clip teasing the app on a Pixel device.
+- **The Verge, Arc discontinuation (2026):** https://www.theverge.com/tech/1016832/arc-browser-shutting-down — secondary reporting that aligns with Arc's official lifecycle notice.
+- **Community Android UI comparison thread:** https://www.reddit.com/r/ArcBrowser/comments/1fwig1y — launch-era discussion of differences between Android and iOS UI. Treat comments as anecdotal, but screenshots can be useful for finding details to test.
+- **Launch montage analysis lead:** https://refs.video/v/1857084594010403260 — third-party frame/cut analysis of a short Arc Search Android launch montage. This is a lead to the original clip, not a substitute for frame-by-frame app-motion measurement.
+- **One-phone feature comparison video lead:** https://refs.video/v/yt-FHA5YZEAYOc — a short video analysis page associated with a phone-based Arc Search comparison. Verify the original footage/platform before using it as Android evidence.
+
+### Why the original designer images are still not a pixel spec
+
+The designer assets establish component hierarchy and reveal content that the code currently must support. However, phone frames, marketing backgrounds, image scaling and overlays contaminate absolute coordinates and color samples. We can use them to decide what state to recreate; we should not convert their coordinates directly into Compose dp values or quote them as measured Android UI dimensions. Absolute measurement remains a capture task.
