@@ -276,13 +276,13 @@ fun BrowserScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth().clickable(onClick = viewModel::refreshOrStop),
                     shape = PillShape,
-                    color = Color(0xFFFCFAFE),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA))
+                    color = Color(0xFF25232D),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948))
                 ) {
                     Text(
                         text = "Page couldn't load · ${error.take(72)} · Tap to retry",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        color = Color(0xFF37313F),
+                        color = Color(0xFFF7F4FC),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -607,7 +607,7 @@ private fun FloatingBar(
             Surface(
                 shape = PillShape,
                 color = Color(0xF7FCFAFE),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(vertical = 4.dp)) {
@@ -653,13 +653,13 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = Color(0xFF777180),
+                                tint = Color(0xFFB1ABBF),
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(Modifier.width(7.dp))
                             Text(
                                 text = displayUrl.ifBlank { "Search or enter address" },
-                                color = if (displayUrl.isBlank()) Color(0xFF898392) else Color(0xFF37313F),
+                                color = if (displayUrl.isBlank()) Color(0xFFAAA3B8) else Color(0xFFF7F4FC),
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -670,7 +670,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                                 contentDescription = if (loading) "Stop loading" else "Reload page",
-                                tint = Color(0xFF575161),
+                                tint = Color(0xFFE1DAF2),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -678,7 +678,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.MoreHoriz,
                                 contentDescription = "Browser menu",
-                                tint = Color(0xFF575161),
+                                tint = Color(0xFFE1DAF2),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -718,8 +718,8 @@ private fun FloatingBar(
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xEFFFFFFF),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
+                color = Color(0xE52C2935),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
                 onClick = onOpenTabs,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -727,7 +727,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color(0xFF37313F),
+                        tint = Color(0xFFF7F4FC),
                         modifier = Modifier.size(23.dp)
                     )
                 }
@@ -737,7 +737,7 @@ private fun FloatingBar(
             // the new tab it creates; using a magnifying glass here was the wrong affordance.
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = Color(0xFFF5F0FA),
+                color = Color(0xFF302D39),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
                 onClick = onNewTab,
                 modifier = Modifier.size(width = 58.dp, height = 42.dp)
@@ -746,7 +746,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "New search",
-                        tint = Color(0xFF34255F),
+                        tint = Color(0xFFEEE9FC),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -754,8 +754,8 @@ private fun FloatingBar(
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xEFFFFFFF),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
+                color = Color(0xE52C2935),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
                 onClick = { expanded = !expanded },
                 modifier = Modifier.size(48.dp)
             ) {
@@ -763,7 +763,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
                         contentDescription = if (expanded) "Collapse browser controls" else "Show browser controls",
-                        tint = Color(0xFF37313F),
+                        tint = Color(0xFFF7F4FC),
                         modifier = Modifier.size(23.dp)
                     )
                 }
@@ -787,6 +787,6 @@ private fun ExpandedTool(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = 0.82f), modifier = Modifier.size(19.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF777180))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB1ABBF))
     }
 }

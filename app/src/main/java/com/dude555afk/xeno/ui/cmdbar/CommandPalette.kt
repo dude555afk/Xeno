@@ -113,10 +113,10 @@ fun CommandPalette(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF8C7DE5),
-                            Color(0xFFB5A0EE),
-                            Color(0xFFF2C5E0),
-                            Color(0xFFF7DBDF)
+                            Color(0xFF251126),
+                            Color(0xFF30154D),
+                            Color(0xFF542A82),
+                            Color(0xFFB64D8F)
                         )
                     )
                 )
@@ -148,8 +148,8 @@ fun CommandPalette(
 
                 Surface(
                     shape = RoundedCornerShape(27.dp),
-                    color = Color(0xFFF8F6FB),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f)),
+                    color = Color(0xFF25232D),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -163,7 +163,7 @@ fun CommandPalette(
                             Icon(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = Color(0xFF5B536B),
+                                tint = Color(0xFFB9B3C5),
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.size(10.dp))
@@ -175,10 +175,10 @@ fun CommandPalette(
                                     .focusRequester(focusRequester),
                                 singleLine = true,
                                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    color = Color(0xFF211D2B),
+                                    color = Color(0xFFF7F4FC),
                                     fontSize = 16.sp
                                 ),
-                                cursorBrush = SolidColor(Color(0xFF5E48DE)),
+                                cursorBrush = SolidColor(Color(0xFF8A79FF)),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(
                                     onSearch = {
@@ -195,7 +195,7 @@ fun CommandPalette(
                                         Text(
                                             text = "Search or enter a URL",
                                             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                                            color = Color(0xFF827B8E)
+                                            color = Color(0xFFB2ACBF)
                                         )
                                     }
                                     inner()
@@ -209,7 +209,7 @@ fun CommandPalette(
                                     Icon(
                                         imageVector = Icons.Rounded.Close,
                                         contentDescription = "Clear search",
-                                        tint = Color(0xFF6D6579),
+                                        tint = Color(0xFFB9B3C5),
                                         modifier = Modifier.size(19.dp)
                                     )
                                 }
@@ -221,7 +221,7 @@ fun CommandPalette(
                                     Icon(
                                         imageVector = Icons.Rounded.Mic,
                                         contentDescription = "Voice search",
-                                        tint = Color(0xFF6D6579),
+                                        tint = Color(0xFFB9B3C5),
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -242,7 +242,7 @@ fun CommandPalette(
                                 Icon(
                                     Icons.Rounded.Search,
                                     contentDescription = null,
-                                    tint = Color(0xFF776F88),
+                                    tint = Color(0xFFB9B3C5),
                                     modifier = Modifier.size(19.dp)
                                 )
                                 Column(
@@ -252,14 +252,14 @@ fun CommandPalette(
                                 ) {
                                     Text(
                                         text = query.trim(),
-                                        color = Color(0xFF282334),
+                                        color = Color(0xFFF4F0FA),
                                         style = MaterialTheme.typography.bodyMedium,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = "Search the web",
-                                        color = Color(0xFF898194),
+                                        color = Color(0xFFAAA3B8),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontSize = 11.sp
                                     )
@@ -347,7 +347,7 @@ fun CommandPalette(
                         if (loading) {
                             LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth(),
-                                color = Color(0xFF5E48DE),
+                                color = Color(0xFF8A79FF),
                                 trackColor = Color.Transparent
                             )
                         }
@@ -364,7 +364,7 @@ private fun PaletteSectionLabel(text: String) {
     Text(
         text = text,
         modifier = Modifier.padding(start = 17.dp, top = 9.dp, bottom = 4.dp),
-        color = Color(0xFF928B9D),
+        color = Color(0xFFA7A0B4),
         style = MaterialTheme.typography.labelSmall,
         fontSize = 10.sp,
         fontWeight = FontWeight.SemiBold,
@@ -392,14 +392,14 @@ private fun PaletteSuggestionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF8A8298),
+            tint = Color(0xFFAAA3B8),
             modifier = Modifier.size(18.dp)
         )
         Column(Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF2E2939),
+                color = Color(0xFFF7F4FC),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -407,7 +407,7 @@ private fun PaletteSuggestionRow(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF968FA1),
+                    color = Color(0xFFA7A0B4),
                     fontSize = 10.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -429,7 +429,7 @@ private fun BrowseForMeButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF5848E8),
+        color = Color(0xFF5D4BE8),
         contentColor = Color.White
     ) {
         Text(

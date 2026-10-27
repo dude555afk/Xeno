@@ -169,7 +169,7 @@ fun BrowserToolsSheet(
         val isBottomSheet = panel == BrowserPanel.MENU || panel == BrowserPanel.SITE_SETTINGS
         Box(
             Modifier.fillMaxSize()
-                .background(if (isBottomSheet) Color.Black.copy(alpha = 0.22f) else Color(0xFFF8F6FB))
+                .background(if (isBottomSheet) Color.Black.copy(alpha = 0.22f) else Color(0xFF191821))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -192,7 +192,7 @@ fun BrowserToolsSheet(
                         interactionSource = remember { MutableInteractionSource() }
                     ) { },
                 shape = if (isBottomSheet) RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp) else RoundedCornerShape(0.dp),
-                color = Color(0xFFFCFAFE),
+                color = Color(0xFF191821),
                 border = BorderStroke(1.dp, StrokeSubtle),
                 shadowElevation = if (isBottomSheet) 18.dp else 0.dp
             ) {
@@ -484,7 +484,7 @@ fun BrowserToolsSheet(
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 items(downloads, key = { it.id }) { item ->
-                                    Row(Modifier.fillMaxWidth().background(Color(0xFFF3F0F8), RoundedCornerShape(16.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(Modifier.fillMaxWidth().background(Color(0xFF302D39), RoundedCornerShape(16.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Rounded.Download, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
                                         Column(Modifier.weight(1f).padding(start = 10.dp)) {
                                             Text(item.title, color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -934,7 +934,7 @@ private fun SpaceManagementRow(
     var draft by remember(space.id, space.name) { mutableStateOf(space.name) }
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = if (active) space.accent.copy(alpha = 0.11f) else Color.White.copy(alpha = 0.035f),
+        color = if (active) space.accent.copy(alpha = 0.11f) else Color(0xFF25232D),
         border = BorderStroke(1.dp, if (active) space.accent.copy(alpha = 0.45f) else StrokeSubtle)
     ) {
         Row(
@@ -988,7 +988,7 @@ private fun MenuAction(title: String, subtitle: String, icon: ImageVector, onCli
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(17.dp),
-        color = Color.White,
+        color = Color(0xFF25232D),
         border = BorderStroke(1.dp, StrokeSubtle)
     ) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1006,7 +1006,7 @@ private fun InfoCard(title: String, body: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFFF3F0F8),
+        color = Color(0xFF302D39),
         border = BorderStroke(1.dp, StrokeSubtle)
     ) {
         Column(Modifier.padding(16.dp)) {
