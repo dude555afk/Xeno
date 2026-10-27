@@ -127,7 +127,7 @@ fun CommandPalette(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.78f))
+                .background(Color.Black.copy(alpha = 0.10f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -235,38 +235,50 @@ fun CommandPalette(
                 Spacer(Modifier.height(12.dp))
 
                 if (query.isNotBlank()) {
-                    Surface(
-                        onClick = {
-                            keyboard?.hide()
-                            onAsk(query.trim())
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFB8FF3D),
-                        contentColor = Color(0xFF10110A),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(19.dp))
-                            Spacer(Modifier.width(9.dp))
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "Browse for me",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "Search the web and build an answer",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xCC10110A)
-                                )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                keyboard?.hide()
+                                onNavigate(query.trim())
                             }
+                            .padding(start = 8.dp, end = 5.dp, top = 7.dp, bottom = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.Search,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.56f),
+                            modifier = Modifier.size(19.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = query.trim(),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.92f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Surface(
+                            onClick = {
+                                keyboard?.hide()
+                                onAsk(query.trim())
+                            },
+                            shape = RoundedCornerShape(50),
+                            color = Color(0xFF5757E8),
+                            contentColor = Color.White
+                        ) {
+                            Text(
+                                "Browse for me",
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(8.dp))
                 } else {
                     Text(
                         "SEARCH OR GO TO",
