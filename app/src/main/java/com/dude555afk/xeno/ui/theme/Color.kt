@@ -2,23 +2,23 @@ package com.dude555afk.xeno.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/** Light Arc-inspired browser chrome; website rendering remains site-controlled. */
-val XenoBlack = Color(0xFFF8F6FB)
-val SurfaceCard = Color(0xFFFFFFFF)
-val SurfaceCardHigh = Color(0xFFF2EFF7)
-val StrokeSubtle = Color(0xFFE5E0EA)
-val TextPrimary = Color(0xFF292532)
-val TextSecondary = Color(0xFF777180)
-val TextTertiary = Color(0xFFA49DAD)
+/** Dark slate and electric-violet chrome inspired by Arc Search on Android. */
+val XenoBlack = Color(0xFF191821)
+val SurfaceCard = Color(0xFF25232D)
+val SurfaceCardHigh = Color(0xFF302D39)
+val StrokeSubtle = Color(0xFF3D3948)
+val TextPrimary = Color(0xFFF7F4FC)
+val TextSecondary = Color(0xFFB1ABBF)
+val TextTertiary = Color(0xFF817A91)
 val TextOnAccent = Color(0xFFFFFFFF)
 
 object SpaceAccents {
-    val Violet = Color(0xFF6656D9)
-    val Cyan = Color(0xFF278F9B)
-    val Coral = Color(0xFFD45D72)
-    val Lime = Color(0xFF6B8D39)
-    val Amber = Color(0xFFB77725)
-    val Rose = Color(0xFFC05A91)
+    val Violet = Color(0xFF5D4BE8)
+    val Cyan = Color(0xFF39B8D3)
+    val Coral = Color(0xFFF07888)
+    val Lime = Color(0xFFD5EF72)
+    val Amber = Color(0xFFF5B85D)
+    val Rose = Color(0xFFE79AC8)
     val all = listOf(Violet, Cyan, Coral, Lime, Amber, Rose)
     fun forIndex(index: Int): Color = all[((index % all.size) + all.size) % all.size]
 }

@@ -93,7 +93,7 @@ fun TabStackSheet(
     ) {
         Surface(
             shape = RoundedCornerShape(0.dp),
-            color = Color(0xFFF8F6FB),
+            color = Color(0xFF191821),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
             modifier = Modifier
@@ -119,19 +119,19 @@ fun TabStackSheet(
                         Text(
                             text = "Tabs",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFF292532)
+                            color = Color(0xFFF7F4FC)
                         )
                         Text(
                             text = if (tabs.size == 1) "1 open page" else "${tabs.size} open pages",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF777180)
+                            color = Color(0xFFB1ABBF)
                         )
                     }
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
                             contentDescription = "Close tab switcher",
-                            tint = Color(0xFF6F6879)
+                            tint = Color(0xFFA7A0B4)
                         )
                     }
                 }
@@ -146,7 +146,7 @@ fun TabStackSheet(
                         Text(
                             text = "No open pages",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF777180)
+                            color = Color(0xFFB1ABBF)
                         )
                     }
                 } else {
@@ -179,8 +179,8 @@ fun TabStackSheet(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE8E2EE)),
+                        color = Color(0xFF25232D),
+                        border = BorderStroke(1.dp, Color(0xFF3D3948)),
                         onClick = onOpenSettings,
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -190,8 +190,8 @@ fun TabStackSheet(
                     }
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFF5C4AE2),
-                        border = BorderStroke(1.dp, Color(0xFFE1D9FF)),
+                        color = Color(0xFF5D4BE8),
+                        border = BorderStroke(1.dp, Color(0xFFA69AFF)),
                         onClick = onNewTab,
                         modifier = Modifier.size(width = 62.dp, height = 48.dp)
                     ) {
@@ -201,8 +201,8 @@ fun TabStackSheet(
                     }
                     Surface(
                         shape = CircleShape,
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE8E2EE)),
+                        color = Color(0xFF25232D),
+                        border = BorderStroke(1.dp, Color(0xFF3D3948)),
                         onClick = onDismiss,
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -235,10 +235,10 @@ private fun TabCard(
 
     Surface(
         shape = RoundedCornerShape(26.dp),
-        color = Color(0xFFFFFFFF),
+        color = Color(0xFF25232D),
         border = BorderStroke(
             if (active) 1.5.dp else 1.dp,
-            if (active) Color(0xFFD3C9EA) else Color(0xFFE7E2EC)
+            if (active) Color(0xFF8B7AFF) else Color(0xFF3D3948)
         ),
         onClick = onSelect,
         modifier = Modifier
@@ -253,7 +253,7 @@ private fun TabCard(
                     .weight(1f)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(19.dp))
-                    .background(Color(0xFFF0EDF6)),
+                    .background(Color(0xFF302D39)),
                 contentAlignment = Alignment.Center
             ) {
                 if (preview != null && !preview.isRecycled) {
@@ -274,7 +274,7 @@ private fun TabCard(
                             .fillMaxWidth()
                             .padding(horizontal = 22.dp),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF5E586A),
+                        color = Color(0xFFEAE6F4),
                         textAlign = TextAlign.Center,
                         maxLines = 5,
                         overflow = TextOverflow.Ellipsis
@@ -292,14 +292,14 @@ private fun TabCard(
                     Text(
                         text = tab.displayTitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF292532),
+                        color = Color(0xFFF7F4FC),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = host.ifBlank { if (tab.url.isBlank()) "Search the web" else tab.url },
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF777180),
+                        color = Color(0xFFB1ABBF),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -308,7 +308,7 @@ private fun TabCard(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Close tab",
-                        tint = Color(0xFF6F6879)
+                        tint = Color(0xFFA7A0B4)
                     )
                 }
             }

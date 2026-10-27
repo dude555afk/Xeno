@@ -1,7 +1,7 @@
 package com.dude555afk.xeno.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -9,20 +9,20 @@ import androidx.compose.ui.graphics.Color
 
 val LocalAccent = staticCompositionLocalOf { DefaultAccent }
 
-private fun xenoColorScheme(accent: Color) = lightColorScheme(
+private fun xenoColorScheme(accent: Color) = darkColorScheme(
     primary = accent,
     onPrimary = TextOnAccent,
     secondary = accent,
     onSecondary = TextOnAccent,
     background = XenoBlack,
     onBackground = TextPrimary,
-    surface = Color(0xFFFCFAFE),
+    surface = SurfaceCard,
     onSurface = TextPrimary,
     surfaceVariant = SurfaceCardHigh,
     onSurfaceVariant = TextSecondary,
     outline = StrokeSubtle,
     outlineVariant = StrokeSubtle,
-    error = Color(0xFFB3261E)
+    error = Color(0xFFFF6B79)
 )
 
 @Composable
