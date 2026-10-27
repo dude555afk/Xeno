@@ -1,4 +1,4 @@
-name: Analyze Arc Reference Pixels
+name: Analyze and Annotate Arc Reference Screenshots
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
             --annotated-dir artifacts/arc-reference/annotated-sources \
             --delay-ms 150
 
-      - name: Upload derived measurements only
+      - name: Upload pixel measurements and annotated screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
