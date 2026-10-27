@@ -200,7 +200,7 @@ fun CommandPalette(
                                 Box {
                                     if (query.isEmpty()) {
                                         Text(
-                                            "Search or ask Xeno",
+                                            "Search or ask anything",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = Color.White.copy(alpha = 0.45f)
                                         )
@@ -227,34 +227,61 @@ fun CommandPalette(
                 Spacer(Modifier.height(12.dp))
 
                 if (query.isNotBlank()) {
-                    Surface(
-                        onClick = {
-                            keyboard?.hide()
-                            onAsk(query.trim())
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFB8FF3D),
-                        contentColor = Color(0xFF10110A),
-                        modifier = Modifier.fillMaxWidth()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        Surface(
+                            onClick = {
+                                keyboard?.hide()
+                                onAsk(query.trim())
+                            },
+                            shape = RoundedCornerShape(19.dp),
+                            color = Color(0xFFB8FF3D),
+                            contentColor = Color(0xFF10110A),
+                            modifier = Modifier.weight(1.18f)
                         ) {
-                            Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(19.dp))
-                            Spacer(Modifier.width(9.dp))
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "Browse for me",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "Search the web and build an answer",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xCC10110A)
-                                )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        "Browse for me",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        "AI answer + sources",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xCC10110A)
+                                    )
+                                }
+                            }
+                        }
+                        Surface(
+                            onClick = {
+                                keyboard?.hide()
+                                onNavigate(query.trim())
+                            },
+                            shape = RoundedCornerShape(19.dp),
+                            color = Color(0xFF303033),
+                            contentColor = Color.White,
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                            modifier = Modifier.weight(0.82f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Rounded.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text("Search web", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -317,7 +344,7 @@ fun CommandPalette(
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Text("Your next stop", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
-                                Text("Type a website, search, or question", color = Color.White.copy(alpha = 0.48f), style = MaterialTheme.typography.bodySmall)
+                                Text("A website, a question, or a rabbit hole", color = Color.White.copy(alpha = 0.48f), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

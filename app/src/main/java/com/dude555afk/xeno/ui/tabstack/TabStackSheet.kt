@@ -215,14 +215,14 @@ private fun TabCard(
 
     Surface(
         shape = RoundedCornerShape(26.dp),
-        color = Color(0xFF111111),
+        color = if (active) Color(0xFF18181B) else Color(0xFF101013),
         border = BorderStroke(
             if (active) 1.5.dp else 1.dp,
             if (active) Color.White.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.08f)
         ),
         onClick = onSelect,
         modifier = Modifier
-            .width(260.dp)
+            .width(270.dp)
             .fillMaxHeight()
             .scale(scale)
     ) {
@@ -260,6 +260,22 @@ private fun TabCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xDD111114))
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Close tab",
+                        tint = Color.White.copy(alpha = 0.92f),
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
             }
 
             Row(
@@ -284,12 +300,19 @@ private fun TabCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                IconButton(onClick = onClose) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Close tab",
-                        tint = Color.White.copy(alpha = 0.7f)
-                    )
+                if (active) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFFB8FF3D).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFFB8FF3D).copy(alpha = 0.20f))
+                    ) {
+                        Text(
+                            text = "ACTIVE",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                            color = Color(0xFFB8FF3D),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
             }
         }

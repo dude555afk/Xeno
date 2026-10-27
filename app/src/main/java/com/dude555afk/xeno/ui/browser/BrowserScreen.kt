@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -217,6 +219,16 @@ fun BrowserScreen(
                 onNewTab = viewModel::newTab,
                 onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
                 onOpenTabs = viewModel::toggleTabStack,
+                tabCount = state.tabs.size,
+                onSwitchTab = { dragDistance ->
+                    val orderedTabs = state.tabs.sortedBy { it.position }
+                    val currentIndex = orderedTabs.indexOfFirst { it.id == state.activeTab?.id }
+                    if (orderedTabs.size > 1 && currentIndex >= 0) {
+                        val nextIndex = (currentIndex + if (dragDistance < 0f) 1 else -1)
+                            .coerceIn(0, orderedTabs.lastIndex)
+                        if (nextIndex != currentIndex) viewModel.selectTab(orderedTabs[nextIndex])
+                    }
+                },
                 onOpenReader = viewModel::openReaderMode,
                 onOpenFind = viewModel::openFindInPage,
                 onBack = viewModel::goBack,
@@ -483,10 +495,12 @@ private fun FloatingBar(
     canGoBack: Boolean,
     canGoForward: Boolean,
     displayUrl: String,
+    tabCount: Int,
     onOpenPalette: () -> Unit,
     onNewTab: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenTabs: () -> Unit,
+    onSwitchTab: (Float) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onBack: () -> Unit,
@@ -505,20 +519,25 @@ private fun FloatingBar(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = tween(durationMillis = 230))
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .padding(horizontal = 18.dp, vertical = 8.dp)
     ) {
-        if (expanded) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(tween(140)) + scaleIn(initialScale = 0.96f, animationSpec = tween(190)),
+            exit = fadeOut(tween(110)) + scaleOut(targetScale = 0.98f, animationSpec = tween(130))
+        ) {
             Surface(
-                shape = PillShape,
-                color = Color(0xF2161616),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                shape = RoundedCornerShape(28.dp),
+                color = Color(0xF21B1B1F),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                shadowElevation = 16.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(Modifier.padding(vertical = 4.dp)) {
+                Column(Modifier.padding(vertical = 5.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 5.dp, vertical = 3.dp),
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
@@ -530,7 +549,7 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color.White.copy(alpha = if (canGoBack) 0.9f else 0.28f),
+                                tint = Color.White.copy(alpha = if (canGoBack) 0.92f else 0.26f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -542,28 +561,29 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowForward,
                                 contentDescription = "Forward",
-                                tint = Color.White.copy(alpha = if (canGoForward) 0.9f else 0.28f),
+                                tint = Color.White.copy(alpha = if (canGoForward) 0.92f else 0.26f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
                         Row(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(PillShape)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color.White.copy(alpha = 0.065f))
                                 .clickable(onClick = onOpenPalette)
-                                .padding(horizontal = 8.dp, vertical = 11.dp),
+                                .padding(horizontal = 11.dp, vertical = 11.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.66f),
+                                tint = Color.White.copy(alpha = 0.68f),
                                 modifier = Modifier.size(17.dp)
                             )
-                            Spacer(Modifier.width(7.dp))
+                            Spacer(Modifier.width(8.dp))
                             Text(
                                 text = displayUrl.ifBlank { "Search or enter address" },
-                                color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.9f),
+                                color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.92f),
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -574,7 +594,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                                 contentDescription = if (loading) "Stop loading" else "Reload page",
-                                tint = Color.White.copy(alpha = 0.78f),
+                                tint = Color.White.copy(alpha = 0.84f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -582,7 +602,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.MoreHoriz,
                                 contentDescription = "Browser menu",
-                                tint = Color.White.copy(alpha = 0.78f),
+                                tint = Color.White.copy(alpha = 0.84f),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -610,20 +630,38 @@ private fun FloatingBar(
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
         }
+
+        Spacer(Modifier.height(if (expanded) 8.dp else 0.dp))
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = 8.dp)
+                .pointerInput(tabCount) {
+                    var dragDistance = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            dragDistance += amount
+                        },
+                        onDragEnd = {
+                            if (kotlin.math.abs(dragDistance) >= 54f && tabCount > 1) {
+                                onSwitchTab(dragDistance)
+                            }
+                            dragDistance = 0f
+                        },
+                        onDragCancel = { dragDistance = 0f }
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color(0xE51E1E22),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                shadowElevation = 10.dp,
                 onClick = onOpenTabs,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -631,16 +669,31 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color.White.copy(alpha = 0.91f),
-                        modifier = Modifier.size(23.dp)
+                        tint = Color.White.copy(alpha = 0.94f),
+                        modifier = Modifier.size(22.dp)
                     )
+                    if (tabCount > 0) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFB8FF3D),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)
+                        ) {
+                            Text(
+                                text = tabCount.coerceAtMost(99).toString(),
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                color = Color(0xFF12140B),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
                 }
             }
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xFF303030),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                color = Color(0xFFF3F2F4),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                shadowElevation = 14.dp,
                 onClick = onNewTab,
                 modifier = Modifier.size(54.dp)
             ) {
@@ -648,16 +701,17 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "New search",
-                        tint = Color.White,
-                        modifier = Modifier.size(27.dp)
+                        tint = Color(0xFF222126),
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color(0xE51E1E22),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                shadowElevation = 10.dp,
                 onClick = { expanded = !expanded },
                 modifier = Modifier.size(48.dp)
             ) {
@@ -665,7 +719,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
                         contentDescription = if (expanded) "Collapse browser controls" else "Show browser controls",
-                        tint = Color.White.copy(alpha = 0.9f),
+                        tint = Color.White.copy(alpha = 0.92f),
                         modifier = Modifier.size(23.dp)
                     )
                 }
