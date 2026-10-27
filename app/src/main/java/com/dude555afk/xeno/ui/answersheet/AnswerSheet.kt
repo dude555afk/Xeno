@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -54,7 +55,7 @@ import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.XenoMotion
 
 /**
- * The answer sheet — flagship surface.
+ * Immersive Browse for Me result page with source cards and an editorial reading surface.
  *
  * Order is the design: source cards appear first (fetching is fast, ~1-2s),
  * then the answer streams beneath them (generation, ~4s). Cards first makes
@@ -91,13 +92,19 @@ fun AnswerSheet(
 
     AnimatedVisibility(
         visible = result != null,
-        enter = fadeIn(XenoMotion.backdropFade()),
-        exit = fadeOut(tween(160))
+        enter = fadeIn(tween(180)) + androidx.compose.animation.slideInVertically(
+            initialOffsetY = { it / 16 },
+            animationSpec = tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+        ),
+        exit = fadeOut(tween(150)) + androidx.compose.animation.slideOutVertically(
+            targetOffsetY = { it / 24 },
+            animationSpec = tween(170)
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Color(0xFFF5F4F8))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -106,10 +113,10 @@ fun AnswerSheet(
         ) {
             Surface(
                 shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = Color(0xFF0A0A0A),
+                color = Color(0xFFF5F4F8),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color(0xFF57516A).copy(alpha = 0.10f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
@@ -119,17 +126,49 @@ fun AnswerSheet(
                     ) { /* keep sheet open */ }
             ) {
                 Column(Modifier.fillMaxSize()) {
-                    // Handle
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(vertical = Dimens.spaceM)
-                            .size(width = 36.dp, height = 4.dp)
-                            .background(
-                                Color.White.copy(alpha = 0.2f),
-                                RoundedCornerShape(percent = 50)
+                            .fillMaxWidth()
+                            .padding(start = 18.dp, end = 12.dp, top = 10.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = Color(0xFFE9E5F5),
+                            onClick = onDismiss,
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "Close answer",
+                                    tint = Color(0xFF5146B8),
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Browse for Me",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color(0xFF25222D),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                             )
-                    )
+                            Text(
+                                "Research from the web",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF777181)
+                            )
+                        }
+                        if (streaming) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color(0xFF6155D9)
+                            )
+                        }
+                    }
 
                     LazyColumn(
                         state = listState,
@@ -152,7 +191,7 @@ fun AnswerSheet(
                                 Text(
                                     text = result?.query.orEmpty(),
                                     style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color(0xFF24222D)
                                 )
                             }
                             Spacer(Modifier.height(Dimens.spaceL))
@@ -164,7 +203,7 @@ fun AnswerSheet(
                                 Text(
                                     text = "SOURCES",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Color(0xFF716D7A)
                                 )
                                 Spacer(Modifier.height(Dimens.spaceS))
                             }
@@ -294,7 +333,7 @@ private fun SourceCard(
                 Icon(
                     imageVector = Icons.Rounded.OpenInNew,
                     contentDescription = "Open",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Color(0xFF716D7A),
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(Modifier.width(4.dp))

@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
+import android.speech.RecognizerIntent
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -116,6 +117,21 @@ fun BrowserScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
         if (results.values.none { it }) viewModel.setSitePermission(SiteCapability.LOCATION, false)
+    }
+
+    val voiceSearchLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+                .orEmpty()
+            if (spoken.isNotBlank()) {
+                viewModel.onQueryChange(spoken)
+                viewModel.submit()
+            }
+        }
     }
 
     // Android back should unwind browser surfaces before leaving the app.
@@ -294,6 +310,17 @@ fun BrowserScreen(
             onOpenTab = { tab ->
                 viewModel.selectTab(tab)
                 viewModel.closePalette()
+            },
+            onVoiceSearch = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak a search")
+                }
+                runCatching { voiceSearchLauncher.launch(intent) }
+                    .onFailure {
+                        Toast.makeText(context, "Voice search is not available on this device.", Toast.LENGTH_SHORT).show()
+                    }
             },
             onDismiss = viewModel::closePalette
         )

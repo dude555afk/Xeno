@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -74,9 +75,9 @@ import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.theme.XenoMotion
 
 /**
- * Arc Search-inspired search sheet: dark floating surface, a focused search
- * field, contextual Browse for Me action, and compact recent-page suggestions.
- * Keeps Xeno's lime accent and existing navigation/answer callbacks.
+ * Arc Search Android-style search surface: pale acrylic panel, dark type,
+ * violet Browse for Me action, compact suggestions and an ordinary-search path.
+ * The callbacks remain Xeno's own browser/search implementation.
  */
 @Composable
 fun CommandPalette(
@@ -91,6 +92,7 @@ fun CommandPalette(
     onNavigate: (String) -> Unit,
     onAsk: (String) -> Unit,
     onOpenTab: (Tab) -> Unit,
+    onVoiceSearch: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
@@ -139,7 +141,7 @@ fun CommandPalette(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                        .background(Color(0xD9101014))
+                        .background(Color(0xF2F3F2F7))
                         .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
                         .clickable(
                             indication = null,
@@ -158,8 +160,8 @@ fun CommandPalette(
 
                 Surface(
                     shape = RoundedCornerShape(23.dp),
-                    color = Color(0xFF303033),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.075f)),
+                    color = Color(0xFFFFFFFF),
+                    border = BorderStroke(1.dp, Color(0xFF524C60).copy(alpha = 0.10f)),
                     shadowElevation = 0.dp
                 ) {
                     Row(
@@ -171,7 +173,7 @@ fun CommandPalette(
                         Icon(
                             Icons.Rounded.Search,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.64f),
+                            tint = Color(0xFF5F5A68).copy(alpha = 0.85f),
                             modifier = Modifier.size(21.dp)
                         )
                         Spacer(Modifier.width(11.dp))
@@ -181,10 +183,10 @@ fun CommandPalette(
                             modifier = Modifier.weight(1f).focusRequester(focusRequester),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color.White,
+                                color = Color(0xFF25222D),
                                 fontWeight = FontWeight.Medium
                             ),
-                            cursorBrush = SolidColor(accent),
+                            cursorBrush = SolidColor(Color(0xFF6155D9)),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
                                 onGo = {
@@ -202,13 +204,25 @@ fun CommandPalette(
                                         Text(
                                             "Search or ask anything",
                                             style = MaterialTheme.typography.bodyLarge,
-                                            color = Color.White.copy(alpha = 0.45f)
+                                            color = Color(0xFF6E6879)
                                         )
                                     }
                                     inner()
                                 }
                             }
                         )
+                        if (query.isBlank()) {
+                            Icon(
+                                imageVector = Icons.Rounded.Mic,
+                                contentDescription = "Voice search",
+                                tint = Color(0xFF625C6D),
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable(onClick = onVoiceSearch)
+                                    .padding(7.dp)
+                                    .size(19.dp)
+                            )
+                        }
                         if (query.isNotEmpty()) {
                             Icon(
                                 Icons.Rounded.Close,
@@ -238,8 +252,8 @@ fun CommandPalette(
                                 onAsk(query.trim())
                             },
                             shape = RoundedCornerShape(19.dp),
-                            color = Color(0xFFB8FF3D),
-                            contentColor = Color(0xFF10110A),
+                            color = Color(0xFF6155D9),
+                            contentColor = Color.White,
                             modifier = Modifier.weight(1.18f)
                         ) {
                             Row(
@@ -258,7 +272,7 @@ fun CommandPalette(
                                     Text(
                                         "AI answer + sources",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xCC10110A)
+                                        color = Color.White.copy(alpha = 0.82f)
                                     )
                                 }
                             }
@@ -333,8 +347,8 @@ fun CommandPalette(
                 } else if (query.isBlank()) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.035f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.055f))
+                        color = Color(0xFFE7E4ED),
+                        border = BorderStroke(1.dp, Color(0xFF514B5E).copy(alpha = 0.08f))
                     ) {
                         Row(
                             Modifier.fillMaxWidth().padding(15.dp),
@@ -344,7 +358,7 @@ fun CommandPalette(
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Text("Your next stop", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
-                                Text("A website, a question, or a rabbit hole", color = Color.White.copy(alpha = 0.48f), style = MaterialTheme.typography.bodySmall)
+                                Text("A website, a question, or a rabbit hole", color = Color(0xFF6A6574), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -354,8 +368,8 @@ fun CommandPalette(
                     Spacer(Modifier.height(12.dp))
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth().clip(CircleShape),
-                        color = accent,
-                        trackColor = Color.White.copy(alpha = 0.08f)
+                        color = Color(0xFF6155D9),
+                        trackColor = Color(0xFF6155D9).copy(alpha = 0.14f)
                     )
                 }
                 Spacer(Modifier.height(4.dp))
@@ -363,7 +377,7 @@ fun CommandPalette(
                     "XENO  ·  PRIVATE BY DESIGN",
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.26f)
+                    color = Color(0xFF777181)
                 )
                 }
             }
@@ -376,7 +390,7 @@ private fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,
-        color = Color.White.copy(alpha = 0.38f),
+        color = Color(0xFF777181),
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 5.dp)
     )
@@ -400,14 +414,14 @@ private fun SuggestionRow(
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = Color.White.copy(alpha = 0.055f),
+            color = Color(0xFFEBE8F0),
             modifier = Modifier.size(38.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = accent.copy(alpha = 0.9f),
+                    tint = Color(0xFF6155D9),
                     modifier = Modifier.size(19.dp)
                 )
             }
@@ -417,14 +431,14 @@ private fun SuggestionRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.92f),
+                color = Color(0xFF282530),
                 maxLines = 1
             )
             if (subtitle.isNotBlank()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.43f),
+                    color = Color(0xFF747080),
                     maxLines = 1
                 )
             }
@@ -459,10 +473,10 @@ private fun AcrylicGlow(modifier: Modifier = Modifier) {
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0x335D4BFF),
-                        Color(0x4450DDB8),
-                        Color(0x55B8FF3D),
-                        Color(0x335D4BFF)
+                        Color(0x334C55DA),
+                        Color(0x444B6DCE),
+                        Color(0x554E55D8),
+                        Color(0x334C55DA)
                     )
                 ),
                 shape = RoundedCornerShape(52.dp)
