@@ -193,17 +193,17 @@ private fun HomeMark(modifier: Modifier = Modifier) {
             return Path().apply {
                 moveTo(sx.toFloat(), sy.toFloat())
                 cubicTo(
-                    (cx + cos(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
-                    (cy + sin(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
-                    (cx + cos(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
-                    (cy + sin(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
+                    (cx.toDouble() + cos(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
+                    (cy.toDouble() + sin(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
+                    (cx.toDouble() + cos(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
+                    (cy.toDouble() + sin(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
                     ex.toFloat(), ey.toFloat()
                 )
                 cubicTo(
-                    (cx + cos(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
-                    (cy + sin(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
-                    (cx + cos(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
-                    (cy + sin(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
+                    (cx.toDouble() + cos(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
+                    (cy.toDouble() + sin(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
+                    (cx.toDouble() + cos(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
+                    (cy.toDouble() + sin(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
                     sx.toFloat(), sy.toFloat()
                 )
             }
