@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.ai.ModelInfo
 import com.dude555afk.xeno.core.ai.ProviderPresets
