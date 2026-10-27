@@ -81,6 +81,7 @@ fun BrowserToolsSheet(
     activeSpaceId: Long?,
     isPrivateMode: Boolean,
     autoOpenKeyboard: Boolean,
+    searchEngineId: String,
     currentSiteHost: String,
     sitePermissions: SitePermissions,
     currentTitle: String,
@@ -101,6 +102,7 @@ fun BrowserToolsSheet(
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
     onAutoOpenKeyboardChange: (Boolean) -> Unit,
+    onSearchEngineChange: (String) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onCopyCurrentUrl: () -> Unit,
@@ -150,24 +152,35 @@ fun BrowserToolsSheet(
                 animationSpec = androidx.compose.animation.core.tween(150)
             )
     ) {
+        val isMenuSheet = panel == BrowserPanel.MENU
         Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.64f)).clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().imePadding().fillMaxHeight(
-                    if (panel == BrowserPanel.MENU) 0.82f else 0.84f
-                ).clickable(
+            Modifier.fillMaxSize()
+                .background(if (isMenuSheet) Color.Black.copy(alpha = 0.22f) else Color(0xFFF8F6FB))
+                .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { },
-                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = Color(0xFF090909),
+                ) { onDismiss() },
+            contentAlignment = if (isMenuSheet) Alignment.BottomCenter else Alignment.TopCenter
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()
+                    .fillMaxHeight(if (isMenuSheet) 0.84f else 1f)
+                    .then(
+                        if (isMenuSheet) Modifier
+                        else Modifier
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                    )
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { },
+                shape = if (isMenuSheet) RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp) else RoundedCornerShape(0.dp),
+                color = Color(0xFFFCFAFE),
                 border = BorderStroke(1.dp, StrokeSubtle),
-                shadowElevation = 20.dp
+                shadowElevation = if (isMenuSheet) 18.dp else 0.dp
             ) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
@@ -182,7 +195,7 @@ fun BrowserToolsSheet(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 when (panel) {
-                                    BrowserPanel.MENU -> "Xeno"
+                                    BrowserPanel.MENU -> "Browser controls"
                                     BrowserPanel.HISTORY -> "History"
                                     BrowserPanel.BOOKMARKS -> "Bookmarks"
                                     BrowserPanel.DOWNLOADS -> "Downloads"
@@ -199,12 +212,12 @@ fun BrowserToolsSheet(
                             )
                             Text(
                                 when (panel) {
-                                    BrowserPanel.MENU -> "Your browser, your rules."
+                                    BrowserPanel.MENU -> "Actions for this page"
                                     BrowserPanel.HISTORY -> if (isPrivateMode) "Temporary private history" else "Stored on this device"
                                     BrowserPanel.BOOKMARKS -> "Your saved pages"
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
-                                    BrowserPanel.SETTINGS -> "AI provider and preferences"
+                                    BrowserPanel.SETTINGS -> "Search, privacy and AI preferences"
                                     BrowserPanel.TRANSLATE -> "Choose a target language"
                                     BrowserPanel.SPACES -> "Organize your workspaces"
                                     BrowserPanel.SITE_SETTINGS -> currentSiteHost
@@ -333,7 +346,7 @@ fun BrowserToolsSheet(
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 items(downloads, key = { it.id }) { item ->
-                                    Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(16.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(Modifier.fillMaxWidth().background(Color(0xFFF3F0F8), RoundedCornerShape(16.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Rounded.Download, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
                                         Column(Modifier.weight(1f).padding(start = 10.dp)) {
                                             Text(item.title, color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -528,6 +541,44 @@ fun BrowserToolsSheet(
                                         enabled = !isPrivateMode
                                     )
                                 }
+                                Text(
+                                    text = "SEARCH ENGINE",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 1.dp)
+                                )
+                                listOf(
+                                    "brave" to "Brave Search",
+                                    "duckduckgo" to "DuckDuckGo",
+                                    "google" to "Google",
+                                    "bing" to "Bing",
+                                    "startpage" to "Startpage"
+                                ).chunked(3).forEach { engineRow ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        engineRow.forEach { (id, label) ->
+                                            FilterChip(
+                                                selected = searchEngineId == id,
+                                                onClick = { onSearchEngineChange(id) },
+                                                label = { Text(label, maxLines = 1) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = "AI PROVIDER",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 1.dp)
+                                )
                                 InfoCard(
                                     selectedPreset.displayName,
                                     when {
@@ -777,8 +828,8 @@ private fun SpaceManagementRow(
 private fun MenuAction(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.045f),
+        shape = RoundedCornerShape(17.dp),
+        color = Color.White,
         border = BorderStroke(1.dp, StrokeSubtle)
     ) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -796,7 +847,7 @@ private fun InfoCard(title: String, body: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.04f),
+        color = Color(0xFFF3F0F8),
         border = BorderStroke(1.dp, StrokeSubtle)
     ) {
         Column(Modifier.padding(16.dp)) {

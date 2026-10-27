@@ -22,6 +22,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,6 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,6 +80,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.PrivateBrowserActivity
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.core.model.SiteCapability
+import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
 import com.dude555afk.xeno.ui.summary.SummarySheet
 import com.dude555afk.xeno.ui.tabstack.TabStackSheet
@@ -183,7 +186,18 @@ fun BrowserScreen(
         ) {
             HomeScreen(
                 onNewSearch = viewModel::openPalette,
-                onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) }
+                onOpenTabs = viewModel::toggleTabStack,
+                onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) },
+                onVoiceSearch = {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Search the web")
+                    }
+                    runCatching { voiceSearchLauncher.launch(intent) }
+                        .onFailure {
+                            Toast.makeText(context, "Voice search is unavailable on this device.", Toast.LENGTH_SHORT).show()
+                        }
+                }
             )
         }
 
@@ -238,6 +252,9 @@ fun BrowserScreen(
                 onBack = viewModel::goBack,
                 onForward = viewModel::goForward,
                 onReloadOrStop = viewModel::refreshOrStop,
+                tabs = state.tabs,
+                activeTabId = state.activeTab?.id,
+                onSelectTab = viewModel::selectTab,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -254,13 +271,13 @@ fun BrowserScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth().clickable(onClick = viewModel::refreshOrStop),
                     shape = PillShape,
-                    color = Color(0xFF1C1C1C),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
+                    color = Color(0xFFFCFAFE),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA))
                 ) {
                     Text(
                         text = "Page couldn't load · ${error.take(72)} · Tap to retry",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = Color(0xFF37313F),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -323,7 +340,8 @@ fun BrowserScreen(
             onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
             onClose = viewModel::closeTab,
             onNewTab = viewModel::newTab,
-            onDismiss = viewModel::toggleTabStack
+            onDismiss = viewModel::toggleTabStack,
+            onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) }
         )
 
         AnswerSheet(
@@ -359,6 +377,7 @@ fun BrowserScreen(
             activeSpaceId = state.activeSpace?.id,
             isPrivateMode = state.isPrivateMode,
             autoOpenKeyboard = state.autoOpenKeyboard,
+            searchEngineId = state.searchEngineId,
             currentSiteHost = state.currentSiteHost,
             sitePermissions = state.sitePermissions,
             currentTitle = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
@@ -379,6 +398,7 @@ fun BrowserScreen(
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
             onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
+            onSearchEngineChange = viewModel::setSearchEngine,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
             onCopyCurrentUrl = viewModel::copyCurrentUrl,
@@ -524,6 +544,9 @@ private fun FloatingBar(
     onBack: () -> Unit,
     onForward: () -> Unit,
     onReloadOrStop: () -> Unit,
+    tabs: List<Tab>,
+    activeTabId: Long?,
+    onSelectTab: (Tab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -536,14 +559,33 @@ private fun FloatingBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .pointerInput(tabs, activeTabId) {
+                var dragDistance = 0f
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, amount ->
+                        dragDistance += amount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        val currentIndex = tabs.indexOfFirst { it.id == activeTabId }
+                        if (currentIndex >= 0 && dragDistance <= -42f) {
+                            tabs.getOrNull(currentIndex + 1)?.let(onSelectTab)
+                        } else if (currentIndex > 0 && dragDistance >= 42f) {
+                            tabs.getOrNull(currentIndex - 1)?.let(onSelectTab)
+                        }
+                        dragDistance = 0f
+                    },
+                    onDragCancel = { dragDistance = 0f }
+                )
+            }
             .animateContentSize(animationSpec = tween(durationMillis = 230))
             .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
         if (expanded) {
             Surface(
                 shape = PillShape,
-                color = Color(0xF2161616),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color(0xF7FCFAFE),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(vertical = 4.dp)) {
@@ -589,13 +631,13 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.66f),
+                                tint = Color(0xFF777180),
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(Modifier.width(7.dp))
                             Text(
                                 text = displayUrl.ifBlank { "Search or enter address" },
-                                color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.9f),
+                                color = if (displayUrl.isBlank()) Color(0xFF898392) else Color(0xFF37313F),
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -606,7 +648,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                                 contentDescription = if (loading) "Stop loading" else "Reload page",
-                                tint = Color.White.copy(alpha = 0.78f),
+                                tint = Color(0xFF575161),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -614,7 +656,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.MoreHoriz,
                                 contentDescription = "Browser menu",
-                                tint = Color.White.copy(alpha = 0.78f),
+                                tint = Color(0xFF575161),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -654,8 +696,8 @@ private fun FloatingBar(
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color(0xEFFFFFFF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
                 onClick = onOpenTabs,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -663,7 +705,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color.White.copy(alpha = 0.91f),
+                        tint = Color(0xFF37313F),
                         modifier = Modifier.size(23.dp)
                     )
                 }
@@ -690,8 +732,8 @@ private fun FloatingBar(
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color(0xEFFFFFFF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5DFEA)),
                 onClick = { expanded = !expanded },
                 modifier = Modifier.size(48.dp)
             ) {
@@ -699,7 +741,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
                         contentDescription = if (expanded) "Collapse browser controls" else "Show browser controls",
-                        tint = Color.White.copy(alpha = 0.9f),
+                        tint = Color(0xFF37313F),
                         modifier = Modifier.size(23.dp)
                     )
                 }
@@ -723,6 +765,6 @@ private fun ExpandedTool(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = 0.82f), modifier = Modifier.size(19.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF777180))
     }
 }
