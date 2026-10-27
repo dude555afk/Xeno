@@ -58,8 +58,15 @@ class SettingsStore(context: Context) {
         set(value) = prefs.edit { putBoolean(KEY_FINGERPRINTING_PROTECTION, value) }
 
     var autoOpenKeyboard: Boolean
-        get() = prefs.getBoolean(KEY_AUTO_OPEN_KEYBOARD, false)
+        get() = prefs.getBoolean(KEY_AUTO_OPEN_KEYBOARD, true)
         set(value) = prefs.edit { putBoolean(KEY_AUTO_OPEN_KEYBOARD, value) }
+
+    var searchEngineId: String
+        get() = prefs.getString(KEY_SEARCH_ENGINE, "brave") ?: "brave"
+        set(value) {
+            val safe = value.takeIf { it in SUPPORTED_SEARCH_ENGINES } ?: "brave"
+            prefs.edit { putString(KEY_SEARCH_ENGINE, safe) }
+        }
 
     var activeSpaceId: Long
         get() = prefs.getLong(KEY_SPACE, 1L)
@@ -258,6 +265,8 @@ class SettingsStore(context: Context) {
         const val KEY_THIRD_PARTY_COOKIES = "third_party_cookies_enabled"
         const val KEY_FINGERPRINTING_PROTECTION = "fingerprinting_protection_enabled"
         const val KEY_AUTO_OPEN_KEYBOARD = "auto_open_keyboard"
+        const val KEY_SEARCH_ENGINE = "search_engine"
+        val SUPPORTED_SEARCH_ENGINES = setOf("brave", "duckduckgo", "google", "bing", "startpage")
         const val KEY_SPACE = "active_space"
         const val KEY_ACTIVE_TAB_PREFIX = "active_tab_space_"
         const val ANDROID_KEYSTORE = "AndroidKeyStore"

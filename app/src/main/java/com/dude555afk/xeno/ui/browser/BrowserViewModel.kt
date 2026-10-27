@@ -108,7 +108,8 @@ data class BrowserUiState(
     val findMatches: Int = 0,
     val findActiveMatch: Int = 0,
     val paletteVisible: Boolean = false,
-    val autoOpenKeyboard: Boolean = false,
+    val autoOpenKeyboard: Boolean = true,
+    val searchEngineId: String = "brave",
     val query: String = "",
     val isQuestion: Boolean = false,
     val historyHints: List<SearchHit> = emptyList(),
@@ -189,6 +190,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
             autoOpenKeyboard = settings.autoOpenKeyboard,
+            searchEngineId = settings.searchEngineId,
             thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = settings.fingerprintingProtectionEnabled,
             hasApiKey = settings.hasApiKey,
@@ -1046,6 +1048,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(autoOpenKeyboard = enabled) }
     }
 
+    fun setSearchEngine(engineId: String) {
+        settings.searchEngineId = engineId
+        _state.update { it.copy(searchEngineId = settings.searchEngineId) }
+    }
+
     fun onQueryChange(q: String) {
         _state.update { it.copy(query = q, isQuestion = engine.isQuestion(q)) }
         refreshHistoryHints(q)
@@ -1156,7 +1163,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val q = raw.trim()
         if (q.isEmpty()) return
 
-        val url = NavigationResolver.resolve(q) ?: return
+        val url = NavigationResolver.resolve(q, settings.searchEngineId) ?: return
 
         closePalette()
         closeFindInPage()
