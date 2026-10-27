@@ -641,44 +641,41 @@ private fun FloatingBar(
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color.Transparent,
                 onClick = onOpenTabs,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color.White.copy(alpha = 0.91f),
-                        modifier = Modifier.size(23.dp)
+                        tint = Color.White.copy(alpha = 0.86f),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
             Surface(
-                shape = CircleShape,
-                color = Color(0xFF303030),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                shape = RoundedCornerShape(50),
+                color = Color(0xFFF2F2F5),
                 onClick = onNewTab,
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier.size(width = 54.dp, height = 42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "New search",
-                        tint = Color.White,
-                        modifier = Modifier.size(27.dp)
+                        tint = Color(0xFF17171B),
+                        modifier = Modifier.size(25.dp)
                     )
                 }
             }
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color.Transparent,
                 onClick = { expanded = !expanded },
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
