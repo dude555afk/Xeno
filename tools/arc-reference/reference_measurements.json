@@ -3625,6 +3625,66 @@
           "x": 1190,
           "y": 620,
           "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-upper-left",
+          "x": 126,
+          "y": 609,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-lower-left",
+          "x": 132,
+          "y": 622,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-upper-right",
+          "x": 169,
+          "y": 609,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-lower-right",
+          "x": 174,
+          "y": 621,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-background-left-neighbor",
+          "x": 116,
+          "y": 615,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-background-right-neighbor",
+          "x": 184,
+          "y": 615,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-button-upper-left-interior",
+          "x": 507,
+          "y": 335,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-button-lower-interior",
+          "x": 540,
+          "y": 350,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-query-capsule-interior-left",
+          "x": 326,
+          "y": 285,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-query-capsule-interior-right",
+          "x": 575,
+          "y": 285,
+          "coordinateBasis": "downloaded-source-pixel-space"
         }
       ]
     },
