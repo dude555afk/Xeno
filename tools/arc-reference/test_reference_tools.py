@@ -41,7 +41,7 @@ class ArcReferenceToolTests(unittest.TestCase):
         for item in self.manifest["items"]:
             self.assertNotIn(item["id"], seen_ids)
             seen_ids.add(item["id"])
-            width, height = item["previewCanvasPx"]
+            width, height = item["coordinateCanvasPx"]
             for region in item.get("regions", []):
                 left, top, right, bottom = region["bbox"]
                 self.assertGreaterEqual(left, 0, (item["id"], region["name"]))
@@ -51,7 +51,7 @@ class ArcReferenceToolTests(unittest.TestCase):
                 self.assertLessEqual(right, width, (item["id"], region["name"]))
                 self.assertLessEqual(bottom, height, (item["id"], region["name"]))
                 self.assertEqual(
-                    region["sizePreviewPx"],
+                    region["sizeCoordinatePx"],
                     [right - left, bottom - top],
                     (item["id"], region["name"]),
                 )
