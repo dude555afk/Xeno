@@ -33,6 +33,7 @@ jobs:
             --manifest tools/arc-reference/reference_measurements.json \
             --out artifacts/arc-reference/source_pixel_analysis.json \
             --contact-sheet artifacts/arc-reference/annotated-contact-sheet.jpg \
+            --annotated-dir artifacts/arc-reference/annotated-sources \
             --delay-ms 150
 
       - name: Upload derived measurements only
@@ -43,5 +44,6 @@ jobs:
           path: |
             artifacts/arc-reference/source_pixel_analysis.json
             artifacts/arc-reference/annotated-contact-sheet.jpg
+            artifacts/arc-reference/annotated-sources/
           if-no-files-found: warn
           retention-days: 7
