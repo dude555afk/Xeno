@@ -110,13 +110,15 @@ fun CommandPalette(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                // Pixel probes from the dark Arc Android search screen:
+                // upper-left #1C192E, upper-right #3D242A, lower edge #2D2E32.
+                // This is a restrained dark ambient wash, not the home-screen gradient.
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF251126),
-                            Color(0xFF30154D),
-                            Color(0xFF542A82),
-                            Color(0xFFB64D8F)
+                        colorStops = arrayOf(
+                            0.0f to Color(0xFF1C192E),
+                            0.24f to Color(0xFF3D242A),
+                            1.0f to Color(0xFF2D2E32)
                         )
                     )
                 )
@@ -148,7 +150,7 @@ fun CommandPalette(
 
                 Surface(
                     shape = RoundedCornerShape(27.dp),
-                    color = Color(0xFF25232D),
+                    color = Color(0xFF4F5052),
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
