@@ -200,7 +200,9 @@ fun BrowserScreen(
                         .onFailure {
                             Toast.makeText(context, "Voice search is unavailable on this device.", Toast.LENGTH_SHORT).show()
                         }
-                }
+                },
+                pinnedPages = state.pinnedPages,
+                onOpenPinnedPage = viewModel::openPinnedPage
             )
         }
 
