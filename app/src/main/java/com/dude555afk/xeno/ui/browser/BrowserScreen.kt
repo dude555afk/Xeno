@@ -298,6 +298,7 @@ fun BrowserScreen(
             onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
             onClose = viewModel::closeTab,
             onNewTab = viewModel::newTab,
+            onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) },
             onDismiss = viewModel::toggleTabStack
         )
 
