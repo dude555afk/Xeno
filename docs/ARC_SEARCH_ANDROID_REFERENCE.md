@@ -323,3 +323,14 @@ The forensic report also documents and measures:
 - a settings-page taxonomy from an independent Android launch image, separated from exact geometry because it is a combined editorial composition.
 
 The current manifest validates at 37 records / 208 region boxes, with no out-of-bounds or stale normalized geometry. Exact raw source colors and animation timing are still pending locally available original image/video files or direct-device recording.
+
+
+### Raw-file pixel pass completed
+
+- 32 unique public image URLs were attempted; **31 decoded successfully**. One WordPress proxy URL returned HTTP 404 and is marked unavailable.
+- The analyzer has measured **191 image-region ROIs** and **45 exact point probes** on 18 assets; metadata includes downloaded dimensions, MIME/content type, byte length and SHA-256.
+- Samples from three 1080 × 2520 Browse for Me screenshots confirm distinct near-black values for top/system band `#1E2128`, reading canvas `#1D2027`, and bottom dock `#2D2E32`. The same dock sample repeats in separate answer screenshots and in the 1200 × 667 Clubic montage.
+- Two independent publishers' onboarding images yield matching exact sampled values for the indigo search tutorial (`#3339F1`), light suggestion sheet (`#ECECEE`) and white default-browser page (`#FFFFFF`); other pages have their own distinct coral, cyan, blue and peach colors.
+- The detailed exact-sample tables, image hashes and region statistics are documented in [ARC_SCREENSHOT_FORENSICS.md](ARC_SCREENSHOT_FORENSICS.md). Regenerate the machine-readable data via [fetch_source_pixels.py](../tools/arc-reference/fetch_source_pixels.py) and the [analysis workflow](../.github/workflows/analyze-arc-reference-assets.yml).
+
+The point values are exact RGB samples from the downloaded file bytes. Bounding boxes were visually estimated and transformed into source-pixel coordinates, so region statistics are exact for the sampled rectangles while rectangle boundaries remain approximate. No dp conversion or animation timings are claimed without display-density metadata or screen recordings.
