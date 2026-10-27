@@ -1,3 +1,5 @@
+> **Status: legacy assumptions, not the source of truth for Arc parity.** This document predates the evidence review and contains unmeasured design choices, including assumed default-dark surfaces and invented animation timings. Do not use its colors, positions, or durations as measured Arc specifications. The canonical reference is [ARC_SEARCH_ANDROID_REFERENCE.md](ARC_SEARCH_ANDROID_REFERENCE.md). Re-derive visual tokens and motion values from Android captures before implementation; keep Xeno's engineering/privacy constraints only where they do not conflict with measured reference behavior.
+
 # Xeno Design Language
 
 Xeno follows **Arc Search's mobile interaction model**, adapted for Android and Xeno's own branding. This is not the desktop Arc sidebar squeezed onto a phone. The interface should feel quiet, immediate, and built around one central action: search.
