@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
+import android.speech.RecognizerIntent
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -116,6 +117,17 @@ fun BrowserScreen(
     ) { results ->
         if (results.values.none { it }) viewModel.setSitePermission(SiteCapability.LOCATION, false)
     }
+    val voiceSearchLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+                ?.takeIf { it.isNotBlank() }
+                ?.let(viewModel::onQueryChange)
+        }
+    }
 
     // Android back should unwind browser surfaces before leaving the app.
     BackHandler(
@@ -169,7 +181,10 @@ fun BrowserScreen(
                 animationSpec = tween(150)
             )
         ) {
-            HomeScreen()
+            HomeScreen(
+                onNewSearch = viewModel::openPalette,
+                onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) }
+            )
         }
 
         // Keep private browsing visibly distinct without a permanent top toolbar.
@@ -196,7 +211,7 @@ fun BrowserScreen(
         // and conventional browser controls behind the upward chevron. The bar
         // follows page scroll direction and stays out of the keyboard workflow.
         AnimatedVisibility(
-            visible = state.chromeVisible && !state.paletteVisible && !keyboardVisible,
+            visible = !isHome && state.chromeVisible && !state.paletteVisible && !keyboardVisible,
             enter = fadeIn(tween(170)) + scaleIn(
                 initialScale = 0.94f,
                 animationSpec = tween(210)
@@ -284,7 +299,20 @@ fun BrowserScreen(
                 viewModel.selectTab(tab)
                 viewModel.closePalette()
             },
-            onDismiss = viewModel::closePalette
+            onDismiss = viewModel::closePalette,
+            recentHistory = state.historyEntries.take(6).map {
+                com.dude555afk.xeno.core.model.SearchHit(it.url, it.title)
+            },
+            onVoiceSearch = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Search the web")
+                }
+                runCatching { voiceSearchLauncher.launch(intent) }
+                    .onFailure {
+                        Toast.makeText(context, "Voice search is unavailable on this device.", Toast.LENGTH_SHORT).show()
+                    }
+            }
         )
 
         TabStackSheet(
@@ -306,7 +334,8 @@ fun BrowserScreen(
                 viewModel.navigate(source.url)
                 viewModel.dismissAnswer()
             },
-            onDismiss = viewModel::dismissAnswer
+            onDismiss = viewModel::dismissAnswer,
+            onFollowUp = viewModel::ask
         )
 
         SummarySheet(
@@ -329,6 +358,7 @@ fun BrowserScreen(
             spaces = state.spaces,
             activeSpaceId = state.activeSpace?.id,
             isPrivateMode = state.isPrivateMode,
+            autoOpenKeyboard = state.autoOpenKeyboard,
             currentSiteHost = state.currentSiteHost,
             sitePermissions = state.sitePermissions,
             currentTitle = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
@@ -348,6 +378,7 @@ fun BrowserScreen(
             settingsError = state.settingsError,
             onDismiss = viewModel::closePanel,
             onOpenPanel = viewModel::openPanel,
+            onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
             onCopyCurrentUrl = viewModel::copyCurrentUrl,
@@ -638,21 +669,21 @@ private fun FloatingBar(
                 }
             }
 
-            // Arc Search's central action is a search pill, not a generic plus
-            // button. Creating a tab opens the focused search palette automatically.
+            // Arc's persistent middle action is the plus. Search opens from
+            // the new tab it creates; using a magnifying glass here was the wrong affordance.
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = Color(0xFF343438),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+                color = Color(0xFFF5F0FA),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
                 onClick = onNewTab,
-                modifier = Modifier.size(width = 70.dp, height = 48.dp)
+                modifier = Modifier.size(width = 58.dp, height = 42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = "Search or ask",
-                        tint = Color.White,
-                        modifier = Modifier.size(23.dp)
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "New search",
+                        tint = Color(0xFF34255F),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

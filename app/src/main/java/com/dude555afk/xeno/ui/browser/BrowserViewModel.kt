@@ -108,6 +108,7 @@ data class BrowserUiState(
     val findMatches: Int = 0,
     val findActiveMatch: Int = 0,
     val paletteVisible: Boolean = false,
+    val autoOpenKeyboard: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
     val historyHints: List<SearchHit> = emptyList(),
@@ -187,6 +188,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
+            autoOpenKeyboard = settings.autoOpenKeyboard,
             thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = settings.fingerprintingProtectionEnabled,
             hasApiKey = settings.hasApiKey,
@@ -290,7 +292,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                                 // Arc Search's launch is search-first. Open the
                                 // palette once when a blank tab is first restored.
                                 paletteVisible = current.paletteVisible ||
-                                    (current.activeTab == null && active != null && active.url.isBlank())
+                                    (current.activeTab == null && active != null &&
+                                        active.url.isBlank() && settings.autoOpenKeyboard)
                             )
                         }
                     }
@@ -945,7 +948,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             )
             selectTab(Tab(id = id, spaceId = spaceId, position = position))
             _state.update {
-                it.copy(tabStackVisible = false, paletteVisible = initialUrl.isNullOrBlank())
+                it.copy(
+                    tabStackVisible = false,
+                    paletteVisible = initialUrl.isNullOrBlank(),
+                    query = "",
+                    historyHints = emptyList(),
+                    isQuestion = false
+                )
             }
         }
     }
@@ -1021,11 +1030,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: palette
 
     fun openPalette() {
-        _state.update { it.copy(paletteVisible = true) }
+        _state.update {
+            it.copy(paletteVisible = true, query = "", historyHints = emptyList(), isQuestion = false)
+        }
     }
 
     fun closePalette() {
-        _state.update { it.copy(paletteVisible = false) }
+        _state.update {
+            it.copy(paletteVisible = false, query = "", historyHints = emptyList(), isQuestion = false)
+        }
+    }
+
+    fun setAutoOpenKeyboard(enabled: Boolean) {
+        settings.autoOpenKeyboard = enabled
+        _state.update { it.copy(autoOpenKeyboard = enabled) }
     }
 
     fun onQueryChange(q: String) {

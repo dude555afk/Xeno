@@ -8,12 +8,13 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +22,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,40 +36,37 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Tab
-import com.dude555afk.xeno.ui.theme.Dimens
-import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.XenoMotion
 
 /**
- * The command palette — the centre of the whole UI.
- *
- * Dual-purpose by design: hit **Go** and it navigates, hit **Ask Xeno** and the
- * same query routes to the answer engine. One keystroke apart, no mode
- * switching, exactly the way Arc's bar feels.
- *
- * Enters with a spring, never a slide — see docs/DESIGN.md.
+ * Full-screen Arc Search-style query surface. Ordinary search is the default
+ * action; Browse for Me is an explicit action attached to a query suggestion.
  */
 @Composable
 fun CommandPalette(
@@ -82,18 +81,15 @@ fun CommandPalette(
     onNavigate: (String) -> Unit,
     onAsk: (String) -> Unit,
     onOpenTab: (Tab) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    recentHistory: List<SearchHit> = emptyList(),
+    onVoiceSearch: () -> Unit = {}
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
-    // Arc Search opens directly into an active search field. Request focus only
-    // when the palette becomes visible so the keyboard does not flash on startup.
     LaunchedEffect(visible) {
         if (visible) {
-            // Wait until the overlay and its text field have been laid out.
-            // Requesting focus during the enter transition can race the IME on
-            // some Android keyboards, leaving the search bar visible but inert.
             withFrameNanos { }
             runCatching { focusRequester.requestFocus() }
             withFrameNanos { }
@@ -105,194 +101,341 @@ fun CommandPalette(
 
     AnimatedVisibility(
         visible = visible,
+        modifier = Modifier.fillMaxSize(),
         enter = fadeIn(XenoMotion.backdropFade()) +
-            scaleIn(initialScale = 0.92f, animationSpec = XenoMotion.overlaySpring()),
-        exit = fadeOut(androidx.compose.animation.core.tween(200)) +
-            scaleOut(
-                targetScale = 0.95f,
-                animationSpec = androidx.compose.animation.core.tween(200)
-            )
+            scaleIn(initialScale = 0.985f, animationSpec = XenoMotion.overlaySpring()),
+        exit = fadeOut(androidx.compose.animation.core.tween(140)) +
+            scaleOut(targetScale = 0.985f, animationSpec = androidx.compose.animation.core.tween(140))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.72f))
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    keyboard?.hide()
-                    onDismiss()
-                },
-            contentAlignment = Alignment.BottomCenter
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF4D39BC),
+                            Color(0xFF9270E8),
+                            Color(0xFFEAA6CB),
+                            Color(0xFFFFD3D9)
+                        )
+                    )
+                )
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceXl)
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .imePadding()
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { /* swallow so the backdrop isn't dismissed */ }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                // The bar itself — a pill, docked at the bottom.
-                Surface(
-                    shape = RoundedCornerShape(percent = 50),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
-                    shadowElevation = 0.dp
+                IconButton(
+                    onClick = {
+                        keyboard?.hide()
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .padding(start = 1.dp, top = 1.dp)
+                        .size(38.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimens.spaceL, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.width(Dimens.spaceM))
-
-                        BasicTextField(
-                            value = query,
-                            onValueChange = onQueryChange,
-                            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            cursorBrush = SolidColor(accent),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                            keyboardActions = KeyboardActions(
-                                onGo = {
-                                    keyboard?.hide()
-                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
-                                },
-                                onSearch = {
-                                    keyboard?.hide()
-                                    if (isQuestion) onAsk(query.trim()) else onNavigate(query.trim())
-                                }
-                            ),
-                            decorationBox = { inner ->
-                                if (query.isEmpty()) {
-                                    Text(
-                                        text = "Search or ask anything",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                inner()
-                            }
-                        )
-
-                        if (query.isNotBlank()) {
-                            // The dual mode — this button is the whole trick.
-                            // The label reflects what the heuristic thinks, so
-                            // the user knows which one the keyboard Go key is
-                            // about to do. Both paths stay reachable regardless.
-                            TextButton(
-                                onClick = { keyboard?.hide(); onAsk(query.trim()) },
-                                shape = PillShape,
-                                colors = ButtonDefaults.textButtonColors(
-                                    containerColor = accent,
-                                    contentColor = Color.Black
-                                )
-                            ) {
-                                Text(
-                                    text = if (isQuestion) "Ask" else "Ask anyway",
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(Dimens.spaceM))
-
-                // Suggestions — tabs and history, fuzzy filtered by the caller.
-                if (query.isNotBlank() && (tabHints.isNotEmpty() || historyHints.isNotEmpty())) {
-                    Surface(
-                        shape = RoundedCornerShape(Dimens.cardRadius),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        tonalElevation = 0.dp,
-                        shadowElevation = 0.dp,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.heightIn(max = 320.dp),
-                            contentPadding = PaddingValues(vertical = Dimens.spaceS)
-                        ) {
-                            items(tabHints, key = { "tab-${it.id}" }) { tab ->
-                                SuggestionRow(
-                                    icon = Icons.Rounded.Article,
-                                    title = tab.displayTitle,
-                                    subtitle = tab.url,
-                                    onClick = { keyboard?.hide(); onOpenTab(tab) }
-                                )
-                            }
-                            items(historyHints, key = { "hist-${it.url}" }) { hit ->
-                                SuggestionRow(
-                                    icon = Icons.Rounded.History,
-                                    title = hit.title.ifBlank { hit.url },
-                                    subtitle = hit.url,
-                                    onClick = { keyboard?.hide(); onNavigate(hit.url) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (loading) {
-                    Spacer(Modifier.height(Dimens.spaceL))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().clip(PillShape),
-                        color = accent
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBack,
+                        contentDescription = "Close search",
+                        tint = Color.White.copy(alpha = 0.92f)
                     )
                 }
+
+                Spacer(Modifier.weight(1f))
+
+                Surface(
+                    shape = RoundedCornerShape(27.dp),
+                    color = Color(0xFFF8F6FB),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f)),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 7.dp, top = 8.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = Color(0xFF5B536B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.size(10.dp))
+                            BasicTextField(
+                                value = query,
+                                onValueChange = onQueryChange,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .focusRequester(focusRequester),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = Color(0xFF211D2B),
+                                    fontSize = 16.sp
+                                ),
+                                cursorBrush = SolidColor(Color(0xFF5E48DE)),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = {
+                                        keyboard?.hide()
+                                        if (query.isNotBlank()) onNavigate(query.trim())
+                                    },
+                                    onGo = {
+                                        keyboard?.hide()
+                                        if (query.isNotBlank()) onNavigate(query.trim())
+                                    }
+                                ),
+                                decorationBox = { inner ->
+                                    if (query.isEmpty()) {
+                                        Text(
+                                            text = "Search or enter a URL",
+                                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                                            color = Color(0xFF827B8E)
+                                        )
+                                    }
+                                    inner()
+                                }
+                            )
+                            if (query.isNotBlank()) {
+                                IconButton(
+                                    onClick = { onQueryChange("") },
+                                    modifier = Modifier.size(35.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Close,
+                                        contentDescription = "Clear search",
+                                        tint = Color(0xFF6D6579),
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = onVoiceSearch,
+                                    modifier = Modifier.size(35.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Mic,
+                                        contentDescription = "Voice search",
+                                        tint = Color(0xFF6D6579),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (query.isNotBlank()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        keyboard?.hide()
+                                        onNavigate(query.trim())
+                                    }
+                                    .padding(start = 16.dp, end = 9.dp, top = 6.dp, bottom = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Search,
+                                    contentDescription = null,
+                                    tint = Color(0xFF776F88),
+                                    modifier = Modifier.size(19.dp)
+                                )
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 11.dp, end = 5.dp)
+                                ) {
+                                    Text(
+                                        text = query.trim(),
+                                        color = Color(0xFF282334),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "Search the web",
+                                        color = Color(0xFF898194),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                BrowseForMeButton(
+                                    enabled = !loading,
+                                    onClick = {
+                                        keyboard?.hide()
+                                        onAsk(query.trim())
+                                    }
+                                )
+                            }
+                        }
+
+                        val matchingTabs = tabHints.filter {
+                            query.isBlank() ||
+                                it.displayTitle.contains(query, ignoreCase = true) ||
+                                it.url.contains(query, ignoreCase = true)
+                        }.take(4)
+                        if (matchingTabs.isNotEmpty()) {
+                            PaletteSectionLabel(if (query.isBlank()) "Continue browsing" else "Open tabs")
+                            matchingTabs.forEach { tab ->
+                                PaletteSuggestionRow(
+                                    icon = Icons.Rounded.Article,
+                                    title = tab.displayTitle.ifBlank { tab.url },
+                                    subtitle = tab.url,
+                                    onClick = {
+                                        keyboard?.hide()
+                                        onOpenTab(tab)
+                                    }
+                                )
+                            }
+                        }
+
+                        val availableHistory = if (query.isBlank()) recentHistory else historyHints
+                        if (availableHistory.isNotEmpty()) {
+                            PaletteSectionLabel(if (query.isBlank()) "Recent pages" else "Suggestions")
+                            LazyColumn(
+                                modifier = Modifier.heightIn(max = 220.dp),
+                                contentPadding = PaddingValues(bottom = 7.dp)
+                            ) {
+                                items(availableHistory.take(6), key = { "history-${it.url}" }) { hit ->
+                                    PaletteSuggestionRow(
+                                        icon = Icons.Rounded.History,
+                                        title = hit.title.ifBlank { hit.url },
+                                        subtitle = hit.url,
+                                        browseQuery = if (query.isBlank()) null else hit.title.ifBlank { hit.url },
+                                        onBrowseForMe = {
+                                            keyboard?.hide()
+                                            onAsk(hit.title.ifBlank { hit.url })
+                                        },
+                                        onClick = {
+                                            keyboard?.hide()
+                                            onNavigate(hit.url)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        if (query.isBlank() && matchingTabs.isEmpty() && availableHistory.isEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 21.dp, vertical = 23.dp),
+                                verticalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Text(
+                                    "Search the web",
+                                    color = Color(0xFF302A3D),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    "Or use Browse for Me to turn a question into a sourced answer.",
+                                    color = Color(0xFF827B8E),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        if (loading) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color(0xFF5E48DE),
+                                trackColor = Color.Transparent
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(7.dp))
             }
         }
     }
 }
 
 @Composable
-private fun SuggestionRow(
-    icon: ImageVector,
+private fun PaletteSectionLabel(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.padding(start = 17.dp, top = 9.dp, bottom = 4.dp),
+        color = Color(0xFF928B9D),
+        style = MaterialTheme.typography.labelSmall,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.5.sp
+    )
+}
+
+@Composable
+private fun PaletteSuggestionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    browseQuery: String? = null,
+    onBrowseForMe: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceM),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
+            tint = Color(0xFF8A8298),
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(Modifier.width(Dimens.spaceM))
         Column(Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF2E2939),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (subtitle.isNotBlank()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
+                    color = Color(0xFF968FA1),
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+        if (browseQuery != null && onBrowseForMe != null) {
+            BrowseForMeButton(enabled = true, onClick = onBrowseForMe)
+        }
+    }
+}
+
+@Composable
+private fun BrowseForMeButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(18.dp),
+        color = Color(0xFF5848E8),
+        contentColor = Color.White
+    ) {
+        Text(
+            text = "Browse for me",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

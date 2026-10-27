@@ -80,6 +80,7 @@ fun BrowserToolsSheet(
     spaces: List<Space>,
     activeSpaceId: Long?,
     isPrivateMode: Boolean,
+    autoOpenKeyboard: Boolean,
     currentSiteHost: String,
     sitePermissions: SitePermissions,
     currentTitle: String,
@@ -99,6 +100,7 @@ fun BrowserToolsSheet(
     settingsError: String?,
     onDismiss: () -> Unit,
     onOpenPanel: (BrowserPanel) -> Unit,
+    onAutoOpenKeyboardChange: (Boolean) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onCopyCurrentUrl: () -> Unit,
@@ -512,6 +514,20 @@ fun BrowserToolsSheet(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                                        Text("Auto-open keyboard", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
+                                        Text("Start directly in search on launch", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    Switch(
+                                        checked = autoOpenKeyboard,
+                                        onCheckedChange = onAutoOpenKeyboardChange,
+                                        enabled = !isPrivateMode
+                                    )
+                                }
                                 InfoCard(
                                     selectedPreset.displayName,
                                     when {
