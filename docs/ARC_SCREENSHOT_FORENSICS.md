@@ -526,3 +526,60 @@ The current JSON manifest now contains **37 source-asset records and 208 named r
 - 5 iOS-only screenshots explicitly excluded from Android geometry.
 
 The manifest boxes were checked for bounds and internal width/height/normalized-coordinate consistency. Coordinates remain manually read from displayed image canvases, with uncertainty; they are not exact raw-image RGB or dp measurements.
+
+
+## Q. Raw encoded-file pixel analysis (not preview-only estimates)
+
+The source-pixel runner successfully downloaded and decoded **31 of 32 unique public image URLs** from the manifest. One source, `AA-WEB-01` (the 9to5Google image relayed by i0.wp.com), now returns HTTP 404 and has no pixel claims. Excluded iOS gallery captures are not attempted unless explicitly requested.
+
+The successful image decodes generated **191 region-level ROI measurements** and, after explicit probe coordinates were added, **45 exact single-pixel samples** across 18 image assets. The analysis records exact encoded dimensions, content type, downloaded byte count, final URL and SHA-256 for each file. Region-level outputs include the sampled box, center pixel RGB/HEX, inset-core median/mean/standard deviation, p10 and p90, plus the quantized 12-colour representative palette.
+
+### Q1. Exact samples from raw decoded image bytes
+
+These are RGB values returned by Pillow on GitHub Actions from the downloaded bytes, not color names guessed from the rendered browser preview. Coordinates are the encoded file's own pixel grid.
+
+| Asset / probe | File coordinate | Exact RGB / HEX | Interpretation |
+|---|---:|---|---|
+| AA-BFM-01 status-bar background | (20, 20) | RGB (30, 33, 40) / `#1E2128` | Top/system strip. |
+| AA-BFM-01 gap between query and carousel | (540, 320) | RGB (30, 33, 40) / `#1E2128` | Flat dark region between surfaces. |
+| AA-BFM-01 main content left margin | (20, 1200) | RGB (29, 32, 39) / `#1D2027` | Reading-canvas background. |
+| AA-BFM-01 query capsule right-interior probe | (1000, 180) | RGB (66, 69, 76) / `#42454C` | Exact pixel within capsule near its right edge. |
+| AA-BFM-01 bottom dock left inset | (20, 2470) | RGB (45, 46, 50) / `#2D2E32` | Dock background. |
+| AA-BFM-01 bottom dock right inset | (1060, 2470) | RGB (45, 46, 50) / `#2D2E32` | Same exact sample as the opposite inset. |
+| AA-BFM-02 bottom dock left inset | (20, 2470) | RGB (45, 46, 50) / `#2D2E32` | Cross-capture consistency. |
+| AA-BFM-03 main content left margin | (20, 900) | RGB (29, 32, 39) / `#1D2027` | Cross-capture canvas sample. |
+| Clubic montage search-screen lower background | (305, 600) | RGB (45, 46, 50) / `#2D2E32` | Repeated dark surface. |
+| Clubic montage Browse for Me gutter | (605, 300) | RGB (30, 31, 36) / `#1E1F24` | Dark answer-page canvas. |
+| Clubic montage controls left gutter | (905, 620) | RGB (45, 46, 50) / `#2D2E32` | Site-controls surface. |
+| Clubic montage controls right gutter | (1190, 620) | RGB (45, 46, 50) / `#2D2E32` | Same exact sample as the opposite gutter. |
+
+### Q2. Historical onboarding pixels independently reproduced by two sources
+
+| State | Android Authority exact sample | 9to5Google exact sample |
+|---|---|---|
+| Intro blue | `#2403AA` | `#2404AA` |
+| Coral feature tutorial | `#E1686F` | `#E1686E` |
+| Indigo search tutorial | `#3339F1` | `#3339F1` |
+| Light suggestion sheet | `#ECECEE` | `#ECECEE` |
+| Cyan ad-block tutorial | `#6EBBD9` | `#6DBAD9` |
+| White default-browser state | `#FFFFFF` | `#FFFFFF` |
+| Peach footer | `#FEE2DF` | `#FEE2E0` |
+
+Differences of one channel level across two separately published JPEG/WebP encodes are expected; they do not prove the original design tokens differ. The key result is that the sampled states are reproducible across independent publishers. They are onboarding-page colors, not a universal current-app theme.
+
+### Q3. Encoded-file provenance examples
+
+| Asset | Encoded format and dimensions | Bytes | SHA-256 |
+|---|---|---:|---|
+| AA-BFM-01 | JPEG, 1080 × 2520 | 313,228 | `50e1fe89b3e616ee86f2164eb4de6b8bbaef759d8dae334a13fbd495a63912fa` |
+| AA-BFM-02 | JPEG, 1080 × 2520 | 299,672 | `d81d1b3b445f212f4f75b61817db6f9cd87938b096c70f9f9fa3102a86fea344` |
+| AA-BFM-03 | JPEG, 1080 × 2520 | 296,117 | `46a1e013edfc0f617c9448414094840f401673b7be30205e027055a70a542311` |
+| 9TO5-ONB-01 | WebP, 460 × 1024 | 15,864 | `988eba9b7df87e09c887dbfe74f7cb4370503bab49839d4e620b34a07a13cbe5` |
+| 9TO5-ONB-04 | WebP, 460 × 1024 | 58,362 | `b09f06dac06472a89e26fa56439d60db10903cbd0ce1744c3b3fa2361fb81e89` |
+| Clubic four-screen montage | JPEG, 1200 × 667 | 110,397 | `1415d7c90a726d8edf0da0bafc45dce51bff41a140ab39d9056d94ff7ebc2552` |
+
+### Q4. Reproducible data files
+
+The latest source-analysis run is [Analyze Arc Reference Pixels, commit f1378086](https://github.com/dude555afk/Xeno/actions/runs/40559673319). Its short-retention GitHub Actions artifact contains the complete JSON results with all exact image metadata, point samples, ROI statistics and per-image palette data. The repository includes the fetch/measurement script and manifest so the data can be regenerated.
+
+The analysis does **not** claim that all 191 ROI rectangles represent pure design tokens: full-screen regions can include text, icons, clipping edges or images. Use the dedicated exact point probes and low-variance surface interiors for token investigation. Exact Android dp measurements still require device density / display metadata; animation duration/easing requires a screen recording with known frame timing.
