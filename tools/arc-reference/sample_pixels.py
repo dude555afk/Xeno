@@ -116,7 +116,7 @@ def load_manifest_boxes(
     if asset is None:
         raise ValueError(f"Unknown asset ID in manifest: {asset_id}")
 
-    base_w, base_h = asset["previewCanvasPx"]
+    base_w, base_h = asset["coordinateCanvasPx"]
     image_w, image_h = image_size
     base_ratio = base_w / base_h
     image_ratio = image_w / image_h
