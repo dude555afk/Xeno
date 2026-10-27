@@ -1,0 +1,46 @@
+name: Arc Reference Tool Validation
+
+on:
+  push:
+    branches: [main, feature/xeno-arc-search-e2e-rebuild]
+    paths:
+      - 'tools/arc-reference/**'
+      - 'docs/ARC_SCREENSHOT_FORENSICS.md'
+      - 'docs/ARC_SEARCH_ANDROID_REFERENCE.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/arc-reference/**'
+      - 'docs/ARC_SCREENSHOT_FORENSICS.md'
+      - 'docs/ARC_SEARCH_ANDROID_REFERENCE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install image analysis dependencies
+        run: python -m pip install --upgrade pillow numpy
+
+      - name: Compile reference tooling
+        run: |
+          python -m py_compile \
+            tools/arc-reference/compare_screenshots.py \
+            tools/arc-reference/annotate_measurements.py \
+            tools/arc-reference/sample_pixels.py \
+            tools/arc-reference/test_reference_tools.py
+
+      - name: Validate measurement manifest and exercise image tools
+        run: python -m unittest discover -s tools/arc-reference -p 'test_*.py' -v
