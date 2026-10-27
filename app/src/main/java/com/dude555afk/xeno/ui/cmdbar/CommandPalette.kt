@@ -342,35 +342,16 @@ fun CommandPalette(
                         modifier = Modifier.heightIn(max = 290.dp),
                         contentPadding = PaddingValues(bottom = 6.dp)
                     ) {
-                        if (query.isBlank()) {
-                            item(key = "suggested-heading") {
-                                SectionLabel("SUGGESTED")
-                            }
-                            items(
-                                listOf(
-                                    "Summarize today's news",
-                                    "museum shows near me",
-                                    "quick chicken recipes",
-                                    "fun things to do in NYC"
-                                ),
-                                key = { "prompt-$it" }
-                            ) { prompt ->
-                                QuickPromptRow(
-                                    title = prompt,
-                                    onBrowse = {
-                                        keyboard?.hide()
-                                        onAsk(prompt)
-                                    },
-                                    onSearch = {
-                                        keyboard?.hide()
-                                        onNavigate(prompt)
-                                    }
-                                )
+                        if (query.isBlank() && tabHints.isNotEmpty()) {
+                            item(key = "open-tabs-heading") {
+                                SectionLabel("OPEN TABS")
                             }
                         }
                         if (tabHints.isNotEmpty()) {
-                            item(key = "open-tabs-heading") {
-                                SectionLabel("OPEN TABS")
+                            if (query.isNotBlank()) {
+                                item(key = "open-tabs-heading") {
+                                    SectionLabel("OPEN TABS")
+                                }
                             }
                             items(tabHints, key = { "tab-${it.id}" }) { tab ->
                                 SuggestionRow(
@@ -384,7 +365,7 @@ fun CommandPalette(
                         }
                         if (historyHints.isNotEmpty()) {
                             item(key = "history-heading") {
-                                SectionLabel("RECENT")
+                                SectionLabel(if (query.isBlank()) "RECENT" else "HISTORY")
                             }
                             items(historyHints, key = { "hist-${it.url}" }) { hit ->
                                 SuggestionRow(
