@@ -157,6 +157,32 @@ def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
             if preview_ratio and image_ratio else None
         )
 
+        # Exact per-point probes complement broad ROI statistics. These
+        # are exact bytes at named file coordinates; names describe intended
+        # locations, not a guarantee that a point is free of text or edges.
+        sample_points = []
+        for probe in item.get("samplePoints", []):
+            x, y = int(probe["x"]), int(probe["y"])
+            if 0 <= x < width and 0 <= y < height:
+                pixel = [int(v) for v in array[y, x]]
+                sample_points.append({
+                    "name": probe["name"],
+                    "x_px": x,
+                    "y_px": y,
+                    "rgb": pixel,
+                    "hex": rgb_hex(pixel),
+                    "status": "measured-from-downloaded-file",
+                    "coordinate_basis": probe.get("coordinateBasis", "downloaded-source-pixel-space"),
+                })
+            else:
+                sample_points.append({
+                    "name": probe.get("name", "unnamed"),
+                    "x_px": x,
+                    "y_px": y,
+                    "status": "invalid-point",
+                    "image_px": [width, height],
+                })
+
         regions = []
         if ratio_error is not None and ratio_error <= 0.015:
             scale_x = width / preview_w
@@ -205,6 +231,7 @@ def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
                 "relative_aspect_ratio_error": round(ratio_error, 7) if ratio_error is not None else None,
                 "palette_12_quantized": representative_palette(image),
             },
+            "point_samples": sample_points,
             "region_measurements": regions,
             "limits": [
                 "RGB statistics are exact for the downloaded image bytes; the image may already be rescaled, compressed, cropped, or promotional artwork.",
