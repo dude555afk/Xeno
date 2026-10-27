@@ -68,6 +68,14 @@ class SettingsStore(context: Context) {
             prefs.edit { putString(KEY_SEARCH_ENGINE, safe) }
         }
 
+    var archiveRetentionHours: Int
+        get() = prefs.getInt(KEY_ARCHIVE_RETENTION_HOURS, 24)
+            .takeIf { it in ARCHIVE_RETENTION_OPTIONS } ?: 24
+        set(value) {
+            val safe = value.takeIf { it in ARCHIVE_RETENTION_OPTIONS } ?: 24
+            prefs.edit { putInt(KEY_ARCHIVE_RETENTION_HOURS, safe) }
+        }
+
     var activeSpaceId: Long
         get() = prefs.getLong(KEY_SPACE, 1L)
         set(value) = prefs.edit { putLong(KEY_SPACE, value) }
@@ -266,6 +274,8 @@ class SettingsStore(context: Context) {
         const val KEY_FINGERPRINTING_PROTECTION = "fingerprinting_protection_enabled"
         const val KEY_AUTO_OPEN_KEYBOARD = "auto_open_keyboard"
         const val KEY_SEARCH_ENGINE = "search_engine"
+        const val KEY_ARCHIVE_RETENTION_HOURS = "archive_retention_hours"
+        val ARCHIVE_RETENTION_OPTIONS = setOf(12, 24, 72, 168, 720)
         val SUPPORTED_SEARCH_ENGINES = setOf("brave", "duckduckgo", "google", "bing", "startpage")
         const val KEY_SPACE = "active_space"
         const val KEY_ACTIVE_TAB_PREFIX = "active_tab_space_"
