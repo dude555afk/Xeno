@@ -1,0 +1,44 @@
+name: Analyze Arc Reference Pixels
+
+on:
+  push:
+    branches: [feature/xeno-arc-search-e2e-rebuild]
+    paths:
+      - 'tools/arc-reference/reference_measurements.json'
+      - 'tools/arc-reference/fetch_source_pixels.py'
+      - '.github/workflows/analyze-arc-reference-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-source-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install image analysis dependencies
+        run: python -m pip install --upgrade pillow numpy
+
+      - name: Fetch public image files and calculate pixel measurements
+        run: |
+          python tools/arc-reference/fetch_source_pixels.py \
+            --manifest tools/arc-reference/reference_measurements.json \
+            --out artifacts/arc-reference/source_pixel_analysis.json \
+            --delay-ms 150
+
+      - name: Upload derived measurements only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc-reference-source-pixel-analysis
+          path: artifacts/arc-reference/source_pixel_analysis.json
+          if-no-files-found: warn
+          retention-days: 7
