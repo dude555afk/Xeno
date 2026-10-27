@@ -41,4 +41,4 @@ object SpaceAccents {
 }
 
 /** Fallback used before any space is loaded. */
-val DefaultAccent = SpaceAccents.Violet
+val DefaultAccent = SpaceAccents.Lime

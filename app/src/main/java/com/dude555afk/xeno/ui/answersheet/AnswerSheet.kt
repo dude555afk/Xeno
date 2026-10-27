@@ -56,9 +56,8 @@ import com.dude555afk.xeno.ui.theme.XenoMotion
 /**
  * The answer sheet — flagship surface.
  *
- * Order is the design: source cards appear first (fetching is fast, ~1-2s),
- * then the answer streams beneath them (generation, ~4s). Cards first makes
- * the wait read as progress rather than a hang.
+ * A readable, scrollable answer page with a distinct source section. The
+ * streaming skeleton fills the empty state while the answer is generated.
  */
 @Composable
 fun AnswerSheet(
@@ -85,8 +84,11 @@ fun AnswerSheet(
     // Keep the newest text in view as it streams. Keyed on length rather than
     // content so a token arriving mid-animation does not cancel the scroll.
     LaunchedEffect(markdown.length) {
-        val count = sources.size + parsed.blocks.size + 1
-        if (count > 0) runCatching { listState.animateScrollToItem(count - 1) }
+        val answerItemCount = 1 + parsed.blocks.size +
+            if (streaming && markdown.isEmpty()) 1 else 0
+        if (answerItemCount > 0) {
+            runCatching { listState.animateScrollToItem(answerItemCount - 1) }
+        }
     }
 
     AnimatedVisibility(
@@ -158,29 +160,6 @@ fun AnswerSheet(
                             Spacer(Modifier.height(Dimens.spaceL))
                         }
 
-                        // Source cards — always first.
-                        if (sources.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = "SOURCES",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(Dimens.spaceS))
-                            }
-                            item {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(Dimens.spaceM),
-                                    contentPadding = PaddingValues(vertical = 2.dp)
-                                ) {
-                                    items(sources) { source ->
-                                        SourceCard(source, accent, onOpenSource)
-                                    }
-                                }
-                                Spacer(Modifier.height(Dimens.spaceL))
-                            }
-                        }
-
                         // Answer blocks.
                         itemsIndexed(parsed.blocks) { _, block ->
                             when (block) {
@@ -226,6 +205,31 @@ fun AnswerSheet(
 
                         if (streaming && markdown.isEmpty()) {
                             item { StreamingSkeleton() }
+                        }
+
+                        // Arc's generated answer is a readable page first;
+                        // sources remain available as a distinct section below it.
+                        if (sources.isNotEmpty()) {
+                            item {
+                                Spacer(Modifier.height(Dimens.spaceL))
+                                Text(
+                                    text = "Sources",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(Modifier.height(Dimens.spaceS))
+                            }
+                            item {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(Dimens.spaceM),
+                                    contentPadding = PaddingValues(vertical = 2.dp)
+                                ) {
+                                    items(sources) { source ->
+                                        SourceCard(source, accent, onOpenSource)
+                                    }
+                                }
+                                Spacer(Modifier.height(Dimens.spaceL))
+                            }
                         }
                     }
                 }

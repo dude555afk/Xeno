@@ -45,11 +45,37 @@ class ReadabilityInjector(
     private val assetLoader = XenoAssetLoader.create(context)
 
     companion object {
-        private const val EXTRACT_CALL = "window.__xenoReadability.extract()"
+        private const val EXTRACT_CALL = "JSON.stringify(window.__xenoReadability.extract())"
+        private const val READER_BOOTSTRAP_WAIT_MS = 3_000L
+        private const val JS_CALLBACK_TIMEOUT_MS = 2_500L
 
         private const val PROBE_CALL =
             "(function(){try{var b=document.body;var t=(b&&b.innerText)||'';" +
-                "return document.readyState+':'+t.length;}catch(e){return 'err:0';}})()"
+                "return document.readyState+':'+t.length+':'+(window.__xenoReadability?'ready':'pending');" +
+                "}catch(e){return 'err:0:pending';}})()"
+
+        // Readability can be blocked by a site's CSP or fail on unusual markup.
+        // Fall back to visible DOM text only; never attempt to bypass a paywall.
+        private val FALLBACK_CALL = """
+            (function(){
+              try {
+                var b = document.body;
+                var t = (b && b.innerText) || '';
+                var author = document.querySelector('meta[name="author"]');
+                var description = document.querySelector('meta[name="description"]');
+                return JSON.stringify({
+                  url: location.href,
+                  title: document.title || '',
+                  byline: author ? (author.content || '') : '',
+                  text: t,
+                  excerpt: description ? (description.content || '') : '',
+                  wordCount: t.trim() ? t.trim().split(/\s+/).length : 0
+                });
+              } catch(e) {
+                return JSON.stringify({url: location.href, title: document.title || '', text: '', excerpt: '', wordCount: 0});
+              }
+            })()
+        """.trimIndent()
 
         /** Injected once per navigation so [PROBE_CALL]/[EXTRACT_CALL] exist. */
         private const val BOOTSTRAP =
@@ -83,72 +109,79 @@ class ReadabilityInjector(
 
         val previousClient = webView.webViewClient
 
-        val loaded = withTimeoutOrNull(timeoutMs) {
-            suspendCancellableCoroutine<Unit> { cont ->
-                var resumed = false
-                fun once(block: () -> Unit) { if (!resumed) { resumed = true; block() } }
+        try {
+            val loaded = withTimeoutOrNull(timeoutMs) {
+                suspendCancellableCoroutine<Unit> { cont ->
+                    var resumed = false
+                    fun once(block: () -> Unit) { if (!resumed) { resumed = true; block() } }
 
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: android.graphics.Bitmap?) {
-                        runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
-                    }
+                    webView.webViewClient = object : WebViewClient() {
+                        override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: android.graphics.Bitmap?) {
+                            runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
+                        }
 
-                    override fun onPageFinished(view: WebView?, finishedUrl: String?) {
-                        // The bootstrap only ever runs as a script tag append,
-                        // so once the document is done the script has been
-                        // fetched and executed — bar a CSP block, which is
-                        // handled by the readiness probe going quiet.
-                        once { if (cont.isActive) cont.resume(Unit) }
-                    }
-
-                    override fun onReceivedError(
-                        view: WebView?, request: WebResourceRequest?,
-                        error: android.webkit.WebResourceError?
-                    ) {
-                        // Only a main-frame failure aborts; sub-resource errors
-                        // are the normal case on a blocked page.
-                        if (request?.isForMainFrame == true) {
+                        override fun onPageFinished(view: WebView?, finishedUrl: String?) {
+                            runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
                             once { if (cont.isActive) cont.resume(Unit) }
                         }
+
+                        override fun onReceivedError(
+                            view: WebView?, request: WebResourceRequest?,
+                            error: android.webkit.WebResourceError?
+                        ) {
+                            if (request?.isForMainFrame == true) {
+                                once { if (cont.isActive) cont.resume(Unit) }
+                            }
+                        }
+
+                        override fun shouldInterceptRequest(
+                            view: WebView?,
+                            request: WebResourceRequest
+                        ): android.webkit.WebResourceResponse? =
+                            assetLoader.shouldInterceptRequest(request.url)
                     }
-
-                    override fun shouldInterceptRequest(
-                        view: WebView?,
-                        request: WebResourceRequest
-                    ): android.webkit.WebResourceResponse? =
-                        assetLoader.shouldInterceptRequest(request.url)
+                    webView.loadUrl(url)
                 }
-                webView.loadUrl(url)
             }
-        }
 
-        if (loaded == null) {
+            if (loaded == null) return@withContext ExtractedContent.junk(url)
+
+            // Wait for the DOM to go quiet, then extract.
+            var last = ""
+            var quietSince = 0L
+            val start = System.currentTimeMillis()
+
+            while (System.currentTimeMillis() - start < timeoutMs) {
+                val snapshot = evalToString(webView, PROBE_CALL) ?: ""
+                val now = System.currentTimeMillis()
+
+                val readerReady = snapshot.contains(":ready")
+                if (snapshot == last && snapshot.isNotBlank() && readerReady) {
+                    if (quietSince == 0L) quietSince = now
+                    if (now - quietSince >= quietForMs) break
+                } else {
+                    last = snapshot
+                    quietSince = 0L
+                    // The script asset can load later than the document on a
+                    // slow phone. Wait briefly for it, then use DOM-text fallback
+                    // instead of burning the entire page timeout.
+                    if (!readerReady && now - start >= minOf(timeoutMs, READER_BOOTSTRAP_WAIT_MS)) break
+                }
+                delay(220)
+            }
+
+            val primary = parse(evalToString(webView, EXTRACT_CALL), url)
+            if (!primary.isJunk) primary else {
+                // The fallback reads only text currently exposed by the page.
+                // It does not unlock subscriber-only content or bypass access controls.
+                val fallback = parse(evalToString(webView, FALLBACK_CALL), url)
+                if (!fallback.isJunk) fallback else primary
+            }
+        } finally {
+            // Restore even on cancellation/JS bridge failure: this class may be
+            // used with a retained WebView, so leaking the temporary client breaks navigation.
             webView.webViewClient = previousClient
-            return@withContext ExtractedContent.junk(url)
         }
-
-        // Wait for the DOM to go quiet, then extract.
-        var last = ""
-        var quietSince = 0L
-        val start = System.currentTimeMillis()
-
-        while (System.currentTimeMillis() - start < timeoutMs) {
-            val snapshot = evalToString(webView, PROBE_CALL) ?: ""
-            val now = System.currentTimeMillis()
-
-            if (snapshot == last && snapshot.isNotBlank() && !snapshot.startsWith("loading")) {
-                if (quietSince == 0L) quietSince = now
-                if (now - quietSince >= quietForMs) break
-            } else {
-                last = snapshot
-                quietSince = 0L
-            }
-            delay(220)
-        }
-
-        val raw = evalToString(webView, EXTRACT_CALL)
-        webView.webViewClient = previousClient
-        parse(raw, url)
     }
 
     /**
@@ -162,9 +195,11 @@ class ReadabilityInjector(
     fun bootstrapScript(): String = BOOTSTRAP
 
     private suspend fun evalToString(webView: WebView, script: String): String? =
-        suspendCancellableCoroutine { cont ->
-            webView.evaluateJavascript(script) { value ->
-                if (cont.isActive) cont.resume(value)
+        withTimeoutOrNull(JS_CALLBACK_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                webView.evaluateJavascript(script) { value ->
+                    if (cont.isActive) cont.resume(value)
+                }
             }
         }
 
@@ -184,27 +219,46 @@ class ReadabilityInjector(
      * always said "couldn't be read" and the answer engine always reported zero
      * readable sources. Neither symptom points at this line.
      */
-    private fun parse(raw: String?, fallbackUrl: String): ExtractedContent {
+    private fun parse(raw: String?, fallbackUrl: String): ExtractedContent =
+        ExtractionJsonParser.parse(raw, fallbackUrl, json)
+}
+/**
+ * Pure parser separated from the WebView lifecycle so the tricky Android
+ * evaluateJavascript JSON shapes can be regression-tested on the JVM.
+ */
+internal object ExtractionJsonParser {
+    fun parse(
+        raw: String?,
+        fallbackUrl: String,
+        json: Json = Json { ignoreUnknownKeys = true }
+    ): ExtractedContent {
         if (raw.isNullOrBlank() || raw == "null") return ExtractedContent.junk(fallbackUrl)
         return runCatching {
-            val literal = json.parseToJsonElement(raw).jsonPrimitive.content
-            val obj = json.parseToJsonElement(literal) as? JsonObject
-                ?: return ExtractedContent.junk(fallbackUrl)
+            val first = json.parseToJsonElement(raw)
+            val obj = when (first) {
+                is JsonObject -> first
+                is JsonPrimitive -> if (first.isString) {
+                    json.parseToJsonElement(first.content) as? JsonObject
+                } else null
+                else -> null
+            } ?: return ExtractedContent.junk(fallbackUrl)
 
-            fun str(key: String) =
-                obj[key]?.jsonPrimitive?.takeIf { it.isString }?.content.orEmpty()
+            fun str(key: String): String =
+                (obj[key] as? JsonPrimitive)?.takeIf { it.isString }?.content.orEmpty()
 
-            // Works whether the JS side sent a number or a numeric string —
-            // JsonPrimitive.content is the textual form either way.
-            fun num(key: String) = obj[key]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            fun num(key: String): Int =
+                (obj[key] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
 
+            val text = str("text")
+            val explicitCount = num("wordCount")
             ExtractedContent(
                 url = str("url").ifBlank { fallbackUrl },
                 title = str("title"),
                 byline = str("byline").ifBlank { null },
-                text = str("text"),
+                text = text,
                 excerpt = str("excerpt"),
-                wordCount = num("wordCount")
+                wordCount = explicitCount.takeIf { it > 0 }
+                    ?: text.trim().split(Regex("\\s+")).count { it.isNotBlank() }
             )
         }.getOrElse { ExtractedContent.junk(fallbackUrl) }
     }
