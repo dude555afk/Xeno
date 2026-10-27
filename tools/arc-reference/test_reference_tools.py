@@ -61,11 +61,19 @@ class ArcReferenceToolTests(unittest.TestCase):
                     round(right / width, 4),
                     round(bottom / height, 4),
                 ]
+                # JS .toFixed and Python round can break ties differently.
+                # Permit one unit in the final displayed decimal place.
                 self.assertEqual(
-                    region["bboxNormalized"],
-                    normalized,
+                    len(region["bboxNormalized"]),
+                    4,
                     (item["id"], region["name"]),
                 )
+                for actual, expected in zip(region["bboxNormalized"], normalized):
+                    self.assertLessEqual(
+                        abs(actual - expected),
+                        0.0001,
+                        (item["id"], region["name"], actual, expected),
+                    )
 
     def test_pixel_sampler_reports_exact_local_rgb(self) -> None:
         image_path = self.work / "pixels.png"
@@ -105,7 +113,7 @@ class ArcReferenceToolTests(unittest.TestCase):
     def test_annotator_generates_region_overlay(self) -> None:
         image_path = self.work / "reference.png"
         out_path = self.work / "annotated.png"
-        Image.new("RGB", (428, 959), (30, 30, 30)).save(image_path)
+        Image.new("RGB", (1080, 2520), (30, 30, 30)).save(image_path)
         result = self.run_script(
             "annotate_measurements.py",
             "AA-BFM-01",
@@ -118,7 +126,7 @@ class ArcReferenceToolTests(unittest.TestCase):
         self.assertGreaterEqual(report["scaled_box_count"], 10)
         self.assertTrue(out_path.is_file())
         with Image.open(out_path) as rendered:
-            self.assertEqual(rendered.size, (428, 959))
+            self.assertEqual(rendered.size, (1080, 2520))
 
     def test_compare_outputs_overlay_diff_and_metrics(self) -> None:
         ref_path = self.work / "arc.png"
