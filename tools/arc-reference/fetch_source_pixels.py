@@ -217,6 +217,7 @@ def analyze_one(
             } for region in item.get("regions", [])]
 
         if thumbnail_dir is not None or annotated_dir is not None:
+            asset_id = str(item.get("id", "unknown"))
             # Keep a full-size annotated derivative for forensic inspection.
             # Boxes are drawn only when aspect ratios justify mapping them.
             annotated = image.copy()
@@ -256,7 +257,6 @@ def analyze_one(
                 card = Image.new("RGB", (cell_w, cell_h), (26, 27, 32))
                 draw_card = ImageDraw.Draw(card)
                 font = ImageFont.load_default()
-                asset_id = str(item.get("id", "unknown"))
                 title = str(item.get("state", ""))[:48]
                 dimension_label = f"{width}x{height}  |  {len(item.get('regions', []))} boxes"
                 draw_card.text((12, 10), asset_id, fill=(255, 255, 255), font=font)
