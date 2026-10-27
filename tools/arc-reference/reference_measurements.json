@@ -3685,6 +3685,42 @@
           "x": 575,
           "y": 285,
           "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-pill-top-left-fill",
+          "x": 520,
+          "y": 330,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-pill-top-right-fill",
+          "x": 555,
+          "y": 330,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-pill-bottom-left-fill",
+          "x": 520,
+          "y": 354,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search-browse-pill-bottom-right-fill",
+          "x": 555,
+          "y": 354,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-upper-center-left",
+          "x": 139,
+          "y": 605,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home-plus-fill-lower-center-left",
+          "x": 139,
+          "y": 626,
+          "coordinateBasis": "downloaded-source-pixel-space"
         }
       ]
     },
