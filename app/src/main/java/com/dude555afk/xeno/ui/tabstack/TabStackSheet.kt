@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +76,7 @@ fun TabStackSheet(
     onSelect: (Tab) -> Unit,
     onClose: (Tab) -> Unit,
     onNewTab: () -> Unit,
+    onOpenSettings: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AnimatedVisibility(
@@ -181,26 +183,35 @@ fun TabStackSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 18.dp),
-                    horizontalArrangement = Arrangement.Center,
+                        .padding(start = 22.dp, end = 18.dp, top = 8.dp, bottom = 18.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // The tab switcher is also Arc's entry point to app settings.
+                    IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White.copy(alpha = 0.78f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFF2C2C2E),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        color = Color(0xFFF2F2F5),
                         onClick = onNewTab,
-                        modifier = Modifier.size(width = 58.dp, height = 48.dp)
+                        modifier = Modifier.size(width = 56.dp, height = 42.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Rounded.Add,
                                 contentDescription = "New tab",
-                                tint = Color.White,
+                                tint = Color(0xFF17171B),
                                 modifier = Modifier.size(25.dp)
                             )
                         }
                     }
+                    Spacer(Modifier.size(48.dp))
                 }
             }
         }
