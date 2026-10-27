@@ -312,7 +312,7 @@ The screenshot report now has asset-by-asset entries for:
 
 The public Play gallery shows repeated instances of its seven unique assets; those repeats are not counted as new designs or new screens.
 
-**Important:** these are hand-measured rendered-preview coordinates, not pixel values sampled from original file bytes. The exact source image binaries are not available to the local image-processing runtime in this session. Exact raw RGB, original dimensions, density-to-dp conversion and animation measurements remain intentionally unclaimed. The repo now includes tools to perform those analyses once local source captures are available.
+**Important:** these are hand-measured rendered-coordinate-space estimates, not pixel values sampled from original file bytes. The exact source image binaries are not available to the local image-processing runtime in this session. Exact raw RGB, original dimensions, density-to-dp conversion and animation measurements remain intentionally unclaimed. The repo now includes tools to perform those analyses once local source captures are available.
 
 
 ### Latest screenshot audit additions
