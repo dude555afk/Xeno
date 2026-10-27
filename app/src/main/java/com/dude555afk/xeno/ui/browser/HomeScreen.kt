@@ -83,7 +83,7 @@ fun HomeScreen(
         ) {
             Surface(
                 shape = RoundedCornerShape(7.dp),
-                color = Color(0xFF4B5268),
+                // Source pixels inside the reference plus capsule cluster around #556179.\n                color = Color(0xFF556179),
                 shadowElevation = 0.dp,
                 modifier = Modifier
                     .size(width = controlWidth, height = controlHeight)
