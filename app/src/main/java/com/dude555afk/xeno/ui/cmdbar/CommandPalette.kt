@@ -289,11 +289,37 @@ fun CommandPalette(
                     )
                 }
 
-                if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
+                if (query.isBlank() || tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 290.dp),
                         contentPadding = PaddingValues(bottom = 6.dp)
                     ) {
+                        if (query.isBlank()) {
+                            item(key = "suggested-heading") {
+                                SectionLabel("SUGGESTED")
+                            }
+                            items(
+                                listOf(
+                                    "Summarize today's news",
+                                    "museum shows near me",
+                                    "quick chicken recipes",
+                                    "fun things to do in NYC"
+                                ),
+                                key = { "prompt-$it" }
+                            ) { prompt ->
+                                QuickPromptRow(
+                                    title = prompt,
+                                    onBrowse = {
+                                        keyboard?.hide()
+                                        onAsk(prompt)
+                                    },
+                                    onSearch = {
+                                        keyboard?.hide()
+                                        onNavigate(prompt)
+                                    }
+                                )
+                            }
+                        }
                         if (tabHints.isNotEmpty()) {
                             item(key = "open-tabs-heading") {
                                 SectionLabel("OPEN TABS")
@@ -323,24 +349,6 @@ fun CommandPalette(
                             }
                         }
                     }
-                } else if (query.isBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.035f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.055f))
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(15.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Rounded.Language, contentDescription = null, tint = accent)
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text("Your next stop", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium)
-                                Text("Type a website, search, or question", color = Color.White.copy(alpha = 0.48f), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
                 }
 
                 if (loading) {
@@ -360,6 +368,51 @@ fun CommandPalette(
                 )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickPromptRow(
+    title: String,
+    onBrowse: () -> Unit,
+    onSearch: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onSearch)
+            .padding(start = 7.dp, end = 4.dp, top = 7.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Rounded.Search,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.62f),
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.91f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Surface(
+            onClick = onBrowse,
+            shape = RoundedCornerShape(50),
+            color = Color(0xFF5757E8),
+            contentColor = Color.White
+        ) {
+            Text(
+                "Browse for me",
+                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
