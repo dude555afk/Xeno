@@ -39,6 +39,7 @@ jobs:
             tools/arc-reference/compare_screenshots.py \
             tools/arc-reference/annotate_measurements.py \
             tools/arc-reference/sample_pixels.py \
+            tools/arc-reference/fetch_source_pixels.py \
             tools/arc-reference/test_reference_tools.py
 
       - name: Validate measurement manifest and exercise image tools
