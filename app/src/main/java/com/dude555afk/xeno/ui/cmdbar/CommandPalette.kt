@@ -5,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -110,9 +112,17 @@ fun CommandPalette(
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(XenoMotion.backdropFade()) +
-            scaleIn(initialScale = 0.96f, animationSpec = XenoMotion.overlaySpring()),
-        exit = fadeOut(androidx.compose.animation.core.tween(170)) +
-            scaleOut(targetScale = 0.98f, animationSpec = androidx.compose.animation.core.tween(170))
+            slideInVertically(
+                initialOffsetY = { it / 5 },
+                animationSpec = XenoMotion.sheetSpring()
+            ) +
+            scaleIn(initialScale = 0.985f, animationSpec = XenoMotion.sheetSpring()),
+        exit = fadeOut(androidx.compose.animation.core.tween(150)) +
+            slideOutVertically(
+                targetOffsetY = { it / 7 },
+                animationSpec = androidx.compose.animation.core.tween(170)
+            ) +
+            scaleOut(targetScale = 0.99f, animationSpec = androidx.compose.animation.core.tween(170))
     ) {
         Box(
             modifier = Modifier
@@ -133,13 +143,11 @@ fun CommandPalette(
                     .padding(horizontal = 10.dp, vertical = 8.dp)
                     .imePadding()
             ) {
-                AcrylicGlow(modifier = Modifier.align(Alignment.BottomCenter))
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                        .background(Color(0xD9101014))
+                        .clip(RoundedCornerShape(30.dp))
+                        .background(Color(0xF20F0F12))
                         .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
                         .clickable(
                             indication = null,
