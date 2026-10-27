@@ -387,6 +387,9 @@ fun BrowserScreen(
             currentUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
             desktopSiteEnabled = state.desktopSiteEnabled,
             downloads = state.downloads,
+            archiveEntries = state.archiveEntries,
+            pinnedPages = state.pinnedPages,
+            archiveRetentionHours = state.archiveRetentionHours,
             blockingEnabled = state.blockingEnabled,
             thirdPartyCookiesEnabled = state.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = state.fingerprintingProtectionEnabled,
@@ -409,6 +412,13 @@ fun BrowserScreen(
                     Toast.makeText(context, "Open Android Settings to choose the default browser.", Toast.LENGTH_SHORT).show()
                 }
             },
+            onPinCurrentPage = viewModel::pinCurrentPage,
+            onArchiveCurrentTab = viewModel::archiveCurrentTab,
+            onUnpinPage = viewModel::unpinPage,
+            onOpenPinnedPage = viewModel::openPinnedPage,
+            onOpenArchivedPage = viewModel::openArchivedPage,
+            onRemoveArchivedPage = viewModel::removeArchivedPage,
+            onArchiveRetentionChange = viewModel::setArchiveRetentionHours,
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
             onCopyCurrentUrl = viewModel::copyCurrentUrl,
