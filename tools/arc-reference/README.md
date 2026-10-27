@@ -41,7 +41,7 @@ These metrics are diagnostic, not a substitute for examining the overlay. Dynami
 
 ## Inspect and annotate measured regions
 
-The manifest contains 30 inspected assets and 123 hand-measured preview-coordinate regions. Region boxes are approximate and explicitly labelled as preview coordinates. They are useful for comparing layout ratios and structuring capture, not for claiming exact dp or source-image dimensions.
+The manifest contains 30 inspected assets and 123 hand-measured preview-coordinate regions. Region boxes are approximate and explicitly labelled as coordinate-space estimates. They are useful for comparing layout ratios and structuring capture, not for claiming exact dp or source-image dimensions.
 
 To draw the boxes over a locally saved, matching source image:
 
