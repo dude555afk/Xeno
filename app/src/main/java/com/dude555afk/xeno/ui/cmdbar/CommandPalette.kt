@@ -317,26 +317,28 @@ fun CommandPalette(
                         }
 
                         if (query.isBlank() && matchingTabs.isEmpty() && availableHistory.isEmpty()) {
-                            listOf(
-                                "Summarize today's news",
-                                "museum shows near me",
-                                "quick chicken recipes",
-                                "fun things to do in NYC"
-                            ).forEach { suggestion ->
-                                PaletteSuggestionRow(
-                                    icon = Icons.Rounded.Search,
-                                    title = suggestion,
-                                    subtitle = "",
-                                    browseQuery = suggestion,
-                                    onBrowseForMe = {
-                                        keyboard?.hide()
-                                        onAsk(suggestion)
-                                    },
-                                    onClick = {
-                                        keyboard?.hide()
-                                        onNavigate(suggestion)
-                                    }
-                                )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(
+                                    "Summarize today's news",
+                                    "museum shows near me",
+                                    "quick chicken recipes",
+                                    "fun things to do in NYC"
+                                ).forEach { suggestion ->
+                                    PaletteSuggestionRow(
+                                        icon = Icons.Rounded.Search,
+                                        title = suggestion,
+                                        subtitle = "",
+                                        browseQuery = suggestion,
+                                        onBrowseForMe = {
+                                            keyboard?.hide()
+                                            onAsk(suggestion)
+                                        },
+                                        onClick = {
+                                            keyboard?.hide()
+                                            onNavigate(suggestion)
+                                        }
+                                    )
+                                }
                             }
                         }
 
