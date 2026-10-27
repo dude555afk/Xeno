@@ -114,6 +114,7 @@ def analyze_one(
     item: dict[str, Any],
     max_bytes: int,
     thumbnail_dir: Path | None = None,
+    annotated_dir: Path | None = None,
 ) -> dict[str, Any]:
     url = item.get("sourceUrl", "")
     base: dict[str, Any] = {
@@ -215,9 +216,9 @@ def analyze_one(
                 ),
             } for region in item.get("regions", [])]
 
-        if thumbnail_dir is not None:
-            # Preserve the full source image in each cell. Boxes are drawn only
-            # when the source aspect ratio matches the measurement canvas.
+        if thumbnail_dir is not None or annotated_dir is not None:
+            # Keep a full-size annotated derivative for forensic inspection.
+            # Boxes are drawn only when aspect ratios justify mapping them.
             annotated = image.copy()
             if ratio_error is not None and ratio_error <= 0.015:
                 drawer = ImageDraw.Draw(annotated)
@@ -241,23 +242,33 @@ def analyze_one(
                             width=max(2, stroke),
                         )
 
-            cell_w, cell_h = 360, 440
-            card = Image.new("RGB", (cell_w, cell_h), (26, 27, 32))
-            draw_card = ImageDraw.Draw(card)
-            font = ImageFont.load_default()
-            asset_id = str(item.get("id", "unknown"))
-            title = str(item.get("state", ""))[:48]
-            dimension_label = f"{width}x{height}  |  {len(item.get('regions', []))} boxes"
-            draw_card.text((12, 10), asset_id, fill=(255, 255, 255), font=font)
-            draw_card.text((12, 28), title, fill=(220, 222, 229), font=font)
-            draw_card.text((12, 44), dimension_label, fill=(160, 190, 205), font=font)
-            annotated.thumbnail((336, 350), Image.Resampling.LANCZOS)
-            x_off = (cell_w - annotated.width) // 2
-            y_off = 64 + (350 - annotated.height) // 2
-            card.paste(annotated, (x_off, y_off))
-            draw_card.text((12, 420), "magenta=region box, cyan=exact point", fill=(170, 178, 189), font=font)
-            thumbnail_dir.mkdir(parents=True, exist_ok=True)
-            card.save(thumbnail_dir / f"{asset_id}.jpg", quality=88, optimize=True)
+            if annotated_dir is not None:
+                annotated_dir.mkdir(parents=True, exist_ok=True)
+                annotated.save(
+                    annotated_dir / f"{asset_id}.webp",
+                    format="WEBP",
+                    lossless=True,
+                    method=6,
+                )
+
+            if thumbnail_dir is not None:
+                cell_w, cell_h = 360, 440
+                card = Image.new("RGB", (cell_w, cell_h), (26, 27, 32))
+                draw_card = ImageDraw.Draw(card)
+                font = ImageFont.load_default()
+                asset_id = str(item.get("id", "unknown"))
+                title = str(item.get("state", ""))[:48]
+                dimension_label = f"{width}x{height}  |  {len(item.get('regions', []))} boxes"
+                draw_card.text((12, 10), asset_id, fill=(255, 255, 255), font=font)
+                draw_card.text((12, 28), title, fill=(220, 222, 229), font=font)
+                draw_card.text((12, 44), dimension_label, fill=(160, 190, 205), font=font)
+                annotated.thumbnail((336, 350), Image.Resampling.LANCZOS)
+                x_off = (cell_w - annotated.width) // 2
+                y_off = 64 + (350 - annotated.height) // 2
+                card.paste(annotated, (x_off, y_off))
+                draw_card.text((12, 420), "magenta=region box, cyan=exact point", fill=(170, 178, 189), font=font)
+                thumbnail_dir.mkdir(parents=True, exist_ok=True)
+                card.save(thumbnail_dir / f"{asset_id}.jpg", quality=88, optimize=True)
 
         return {
             **base,
@@ -323,6 +334,11 @@ def main() -> int:
         type=Path,
         help="Create a contact sheet of individually annotated source images.",
     )
+    parser.add_argument(
+        "--annotated-dir",
+        type=Path,
+        help="Write full-resolution lossless annotated WebP derivatives into this directory.",
+    )
     args = parser.parse_args()
 
     if args.max_bytes <= 0:
@@ -349,9 +365,13 @@ def main() -> int:
         total = len(unique)
         with tempfile.TemporaryDirectory(prefix="arc-reference-thumbnails-") as temporary:
             thumbnail_dir = Path(temporary) if args.contact_sheet else None
+            if args.annotated_dir:
+                args.annotated_dir.mkdir(parents=True, exist_ok=True)
             for index, item in enumerate(unique.values(), start=1):
                 print(f"[{index}/{total}] {item.get('id')}: fetching {urlparse(item['sourceUrl']).netloc}", flush=True)
-                results.append(analyze_one(item, args.max_bytes, thumbnail_dir))
+                results.append(
+                    analyze_one(item, args.max_bytes, thumbnail_dir, args.annotated_dir)
+                )
                 if index < total and args.delay_ms:
                     time.sleep(args.delay_ms / 1000)
 
