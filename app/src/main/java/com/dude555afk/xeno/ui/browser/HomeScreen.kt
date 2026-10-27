@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ private val ArcPeach = Color(0xFFF7DBDF)
  * Search-first new-tab canvas. Xeno uses its own mark while following Arc
  * Search's sparse mobile composition, gradient atmosphere and animated centre.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onNewSearch: () -> Unit,
