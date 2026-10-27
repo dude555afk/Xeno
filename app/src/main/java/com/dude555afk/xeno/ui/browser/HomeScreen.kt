@@ -43,7 +43,7 @@ fun HomeScreen(
                 Brush.linearGradient(
                     colorStops = arrayOf(
                         0.0f to ArcHomeTop,
-                        0.108f to ArcHomeTop,
+                        0.1006f to ArcHomeTop,
                         0.346f to ArcHomeMiddle,
                         0.843f to ArcHomeBottom,
                         1.0f to ArcHomeBottom
