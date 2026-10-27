@@ -57,7 +57,11 @@ fun ReaderSheet(
                 color = Color(0xFFFCFAFE),
                 border = StrokeSubtle.let { androidx.compose.foundation.BorderStroke(1.dp, Color.Black.copy(alpha = 0.08f)) }
             ) {
-                Column(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                ) {
                     Row(
                         Modifier.fillMaxWidth().padding(start = 20.dp, top = 12.dp, end = 12.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
