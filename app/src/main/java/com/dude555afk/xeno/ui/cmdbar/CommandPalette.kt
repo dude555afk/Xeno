@@ -159,7 +159,7 @@ fun CommandPalette(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, end = 7.dp, top = 8.dp, bottom = 8.dp),
+                                .padding(start = 16.dp, end = 7.dp, top = 14.dp, bottom = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
