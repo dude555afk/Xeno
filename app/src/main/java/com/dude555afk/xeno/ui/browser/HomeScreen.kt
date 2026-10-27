@@ -45,8 +45,9 @@ import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.storage.CollectedPage
 
 // Measured from the encoded 1200x667 Arc Search Android home montage:
-// (15,80) #1F143C, (150,210) #44243C, (280,550) #34425F.
-// These are reference-pixel anchors, not Android dp values.
+// (15,80) #1F143C, (150,210) #44243C, (280,550) #34425F
+// on the 300x667 home panel. Stops are calibrated to the projected position
+// along Compose's top-left to bottom-right linear gradient; not Android dp.
 private val ArcHomeTop = Color(0xFF1F143C)
 private val ArcHomeMiddle = Color(0xFF44243C)
 private val ArcHomeBottom = Color(0xFF34425F)
@@ -84,7 +85,9 @@ fun HomeScreen(
                 Brush.linearGradient(
                     colorStops = arrayOf(
                         0.0f to ArcHomeTop,
-                        0.36f to ArcHomeMiddle,
+                        0.108f to ArcHomeTop,
+                        0.346f to ArcHomeMiddle,
+                        0.843f to ArcHomeBottom,
                         1.0f to ArcHomeBottom
                     )
                 )
