@@ -12,6 +12,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +28,9 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.dude555afk.xeno.core.storage.CollectedPage
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -58,6 +65,8 @@ fun HomeScreen(
     onOpenTabs: () -> Unit,
     onOpenSettings: () -> Unit,
     onVoiceSearch: () -> Unit,
+    pinnedPages: List<CollectedPage> = emptyList(),
+    onOpenPinnedPage: (CollectedPage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(label = "xeno-home-mark")
@@ -118,6 +127,37 @@ fun HomeScreen(
                 .scale(breathing)
                 .rotate(rotation)
         )
+
+        if (pinnedPages.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = 84.dp)
+                    .height(42.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(pinnedPages.take(8), key = { it.url }) { page ->
+                    Surface(
+                        onClick = { onOpenPinnedPage(page) },
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color.White.copy(alpha = 0.80f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.52f)),
+                        modifier = Modifier.widthIn(max = 210.dp)
+                    ) {
+                        Text(
+                            text = page.title.ifBlank { page.url },
+                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
+                            color = Color(0xFF41385F),
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
 
         Surface(
             modifier = Modifier
