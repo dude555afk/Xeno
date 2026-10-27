@@ -294,7 +294,7 @@ Implement export and clear-data as explicit, testable settings flows if included
 The initial feature/source catalogue is supplemented by a detailed asset audit and preview-coordinate boxes:
 
 - [Screenshot forensic report](ARC_SCREENSHOT_FORENSICS.md) — per-asset classification, measured/estimated bounding boxes, ratios, findings, and explicit measurement limitations.
-- [Machine-readable measurement manifest](../tools/arc-reference/reference_measurements.json) — 30 inspected source/composite items with source URLs and region bounding boxes.
+- [Machine-readable measurement manifest](../tools/arc-reference/reference_measurements.json) — 37 source-asset records with source URLs and region bounding boxes.
 - [Annotation utility](../tools/arc-reference/annotate_measurements.py) — scales the recorded boxes onto a local copy of a matching source image and exports an annotated image.
 - [Screenshot comparison utility](../tools/arc-reference/compare_screenshots.py) — overlay, pixel difference and metrics for matched Arc/Xeno captures.
 
@@ -313,3 +313,13 @@ The screenshot report now has asset-by-asset entries for:
 The public Play gallery shows repeated instances of its seven unique assets; those repeats are not counted as new designs or new screens.
 
 **Important:** these are hand-measured rendered-preview coordinates, not pixel values sampled from original file bytes. The exact source image binaries are not available to the local image-processing runtime in this session. Exact raw RGB, original dimensions, density-to-dp conversion and animation measurements remain intentionally unclaimed. The repo now includes tools to perform those analyses once local source captures are available.
+
+
+### Latest screenshot audit additions
+
+The forensic report also documents and measures:
+- the Clubic four-panel Android capture at `1200 × 667` output geometry, divided into four ~300 × 667 screen panels (home, dark suggestions, Browse for Me, expanded site controls);
+- six individually opened 9to5Google full-screen Android onboarding screenshots, each served at `w=460`, with query-panel, suggestion-row, card-carousel, skeleton, CTA and footer region boxes;
+- a settings-page taxonomy from an independent Android launch image, separated from exact geometry because it is a combined editorial composition.
+
+The current manifest validates at 37 records / 208 region boxes, with no out-of-bounds or stale normalized geometry. Exact raw source colors and animation timing are still pending locally available original image/video files or direct-device recording.
