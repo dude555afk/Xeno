@@ -43,10 +43,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.storage.CollectedPage
 
-private val ArcLilac = Color(0xFF251126)
-private val ArcPurple = Color(0xFF30154D)
-private val ArcPink = Color(0xFF542A82)
-private val ArcPeach = Color(0xFFB64D8F)
+// Measured from the encoded 1200x667 Arc Search Android home montage:
+// (15,80) #1F143C, (150,210) #44243C, (280,550) #34425F.
+// These are reference-pixel anchors, not Android dp values.
+private val ArcHomeTop = Color(0xFF1F143C)
+private val ArcHomeMiddle = Color(0xFF44243C)
+private val ArcHomeBottom = Color(0xFF34425F)
 
 /**
  * Search-first new-tab canvas. Xeno uses its own mark while following Arc
@@ -79,36 +81,19 @@ fun HomeScreen(
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    colors = listOf(ArcLilac, ArcPurple, ArcPink, ArcPeach)
+                    colorStops = arrayOf(
+                        0.0f to ArcHomeTop,
+                        0.36f to ArcHomeMiddle,
+                        1.0f to ArcHomeBottom
+                    )
                 )
             )
     ) {
-        Canvas(Modifier.fillMaxSize()) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFFB65AD2).copy(alpha = 0.20f), Color.Transparent),
-                    center = Offset(size.width * 0.22f, size.height * 0.20f),
-                    radius = size.minDimension * 0.72f
-                ),
-                radius = size.minDimension * 0.72f,
-                center = Offset(size.width * 0.22f, size.height * 0.20f)
-            )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFFE48AC7).copy(alpha = 0.22f), Color.Transparent),
-                    center = Offset(size.width * 0.80f, size.height * 0.72f),
-                    radius = size.minDimension * 0.62f
-                ),
-                radius = size.minDimension * 0.62f,
-                center = Offset(size.width * 0.80f, size.height * 0.72f)
-            )
-        }
-
         HomeMark(
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(bottom = 25.dp)
-                .size(82.dp)
+                .size(140.dp)
                 .scale(breathing)
         )
 
@@ -163,7 +148,7 @@ fun HomeScreen(
                     color = Color(0xFF5D4BE8),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA69AFF)),
                     shadowElevation = 4.dp,
-                    modifier = Modifier.size(width = 76.dp, height = 48.dp)
+                    modifier = Modifier.size(width = 76.dp, height = 40.dp)
                 ) {
                     Box(
                         modifier = Modifier
