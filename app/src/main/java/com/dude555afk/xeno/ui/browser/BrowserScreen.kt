@@ -128,7 +128,10 @@ fun BrowserScreen(
                 ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 ?.firstOrNull()
                 ?.takeIf { it.isNotBlank() }
-                ?.let(viewModel::onQueryChange)
+                ?.let { spoken ->
+                    if (state.paletteVisible) viewModel.onQueryChange(spoken)
+                    else viewModel.navigate(spoken)
+                }
         }
     }
 
