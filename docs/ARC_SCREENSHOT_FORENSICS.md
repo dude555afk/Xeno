@@ -346,3 +346,93 @@ The current manifest contains **30 asset records and 123 measured region boxes**
 - 5 iOS-only captures explicitly excluded from Android geometry.
 
 These are manual preview-coordinate estimates, with relative boxes and sizes; they are not raw source-native pixel measurements. Exact RGB sampling, true source resolutions, Android dp conversion, corner-radius radii and animation timings are not claimed in this pass.
+
+
+## L. High-value four-screen Android montage: direct geometry
+
+Source: Clubic, 2024-10-07, original image delivered at 1200 × 667:  
+https://pic.clubic.com/f80fea002247335/1200x667/smart/arc-browser-android.jpg
+
+This is a notably more useful artifact than a phone photograph: four Android screen states are tiled side by side without perspective distortion. The montage can be divided into four approximate 300 × 667 panels. Its panels were inspected directly and are stored in the manifest as `CLUBIC-FOUR-SCREEN-MONTAGE` with 27 region boxes.
+
+### Panel 1: home
+
+- Panel bounds: [0, 0, 300, 667].
+- Main mark: [95, 280, 205, 385], approx. 110 × 105 px.
+- Plus control: [120, 600, 180, 630], approx. 60 × 30 px.
+- Settings affordance: [242, 602, 260, 624], approx. 18 × 22 px.
+- The screen is intentionally sparse: no persistent page/address toolbar. The mark sits near the middle-to-upper-middle visual center and the two primary controls sit in the bottom band.
+- These dimensions describe this 1200 × 667 publisher montage only. They are not 110 dp mark dimensions.
+
+### Panel 2: search suggestions
+
+- Panel bounds: [300, 0, 600, 667].
+- Query capsule: [310, 261, 590, 308], 280 × 47 px, about 93.3% of the 300 px screen width.
+- Suggestion list: [310, 322, 592, 636].
+- Visible row boxes:
+  - row 1: [310, 335, 592, 379]
+  - row 2: [310, 387, 592, 431]
+  - row 3: [310, 439, 592, 483]
+  - row 4: [310, 491, 592, 535]
+  - row 5: [310, 543, 592, 587]
+  - row 6, partially visible at bottom: [310, 595, 592, 636]
+- Row starts advance by about 52 px; row height is about 44 px, giving about an 8 px gap between rows.
+- Each row contains a left-side search icon/text and its own right-side blue “Browse for me” pill. Those must remain independent click targets.
+- The lower suggestion list occupies the bottom half of the screen while the upper half retains the blurred/gradient atmosphere. This is why a simple centered field with no full suggestion state cannot match the reference.
+
+### Panel 3: Browse for Me result
+
+- Panel bounds: [600, 0, 900, 667].
+- Query capsule: [610, 46, 890, 91], 280 × 45 px, again about 93.3% of panel width.
+- Image carousel: [610, 117, 900, 260], 290 × 143 px; the rightmost image is cropped by the panel edge.
+- Answer heading: [610, 270, 889, 314], approx. 279 × 44 px.
+- Body: [613, 336, 889, 577], approx. 276 × 241 px.
+- Bottom dock: [600, 611, 900, 640], approx. 300 × 29 px. Android's system navigation area occupies the remaining bottom strip.
+- Query-to-carousel vertical gap is about 26 px; carousel-to-heading gap is about 10 px; heading-to-body gap is about 22 px.
+- This is a compact, vertically continuous answer page with images, heading and structured text. It is not a conversation UI, and the image row is a horizontal carousel with overflow clipping.
+
+### Panel 4: website + expanded controls
+
+- Panel bounds: [900, 0, 1200, 667].
+- Website content remains visible above the control surface: [900, 0, 1200, 295].
+- Address/navigation row: [912, 293, 1191, 334], approx. 279 × 41 px.
+- Main action grid: [913, 339, 1190, 419], approx. 277 × 80 px.
+  - Its four visible actions are Translate, Pin, Find and Share.
+- Zoom row: [911, 430, 1190, 466].
+- Desktop Site row: [910, 472, 1190, 509].
+- Site Settings row: [910, 511, 1190, 548].
+- Blocked ads/trackers status: [910, 552, 1190, 589].
+- The controls layer starts around y=293, roughly 44% of the image canvas down; it does not replace the whole webpage with an unrelated full-screen Settings page.
+- The address row has back/forward affordances, domain/URL, link/copy and reload affordances in this frame. Keep the page-controls hierarchy separate from global app settings.
+
+### Why this montage changes the implementation spec
+
+1. **Search field is almost full content width:** in two separate panels its width is roughly 93.3% of the screen panel, with ~10 px side margins in this montage. A narrow centered capsule is wrong.
+2. **Search has a dense stateful suggestion list:** there are six visible rows, each around 44 px high with approximately 8 px gaps, each with a dedicated action.
+3. **Browse for Me has stable repeated geometry:** query capsule, clipped image carousel, title, body and bottom dock are separate, repeatable surfaces.
+4. **Page controls are an anchored bottom layer:** the webpage stays visible above it; the tool grid and rows are stacked in a predictable hierarchy.
+5. **Several rows are visible at once:** actions are not all buried behind a multi-level generic menu.
+6. **These values are image px, not dp:** to convert a panel coordinate to Android dp, the original device screenshot density and any publisher resize factor must be known. This is still a measurable screenshot geometry reference and is considerably more trustworthy than a perspective-distorted handset photo.
+
+## M. Android settings taxonomy observed in a separate launch-period image
+
+The stable-launch coverage image from Astro Awani shows two Android screen states side-by-side: the quiet home surface and the **actual in-app App Settings page**. Source:
+https://img.astroawani.com/2024-11/61731643773_ArcSearch.jpg
+
+The Settings page's order and groups are readable even though the whole artwork also includes a white promotional background. The observable categories are:
+
+- **Global:** Global Site Settings.
+- **Defaults:** Set Arc as Default Browser, Change App Icon, Search Engines (with the chosen engine shown beneath), Languages.
+- **Storage:** Archive, Archive Inactive Tabs (shown as “After 1 day”), Clear Browsing Data, Downloads.
+- **Options:** Auto-Open Keyboard and Always Open App Links, each with a switch.
+
+This is a functional taxonomy reference, not a pixel-measurement reference: the actual settings panel is scaled inside a combined editorial image. The one-day archive value is what this *historical screenshot* shows, not an assertion that every Android version or user configuration always uses that value.
+
+## N. Interaction facts corroborated by contemporary reporting
+
+Clubic's accompanying article says that pressing Enter on a typed query performs an ordinary Google search, while the distinct “Browse for me” action invokes the multi-source answer generator. It describes Incognito inside the search bar and a quick-controls section with Translate, Pin, Find, Zoom, Desktop Site and Site Settings. Source:
+https://www.clubic.com/actualite-539771-arc-search-le-navigateur-qui-veut-reinventer-l-experience-web-debarque-sur-android.html
+
+This separates two explicit intents that Xeno must not accidentally merge:
+- **Search submit:** navigate to the configured search engine.
+- **Browse for Me action:** invoke multi-source retrieval and render the structured answer.
