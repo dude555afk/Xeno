@@ -228,16 +228,7 @@
             21,
             238,
             408,
-            523
-          ]
-        },
-        {
-          "name": "source-carousel",
-          "bbox": [
-            19,
-            816,
-            410,
-            899
+            902
           ]
         },
         {
@@ -609,10 +600,10 @@
         {
           "name": "headline",
           "bbox": [
-            111,
-            784,
-            317,
-            854
+            109,
+            592,
+            320,
+            661
           ]
         },
         {
@@ -635,7 +626,8 @@
         }
       ],
       "observations": [
-        "Some visually estimated boxes overlap in this rendered view; source binary is needed to resolve exact bounds."
+        "Headline is above the bottom call-to-action; prior preview estimate placed it too low and was corrected after reinspection.",
+        "Historical 2024 onboarding screenshot; use only as a reference for that flow."
       ]
     },
     {
