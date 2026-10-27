@@ -55,12 +55,13 @@ import com.dude555afk.xeno.core.model.Space
 import com.dude555afk.xeno.core.model.SiteCapability
 import com.dude555afk.xeno.core.model.SitePermissions
 import com.dude555afk.xeno.core.storage.HistoryEntity
+import com.dude555afk.xeno.core.storage.CollectedPage
 import com.dude555afk.xeno.ui.theme.StrokeSubtle
 import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, AI, TRANSLATE, SPACES, SITE_SETTINGS }
+enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, ARCHIVE, PINNED, PRIVACY, SETTINGS, AI, TRANSLATE, SPACES, SITE_SETTINGS }
 
 data class BrowserDownload(
     val id: Long,
@@ -90,6 +91,9 @@ fun BrowserToolsSheet(
     currentUrl: String,
     desktopSiteEnabled: Boolean,
     downloads: List<BrowserDownload>,
+    archiveEntries: List<CollectedPage>,
+    pinnedPages: List<CollectedPage>,
+    archiveRetentionHours: Int,
     blockingEnabled: Boolean,
     thirdPartyCookiesEnabled: Boolean,
     fingerprintingProtectionEnabled: Boolean,
@@ -106,6 +110,13 @@ fun BrowserToolsSheet(
     onAutoOpenKeyboardChange: (Boolean) -> Unit,
     onSearchEngineChange: (String) -> Unit,
     onOpenDefaultAppsSettings: () -> Unit,
+    onPinCurrentPage: () -> Unit,
+    onArchiveCurrentTab: () -> Unit,
+    onUnpinPage: (CollectedPage) -> Unit,
+    onOpenPinnedPage: (CollectedPage) -> Unit,
+    onOpenArchivedPage: (CollectedPage) -> Unit,
+    onRemoveArchivedPage: (CollectedPage) -> Unit,
+    onArchiveRetentionChange: (Int) -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onCopyCurrentUrl: () -> Unit,
@@ -210,6 +221,8 @@ fun BrowserToolsSheet(
                                     BrowserPanel.HISTORY -> "History"
                                     BrowserPanel.BOOKMARKS -> "Bookmarks"
                                     BrowserPanel.DOWNLOADS -> "Downloads"
+                                    BrowserPanel.ARCHIVE -> "Archive"
+                                    BrowserPanel.PINNED -> "Pinned pages"
                                     BrowserPanel.PRIVACY -> "Privacy"
                                     BrowserPanel.SETTINGS -> "Settings"
                                     BrowserPanel.AI -> "AI and Browse for Me"
@@ -228,6 +241,8 @@ fun BrowserToolsSheet(
                                     BrowserPanel.HISTORY -> if (isPrivateMode) "Temporary private history" else "Stored on this device"
                                     BrowserPanel.BOOKMARKS -> "Your saved pages"
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
+                                    BrowserPanel.ARCHIVE -> "Inactive tabs saved on this device"
+                                    BrowserPanel.PINNED -> "Pages you keep close"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
                                     BrowserPanel.SETTINGS -> "Search, privacy and app preferences"
                                     BrowserPanel.AI -> "Provider, model and request settings"
@@ -265,6 +280,20 @@ fun BrowserToolsSheet(
                                         Icons.Rounded.BookmarkAdd,
                                         onAddBookmark
                                     )
+                                    val pinnedPage = pinnedPages.firstOrNull { it.url == currentUrl }
+                                    MenuAction(
+                                        if (pinnedPage == null) "Pin current page" else "Unpin current page",
+                                        currentTitle.ifBlank { currentUrl },
+                                        Icons.Rounded.Bookmarks
+                                    ) {
+                                        if (pinnedPage == null) onPinCurrentPage() else onUnpinPage(pinnedPage)
+                                    }
+                                    MenuAction(
+                                        "Archive this tab",
+                                        "Save the page and close this tab",
+                                        Icons.Rounded.History,
+                                        onArchiveCurrentTab
+                                    )
                                 }
                             }
                             if (!isPrivateMode) {
@@ -278,6 +307,10 @@ fun BrowserToolsSheet(
                                 onTogglePrivateMode
                             )
                             MenuAction("History", "Recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
+                            MenuAction("Archive", "${archiveEntries.size} archived pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.ARCHIVE) }
+                            if (!isPrivateMode) {
+                                MenuAction("Pinned pages", "${pinnedPages.size} pinned pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.PINNED) }
+                            }
                             MenuAction("Downloads", "Files and download status", Icons.Rounded.Download) {
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
                                 onRefreshDownloads()
@@ -290,6 +323,98 @@ fun BrowserToolsSheet(
                             MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
                             MenuAction("Settings", "Search, privacy and app preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
+                        }
+                        BrowserPanel.ARCHIVE -> Column(
+                            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                "ARCHIVE INACTIVE TABS AFTER",
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                            )
+                            listOf(
+                                12 to "12 hours",
+                                24 to "1 day",
+                                72 to "3 days",
+                                168 to "7 days",
+                                720 to "30 days"
+                            ).chunked(3).forEach { rowOptions ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    rowOptions.forEach { (hours, label) ->
+                                        FilterChip(
+                                            selected = archiveRetentionHours == hours,
+                                            onClick = { onArchiveRetentionChange(hours) },
+                                            enabled = !isPrivateMode,
+                                            label = { Text(label, maxLines = 1) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                            if (archiveEntries.isEmpty()) {
+                                EmptyState("Your Archive is empty")
+                            } else {
+                                LazyColumn(
+                                    Modifier.weight(1f),
+                                    contentPadding = PaddingValues(bottom = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(archiveEntries, key = { it.url }) { page ->
+                                        Row(
+                                            Modifier.fillMaxWidth()
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .clickable { onOpenArchivedPage(page) }
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Rounded.History, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
+                                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                                Text(page.title.ifBlank { page.url }, color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                Text(page.url, color = TextSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            }
+                                            IconButton(onClick = { onOpenArchivedPage(page) }) {
+                                                Icon(Icons.Rounded.OpenInNew, "Restore page", tint = TextSecondary)
+                                            }
+                                            IconButton(onClick = { onRemoveArchivedPage(page) }) {
+                                                Icon(Icons.Rounded.DeleteOutline, "Remove from Archive", tint = TextSecondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        BrowserPanel.PINNED -> {
+                            if (pinnedPages.isEmpty()) EmptyState("No pinned pages yet")
+                            else LazyColumn(
+                                Modifier.weight(1f).fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(pinnedPages, key = { it.url }) { page ->
+                                    Row(
+                                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                                            .clickable { onOpenPinnedPage(page) }
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Rounded.Bookmarks, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                            Text(page.title.ifBlank { page.url }, color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(page.url, color = TextSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        IconButton(onClick = { onUnpinPage(page) }) {
+                                            Icon(Icons.Rounded.DeleteOutline, "Unpin page", tint = TextSecondary)
+                                        }
+                                    }
+                                }
+                            }
                         }
                         BrowserPanel.BOOKMARKS -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -566,8 +691,10 @@ fun BrowserToolsSheet(
                                 onRefreshDownloads()
                             }
                             MenuAction("History", "${history.size} recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
+                            MenuAction("Archive", "${archiveEntries.size} archived pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.ARCHIVE) }
                             if (!isPrivateMode) {
                                 MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                                MenuAction("Pinned pages", "${pinnedPages.size} pinned pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.PINNED) }
                             }
                             MenuAction("Spaces", "${spaces.size} browsing spaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
                             MenuAction("AI and Browse for Me", "${provider.displayName} · ${provider.model}", Icons.Rounded.AutoAwesome) { onOpenPanel(BrowserPanel.AI) }
