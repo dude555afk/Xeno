@@ -1,0 +1,1175 @@
+{
+  "title": "Arc Search Android screenshot preview measurements",
+  "date": "2026-10-27",
+  "coordinateConvention": "[left, top, right, bottom), preview-canvas pixels",
+  "caveat": "Coordinates were manually read from rendered web previews, not original image binaries. Preview canvas sizes do not establish source-native pixels or display density. Bounding boxes are approximate (typically ±4–8 preview px). Do not convert directly to dp or use visual color estimates as exact RGB samples.",
+  "items": [
+    {
+      "id": "AA-BFM-01",
+      "category": "full-screen-app-capture",
+      "state": "Browse for Me answer, top",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-1.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            0,
+            0,
+            428,
+            34
+          ]
+        },
+        {
+          "name": "query-pill",
+          "bbox": [
+            19,
+            54,
+            410,
+            110
+          ]
+        },
+        {
+          "name": "hero-image-carousel",
+          "bbox": [
+            19,
+            134,
+            428,
+            310
+          ]
+        },
+        {
+          "name": "hero-card-1",
+          "bbox": [
+            19,
+            134,
+            157,
+            310
+          ]
+        },
+        {
+          "name": "hero-card-2",
+          "bbox": [
+            168,
+            134,
+            307,
+            310
+          ]
+        },
+        {
+          "name": "hero-card-3-visible-crop",
+          "bbox": [
+            319,
+            134,
+            428,
+            310
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            19,
+            365,
+            412,
+            416
+          ]
+        },
+        {
+          "name": "first-content-section",
+          "bbox": [
+            22,
+            442,
+            407,
+            590
+          ]
+        },
+        {
+          "name": "source-carousel",
+          "bbox": [
+            19,
+            816,
+            409,
+            899
+          ]
+        },
+        {
+          "name": "bottom-dock",
+          "bbox": [
+            0,
+            910,
+            428,
+            959
+          ]
+        },
+        {
+          "name": "tab-switcher-affordance",
+          "bbox": [
+            47,
+            924,
+            99,
+            959
+          ]
+        },
+        {
+          "name": "plus-pill",
+          "bbox": [
+            172,
+            910,
+            258,
+            959
+          ]
+        },
+        {
+          "name": "up-chevron",
+          "bbox": [
+            378,
+            925,
+            400,
+            948
+          ]
+        }
+      ],
+      "observations": [
+        "Search pill is about 91.4% of preview width, with side margins about 4.4%.",
+        "Image carousel uses portrait cards and clips the third card at the right edge.",
+        "Bottom dock appears fixed while the answer is scrollable."
+      ]
+    },
+    {
+      "id": "AA-BFM-02",
+      "category": "full-screen-app-capture",
+      "state": "Browse for Me lower answer section",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-2.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            0,
+            0,
+            428,
+            34
+          ]
+        },
+        {
+          "name": "section-heading",
+          "bbox": [
+            19,
+            34,
+            246,
+            59
+          ]
+        },
+        {
+          "name": "section-body-list",
+          "bbox": [
+            20,
+            72,
+            409,
+            902
+          ]
+        },
+        {
+          "name": "bottom-dock",
+          "bbox": [
+            0,
+            910,
+            428,
+            959
+          ]
+        }
+      ],
+      "observations": [
+        "Scroll state places section heading close to top.",
+        "Repeated icon + bold label + explanation rows form a consistent content grammar.",
+        "Same bottom dock persists."
+      ]
+    },
+    {
+      "id": "AA-BFM-03",
+      "category": "full-screen-app-capture",
+      "state": "Alternate Browse for Me answer / continuation",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-3.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "partially-scrolled-image-strip",
+          "bbox": [
+            19,
+            38,
+            428,
+            153
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            19,
+            170,
+            413,
+            223
+          ]
+        },
+        {
+          "name": "summary-rows",
+          "bbox": [
+            21,
+            238,
+            408,
+            523
+          ]
+        },
+        {
+          "name": "source-carousel",
+          "bbox": [
+            19,
+            816,
+            410,
+            899
+          ]
+        },
+        {
+          "name": "bottom-dock",
+          "bbox": [
+            0,
+            910,
+            428,
+            959
+          ]
+        }
+      ],
+      "observations": [
+        "Carousel can be partially clipped by current scroll position.",
+        "Page geometry repeats between different answer queries."
+      ]
+    },
+    {
+      "id": "AA-WEB-01",
+      "category": "full-screen-app-capture",
+      "state": "Web page in Arc with bottom dock",
+      "sourceUrl": "https://i0.wp.com/9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-Android-1-1.jpg?ssl=1",
+      "previewCanvasPx": [
+        443,
+        960
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "system-strip",
+          "bbox": [
+            0,
+            0,
+            443,
+            36
+          ]
+        },
+        {
+          "name": "web-content",
+          "bbox": [
+            0,
+            36,
+            443,
+            917
+          ]
+        },
+        {
+          "name": "bottom-dock",
+          "bbox": [
+            0,
+            916,
+            443,
+            959
+          ]
+        },
+        {
+          "name": "tab-switcher-affordance",
+          "bbox": [
+            48,
+            931,
+            101,
+            959
+          ]
+        },
+        {
+          "name": "plus-pill",
+          "bbox": [
+            182,
+            929,
+            266,
+            959
+          ]
+        },
+        {
+          "name": "up-chevron",
+          "bbox": [
+            366,
+            936,
+            383,
+            954
+          ]
+        },
+        {
+          "name": "system-gesture-area-estimate",
+          "bbox": [
+            165,
+            952,
+            278,
+            959
+          ]
+        }
+      ],
+      "observations": [
+        "Very little persistent browser chrome above the page.",
+        "Treat the app dock and Android gesture inset as separate layout quantities."
+      ]
+    },
+    {
+      "id": "AA-ONB-01",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Intro / get what you want twice as fast",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-1.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "mark",
+          "bbox": [
+            177,
+            190,
+            251,
+            253
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            105,
+            449,
+            324,
+            537
+          ]
+        },
+        {
+          "name": "lets-go-action",
+          "bbox": [
+            329,
+            918,
+            389,
+            941
+          ]
+        }
+      ],
+      "observations": [
+        "Historical 2024 onboarding screenshot; do not treat as current main-screen truth."
+      ]
+    },
+    {
+      "id": "AA-ONB-02",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Feature explanation cards",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-2.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "headline",
+          "bbox": [
+            117,
+            219,
+            311,
+            272
+          ]
+        },
+        {
+          "name": "feature-stack",
+          "bbox": [
+            20,
+            388,
+            408,
+            699
+          ]
+        },
+        {
+          "name": "footer-wave-start-estimate",
+          "bbox": [
+            0,
+            907,
+            428,
+            916
+          ]
+        },
+        {
+          "name": "progress-indicators",
+          "bbox": [
+            192,
+            923,
+            232,
+            935
+          ]
+        },
+        {
+          "name": "next-action",
+          "bbox": [
+            333,
+            934,
+            412,
+            958
+          ]
+        }
+      ],
+      "observations": [
+        "Historical 2024 onboarding screenshot; do not treat as current main-screen truth."
+      ]
+    },
+    {
+      "id": "AA-ONB-03",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Search field and suggestions tutorial",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-3.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "headline",
+          "bbox": [
+            98,
+            201,
+            331,
+            256
+          ]
+        },
+        {
+          "name": "example-search-suggestions-sheet",
+          "bbox": [
+            32,
+            583,
+            398,
+            913
+          ]
+        }
+      ],
+      "observations": [
+        "Historical 2024 onboarding screenshot; do not treat as current main-screen truth."
+      ]
+    },
+    {
+      "id": "AA-ONB-04",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Browse for Me skeleton tutorial",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-4.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "success-checkmark",
+          "bbox": [
+            194,
+            208,
+            235,
+            249
+          ]
+        },
+        {
+          "name": "answer-panel",
+          "bbox": [
+            32,
+            354,
+            398,
+            913
+          ]
+        },
+        {
+          "name": "query-pill",
+          "bbox": [
+            50,
+            371,
+            378,
+            423
+          ]
+        },
+        {
+          "name": "image-carousel",
+          "bbox": [
+            50,
+            449,
+            398,
+            657
+          ]
+        },
+        {
+          "name": "answer-title",
+          "bbox": [
+            51,
+            682,
+            375,
+            733
+          ]
+        }
+      ],
+      "observations": [
+        "Historical 2024 onboarding screenshot; do not treat as current main-screen truth."
+      ]
+    },
+    {
+      "id": "AA-ONB-05",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Ad-block explainer",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-5.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "headline",
+          "bbox": [
+            97,
+            185,
+            332,
+            231
+          ]
+        },
+        {
+          "name": "website-mockup",
+          "bbox": [
+            66,
+            305,
+            362,
+            914
+          ]
+        },
+        {
+          "name": "block-ads-callout",
+          "bbox": [
+            16,
+            722,
+            412,
+            807
+          ]
+        },
+        {
+          "name": "footer-wave-start-estimate",
+          "bbox": [
+            0,
+            907,
+            428,
+            916
+          ]
+        }
+      ],
+      "observations": [
+        "Historical 2024 onboarding screenshot; do not treat as current main-screen truth."
+      ]
+    },
+    {
+      "id": "AA-ONB-06",
+      "category": "historical-full-screen-onboarding-capture",
+      "state": "Set default browser",
+      "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-6.jpg",
+      "previewCanvasPx": [
+        428,
+        959
+      ],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "app-icon",
+          "bbox": [
+            126,
+            252,
+            302,
+            436
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            111,
+            784,
+            317,
+            854
+          ]
+        },
+        {
+          "name": "default-browser-action",
+          "bbox": [
+            17,
+            789,
+            412,
+            840
+          ]
+        },
+        {
+          "name": "footer-progress-area",
+          "bbox": [
+            0,
+            912,
+            428,
+            959
+          ]
+        }
+      ],
+      "observations": [
+        "Some visually estimated boxes overlap in this rendered view; source binary is needed to resolve exact bounds."
+      ]
+    },
+    {
+      "id": "COMSS-TRIPTYCH-01",
+      "category": "three-screen-composite",
+      "state": "onboarding example, search suggestions, site controls",
+      "sourceUrl": "https://cdn.comss.net/img/092024/arcsearch_android-screen1.png",
+      "previewCanvasPx": [
+        512,
+        512
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "onboarding-panel",
+          "bbox": [
+            0,
+            0,
+            171,
+            512
+          ]
+        },
+        {
+          "name": "search-suggestions-panel",
+          "bbox": [
+            171,
+            0,
+            341,
+            512
+          ]
+        },
+        {
+          "name": "site-controls-panel",
+          "bbox": [
+            341,
+            0,
+            512,
+            512
+          ]
+        },
+        {
+          "name": "search-query-pill-visible",
+          "bbox": [
+            222,
+            196,
+            333,
+            229
+          ]
+        }
+      ],
+      "observations": [
+        "Three panels compressed into one square composite; use only for component/state inventory.",
+        "Not valid for per-row sizing or exact color sampling."
+      ]
+    },
+    {
+      "id": "DESIGN-HERO-01",
+      "category": "marketing-composite",
+      "state": "home, Browse for Me, webpage/tab states",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=95&url=%2Fimages%2Farc%2Farc-hero-mockup.png&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "left-home-phone",
+          "bbox": [
+            0,
+            92,
+            296,
+            563
+          ]
+        },
+        {
+          "name": "center-answer-phone",
+          "bbox": [
+            273,
+            0,
+            748,
+            563
+          ]
+        },
+        {
+          "name": "center-query-pill",
+          "bbox": [
+            308,
+            82,
+            711,
+            142
+          ]
+        },
+        {
+          "name": "center-image-carousel",
+          "bbox": [
+            307,
+            171,
+            711,
+            421
+          ]
+        },
+        {
+          "name": "center-answer-heading",
+          "bbox": [
+            307,
+            451,
+            699,
+            519
+          ]
+        },
+        {
+          "name": "right-webpage-phone",
+          "bbox": [
+            706,
+            94,
+            1000,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Phone devices overlap; center phone is clipped at top/bottom of composite.",
+        "Coordinates refer only to the marketing canvas; never convert to app dp."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-01",
+      "category": "marketing-composite",
+      "state": "Browse for Me image answer example",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-1.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "left-search-phone",
+          "bbox": [
+            70,
+            119,
+            311,
+            563
+          ]
+        },
+        {
+          "name": "center-answer-phone",
+          "bbox": [
+            300,
+            35,
+            707,
+            563
+          ]
+        },
+        {
+          "name": "center-query-pill",
+          "bbox": [
+            331,
+            73,
+            668,
+            121
+          ]
+        },
+        {
+          "name": "center-image-carousel",
+          "bbox": [
+            330,
+            134,
+            695,
+            388
+          ]
+        },
+        {
+          "name": "center-answer-heading",
+          "bbox": [
+            330,
+            417,
+            683,
+            480
+          ]
+        }
+      ],
+      "observations": [
+        "Overlapping portfolio composite; component ratios corroborate AA-BFM screenshots."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-10",
+      "category": "marketing-onboarding-composite",
+      "state": "intro, feature explainers, app icon selection",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-10.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "intro-panel",
+          "bbox": [
+            76,
+            47,
+            413,
+            563
+          ]
+        },
+        {
+          "name": "feature-cards-panel",
+          "bbox": [
+            434,
+            48,
+            776,
+            563
+          ]
+        },
+        {
+          "name": "icon-selection-panel-visible",
+          "bbox": [
+            803,
+            48,
+            1000,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Panels clipped by composite edges; intended as narrative artwork."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-13",
+      "category": "marketing-composite",
+      "state": "text-first versus image/card answer layouts",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-13.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "text-answer-phone",
+          "bbox": [
+            163,
+            53,
+            480,
+            563
+          ]
+        },
+        {
+          "name": "image-list-answer-phone",
+          "bbox": [
+            526,
+            53,
+            841,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Layout changes by query intent; not every generated result uses image cards.",
+        "Content is rendered in page-like sections, not generic chat bubbles."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-15",
+      "category": "marketing-composite",
+      "state": "tab carousel",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-15.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "phone-canvas",
+          "bbox": [
+            339,
+            24,
+            662,
+            563
+          ]
+        },
+        {
+          "name": "foreground-tab-card",
+          "bbox": [
+            397,
+            164,
+            602,
+            563
+          ]
+        },
+        {
+          "name": "left-neighbor-visible",
+          "bbox": [
+            340,
+            164,
+            390,
+            563
+          ]
+        },
+        {
+          "name": "right-neighbor-visible",
+          "bbox": [
+            600,
+            164,
+            660,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Raised active card; neighbors reveal depth and horizontal pager structure.",
+        "Perspective is baked into phone/composite, so use only to infer relative organization."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-17",
+      "category": "marketing-composite",
+      "state": "Browse for Me loading skeleton",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-17.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "phone-canvas",
+          "bbox": [
+            326,
+            132,
+            680,
+            563
+          ]
+        },
+        {
+          "name": "query-pill",
+          "bbox": [
+            350,
+            189,
+            655,
+            228
+          ]
+        },
+        {
+          "name": "image-carousel",
+          "bbox": [
+            347,
+            247,
+            661,
+            405
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            348,
+            431,
+            653,
+            455
+          ]
+        },
+        {
+          "name": "skeleton-content",
+          "bbox": [
+            348,
+            472,
+            650,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Skeleton placeholders reserve the final content structure underneath the answer title.",
+        "Visible card carousel has a right-edge clipped card."
+      ]
+    },
+    {
+      "id": "DESIGN-CONTENT-21",
+      "category": "marketing-composite",
+      "state": "home, Browse for Me, site controls triptych",
+      "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-21.webp&w=3840",
+      "previewCanvasPx": [
+        1000,
+        563
+      ],
+      "confidence": "low",
+      "regions": [
+        {
+          "name": "home-marketing-panel",
+          "bbox": [
+            0,
+            43,
+            498,
+            563
+          ]
+        },
+        {
+          "name": "browse-for-me-panel",
+          "bbox": [
+            509,
+            43,
+            810,
+            563
+          ]
+        },
+        {
+          "name": "site-settings-panel-visible",
+          "bbox": [
+            823,
+            43,
+            1000,
+            563
+          ]
+        }
+      ],
+      "observations": [
+        "Marketing layout intentionally crops panels; use as state inventory not absolute UI bounds."
+      ]
+    },
+    {
+      "id": "PLAY-01",
+      "category": "official-store-marketing-composite",
+      "state": "home/search suggestions",
+      "sourceUrl": "https://play-lh.googleusercontent.com/I0kU4HZmuhG7jZv55_tCUxN1GXnoKWfv5GwEtroFSYm6RIpbJ_kN_fxDSbLalg7Q44K0sR0qw0qilmM-NXkq%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-02",
+      "category": "official-store-marketing-composite",
+      "state": "Browse for Me answer",
+      "sourceUrl": "https://play-lh.googleusercontent.com/VgIqB_Xxdg1kepXRpQWk2HYOhK3HgSAKaFF9yc0zkFedsIIX1jtbrYCd8FE1VqNmSIub8Us50SLbSjhNNMvFmA%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-03",
+      "category": "official-store-marketing-composite",
+      "state": "site settings toggles",
+      "sourceUrl": "https://play-lh.googleusercontent.com/yXPryxLzcpWQPxHvXeYlTta_sNkQHZ0Vp4Nhjk-_O52Xzr31RI5ynkZY_yUh4Pn6d1mtKwsetJxrxKiXfq1a%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-04",
+      "category": "official-store-marketing-composite",
+      "state": "tab switcher and auto-archive",
+      "sourceUrl": "https://play-lh.googleusercontent.com/FbMaRusDityz7-QysRwWuzId8f9-X_Y8xFtg-MsLXIrtUJrTpY2zbhO2LuZ8hqKrlB3v9vQgdVJ4uRs4hYQ8xQ%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-05",
+      "category": "official-store-marketing-composite",
+      "state": "voice-search promotion",
+      "sourceUrl": "https://play-lh.googleusercontent.com/2ecjJuKa-jQEDiTfYvW21iR-OdfRkKdSgayNM0KMzaNwAoAqWaj15_9WzgjSQXU8EhfJ9DZr0GdR0_wqPl01%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-06",
+      "category": "official-store-marketing-composite",
+      "state": "Android home-screen widget",
+      "sourceUrl": "https://play-lh.googleusercontent.com/6hBpv85LX7AZxm98edYFWVpUnJucZEY-f-G__YKSzM4un47GofSwd1A-ll4LOELFnunm_Q9wncxGvlm7ZBf7LQ%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    },
+    {
+      "id": "PLAY-07",
+      "category": "official-store-marketing-composite",
+      "state": "default-browser onboarding",
+      "sourceUrl": "https://play-lh.googleusercontent.com/uNSfZNznU9vTMZc_lVvFihDV7QGj3xBHZe7ZO7QvSffxOB8W8aRoF9n21Zlg6N7zGD75WD99jSkKyWwakkiEqw%3Dw526-h296",
+      "previewCanvasPx": [
+        166,
+        296
+      ],
+      "confidence": "low",
+      "regions": [],
+      "observations": [
+        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
+        "Component/state inventory only; no native app geometry measured."
+      ]
+    }
+  ]
+}
