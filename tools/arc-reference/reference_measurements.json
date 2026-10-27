@@ -9,10 +9,6 @@
       "category": "full-screen-app-capture",
       "state": "Browse for Me answer, top",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-1.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -23,15 +19,15 @@
             1080,
             89
           ],
-          "sizePreviewPx": [
-            1080,
-            89
-          ],
           "bboxNormalized": [
             0,
             0,
             1,
             0.0353
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            89
           ]
         },
         {
@@ -42,15 +38,15 @@
             1035,
             289
           ],
-          "sizePreviewPx": [
-            987,
-            147
-          ],
           "bboxNormalized": [
             0.0444,
             0.0563,
             0.9583,
             0.1147
+          ],
+          "sizeCoordinatePx": [
+            987,
+            147
           ]
         },
         {
@@ -61,15 +57,15 @@
             1080,
             815
           ],
-          "sizePreviewPx": [
-            1032,
-            463
-          ],
           "bboxNormalized": [
             0.0444,
             0.1397,
             1,
             0.3234
+          ],
+          "sizeCoordinatePx": [
+            1032,
+            463
           ]
         },
         {
@@ -80,15 +76,15 @@
             396,
             815
           ],
-          "sizePreviewPx": [
-            348,
-            463
-          ],
           "bboxNormalized": [
             0.0444,
             0.1397,
             0.3667,
             0.3234
+          ],
+          "sizeCoordinatePx": [
+            348,
+            463
           ]
         },
         {
@@ -99,15 +95,15 @@
             775,
             815
           ],
-          "sizePreviewPx": [
-            351,
-            463
-          ],
           "bboxNormalized": [
             0.3926,
             0.1397,
             0.7176,
             0.3234
+          ],
+          "sizeCoordinatePx": [
+            351,
+            463
           ]
         },
         {
@@ -118,15 +114,15 @@
             1080,
             815
           ],
-          "sizePreviewPx": [
-            275,
-            463
-          ],
           "bboxNormalized": [
             0.7454,
             0.1397,
             1,
             0.3234
+          ],
+          "sizeCoordinatePx": [
+            275,
+            463
           ]
         },
         {
@@ -137,15 +133,15 @@
             1040,
             1093
           ],
-          "sizePreviewPx": [
-            992,
-            134
-          ],
           "bboxNormalized": [
             0.0444,
             0.3806,
             0.963,
             0.4337
+          ],
+          "sizeCoordinatePx": [
+            992,
+            134
           ]
         },
         {
@@ -156,15 +152,15 @@
             1027,
             1550
           ],
-          "sizePreviewPx": [
-            971,
-            389
-          ],
           "bboxNormalized": [
             0.0519,
             0.4607,
             0.9509,
             0.6151
+          ],
+          "sizeCoordinatePx": [
+            971,
+            389
           ]
         },
         {
@@ -175,15 +171,15 @@
             1032,
             2362
           ],
-          "sizePreviewPx": [
-            984,
-            218
-          ],
           "bboxNormalized": [
             0.0444,
             0.8508,
             0.9556,
             0.9373
+          ],
+          "sizeCoordinatePx": [
+            984,
+            218
           ]
         },
         {
@@ -194,15 +190,15 @@
             1080,
             2520
           ],
-          "sizePreviewPx": [
-            1080,
-            129
-          ],
           "bboxNormalized": [
             0,
             0.9488,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            129
           ]
         },
         {
@@ -213,15 +209,15 @@
             250,
             2520
           ],
-          "sizePreviewPx": [
-            131,
-            92
-          ],
           "bboxNormalized": [
             0.1102,
             0.9635,
             0.2315,
             1
+          ],
+          "sizeCoordinatePx": [
+            131,
+            92
           ]
         },
         {
@@ -232,15 +228,15 @@
             651,
             2520
           ],
-          "sizePreviewPx": [
-            217,
-            129
-          ],
           "bboxNormalized": [
             0.4019,
             0.9488,
             0.6028,
             1
+          ],
+          "sizeCoordinatePx": [
+            217,
+            129
           ]
         },
         {
@@ -251,15 +247,15 @@
             1009,
             2491
           ],
-          "sizePreviewPx": [
-            55,
-            60
-          ],
           "bboxNormalized": [
             0.8833,
             0.9647,
             0.9343,
             0.9885
+          ],
+          "sizeCoordinatePx": [
+            55,
+            60
           ]
         }
       ],
@@ -269,17 +265,17 @@
         "Bottom dock appears fixed while the answer is scrollable.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-BFM-02",
       "category": "full-screen-app-capture",
       "state": "Browse for Me lower answer section",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-2.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -290,15 +286,15 @@
             1080,
             89
           ],
-          "sizePreviewPx": [
-            1080,
-            89
-          ],
           "bboxNormalized": [
             0,
             0,
             1,
             0.0353
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            89
           ]
         },
         {
@@ -309,15 +305,15 @@
             621,
             155
           ],
-          "sizePreviewPx": [
-            573,
-            66
-          ],
           "bboxNormalized": [
             0.0444,
             0.0353,
             0.575,
             0.0615
+          ],
+          "sizeCoordinatePx": [
+            573,
+            66
           ]
         },
         {
@@ -328,15 +324,15 @@
             1032,
             2370
           ],
-          "sizePreviewPx": [
-            982,
-            2181
-          ],
           "bboxNormalized": [
             0.0463,
             0.075,
             0.9556,
             0.9405
+          ],
+          "sizeCoordinatePx": [
+            982,
+            2181
           ]
         },
         {
@@ -347,15 +343,15 @@
             1080,
             2520
           ],
-          "sizePreviewPx": [
-            1080,
-            129
-          ],
           "bboxNormalized": [
             0,
             0.9488,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            129
           ]
         }
       ],
@@ -365,17 +361,17 @@
         "Same bottom dock persists.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-BFM-03",
       "category": "full-screen-app-capture",
       "state": "Alternate Browse for Me answer / continuation",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-browse-for-me-man-united-aston-villa-3.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -386,15 +382,15 @@
             1080,
             402
           ],
-          "sizePreviewPx": [
-            1032,
-            302
-          ],
           "bboxNormalized": [
             0.0444,
             0.0397,
             1,
             0.1595
+          ],
+          "sizeCoordinatePx": [
+            1032,
+            302
           ]
         },
         {
@@ -405,15 +401,15 @@
             1042,
             586
           ],
-          "sizePreviewPx": [
-            994,
-            139
-          ],
           "bboxNormalized": [
             0.0444,
             0.1774,
             0.9648,
             0.2325
+          ],
+          "sizeCoordinatePx": [
+            994,
+            139
           ]
         },
         {
@@ -424,15 +420,15 @@
             1030,
             2370
           ],
-          "sizePreviewPx": [
-            977,
-            1745
-          ],
           "bboxNormalized": [
             0.0491,
             0.248,
             0.9537,
             0.9405
+          ],
+          "sizeCoordinatePx": [
+            977,
+            1745
           ]
         },
         {
@@ -443,15 +439,15 @@
             1080,
             2520
           ],
-          "sizePreviewPx": [
-            1080,
-            129
-          ],
           "bboxNormalized": [
             0,
             0.9488,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            129
           ]
         }
       ],
@@ -460,17 +456,17 @@
         "Page geometry repeats between different answer queries.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-WEB-01",
       "category": "full-screen-app-capture",
       "state": "Web page in Arc with bottom dock",
       "sourceUrl": "https://i0.wp.com/9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-Android-1-1.jpg?ssl=1",
-      "previewCanvasPx": [
-        443,
-        960
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -481,15 +477,15 @@
             443,
             36
           ],
-          "sizePreviewPx": [
-            443,
-            36
-          ],
           "bboxNormalized": [
             0,
             0,
             1,
             0.0375
+          ],
+          "sizeCoordinatePx": [
+            443,
+            36
           ]
         },
         {
@@ -500,15 +496,15 @@
             443,
             917
           ],
-          "sizePreviewPx": [
-            443,
-            881
-          ],
           "bboxNormalized": [
             0,
             0.0375,
             1,
             0.9552
+          ],
+          "sizeCoordinatePx": [
+            443,
+            881
           ]
         },
         {
@@ -519,15 +515,15 @@
             443,
             959
           ],
-          "sizePreviewPx": [
-            443,
-            43
-          ],
           "bboxNormalized": [
             0,
             0.9542,
             1,
             0.999
+          ],
+          "sizeCoordinatePx": [
+            443,
+            43
           ]
         },
         {
@@ -538,15 +534,15 @@
             101,
             959
           ],
-          "sizePreviewPx": [
-            53,
-            28
-          ],
           "bboxNormalized": [
             0.1084,
             0.9698,
             0.228,
             0.999
+          ],
+          "sizeCoordinatePx": [
+            53,
+            28
           ]
         },
         {
@@ -557,15 +553,15 @@
             266,
             959
           ],
-          "sizePreviewPx": [
-            84,
-            30
-          ],
           "bboxNormalized": [
             0.4108,
             0.9677,
             0.6005,
             0.999
+          ],
+          "sizeCoordinatePx": [
+            84,
+            30
           ]
         },
         {
@@ -576,15 +572,15 @@
             383,
             954
           ],
-          "sizePreviewPx": [
-            17,
-            18
-          ],
           "bboxNormalized": [
             0.8262,
             0.975,
             0.8646,
             0.9938
+          ],
+          "sizeCoordinatePx": [
+            17,
+            18
           ]
         },
         {
@@ -595,21 +591,25 @@
             278,
             959
           ],
-          "sizePreviewPx": [
-            113,
-            7
-          ],
           "bboxNormalized": [
             0.3725,
             0.9917,
             0.6275,
             0.999
+          ],
+          "sizeCoordinatePx": [
+            113,
+            7
           ]
         }
       ],
       "observations": [
         "Very little persistent browser chrome above the page.",
         "Treat the app dock and Android gesture inset as separate layout quantities."
+      ],
+      "coordinateCanvasPx": [
+        443,
+        960
       ]
     },
     {
@@ -617,10 +617,6 @@
       "category": "historical-full-screen-onboarding-capture",
       "state": "Intro / get what you want twice as fast",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-1.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -631,15 +627,15 @@
             633,
             665
           ],
-          "sizePreviewPx": [
-            186,
-            166
-          ],
           "bboxNormalized": [
             0.4139,
             0.198,
             0.5861,
             0.2639
+          ],
+          "sizeCoordinatePx": [
+            186,
+            166
           ]
         },
         {
@@ -650,15 +646,15 @@
             818,
             1411
           ],
-          "sizePreviewPx": [
-            553,
-            231
-          ],
           "bboxNormalized": [
             0.2454,
             0.4683,
             0.7574,
             0.5599
+          ],
+          "sizeCoordinatePx": [
+            553,
+            231
           ]
         },
         {
@@ -669,15 +665,15 @@
             982,
             2473
           ],
-          "sizePreviewPx": [
-            152,
-            61
-          ],
           "bboxNormalized": [
             0.7685,
             0.9571,
             0.9093,
             0.9813
+          ],
+          "sizeCoordinatePx": [
+            152,
+            61
           ]
         }
       ],
@@ -685,17 +681,17 @@
         "Historical 2024 onboarding screenshot; do not treat as current main-screen truth.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-ONB-02",
       "category": "historical-full-screen-onboarding-capture",
       "state": "Feature explanation cards",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-2.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -706,15 +702,15 @@
             785,
             715
           ],
-          "sizePreviewPx": [
-            490,
-            140
-          ],
           "bboxNormalized": [
             0.2731,
             0.2282,
             0.7269,
             0.2837
+          ],
+          "sizeCoordinatePx": [
+            490,
+            140
           ]
         },
         {
@@ -725,15 +721,15 @@
             1030,
             1837
           ],
-          "sizePreviewPx": [
-            980,
-            817
-          ],
           "bboxNormalized": [
             0.0463,
             0.4048,
             0.9537,
             0.729
+          ],
+          "sizeCoordinatePx": [
+            980,
+            817
           ]
         },
         {
@@ -744,15 +740,15 @@
             1080,
             2407
           ],
-          "sizePreviewPx": [
-            1080,
-            24
-          ],
           "bboxNormalized": [
             0,
             0.9456,
             1,
             0.9552
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            24
           ]
         },
         {
@@ -763,15 +759,15 @@
             585,
             2457
           ],
-          "sizePreviewPx": [
-            101,
-            32
-          ],
           "bboxNormalized": [
             0.4481,
             0.9623,
             0.5417,
             0.975
+          ],
+          "sizeCoordinatePx": [
+            101,
+            32
           ]
         },
         {
@@ -782,15 +778,15 @@
             1040,
             2517
           ],
-          "sizePreviewPx": [
-            200,
-            63
-          ],
           "bboxNormalized": [
             0.7778,
             0.9738,
             0.963,
             0.9988
+          ],
+          "sizeCoordinatePx": [
+            200,
+            63
           ]
         }
       ],
@@ -798,17 +794,17 @@
         "Historical 2024 onboarding screenshot; do not treat as current main-screen truth.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-ONB-03",
       "category": "historical-full-screen-onboarding-capture",
       "state": "Search field and suggestions tutorial",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-3.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -819,15 +815,15 @@
             835,
             673
           ],
-          "sizePreviewPx": [
-            588,
-            145
-          ],
           "bboxNormalized": [
             0.2287,
             0.2095,
             0.7731,
             0.2671
+          ],
+          "sizeCoordinatePx": [
+            588,
+            145
           ]
         },
         {
@@ -838,15 +834,15 @@
             1004,
             2399
           ],
-          "sizePreviewPx": [
-            923,
-            867
-          ],
           "bboxNormalized": [
             0.075,
             0.6079,
             0.9296,
             0.952
+          ],
+          "sizeCoordinatePx": [
+            923,
+            867
           ]
         }
       ],
@@ -854,17 +850,17 @@
         "Historical 2024 onboarding screenshot; do not treat as current main-screen truth.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-ONB-04",
       "category": "historical-full-screen-onboarding-capture",
       "state": "Browse for Me skeleton tutorial",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-4.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -875,15 +871,15 @@
             593,
             654
           ],
-          "sizePreviewPx": [
-            103,
-            107
-          ],
           "bboxNormalized": [
             0.4537,
             0.2171,
             0.5491,
             0.2595
+          ],
+          "sizeCoordinatePx": [
+            103,
+            107
           ]
         },
         {
@@ -894,15 +890,15 @@
             1004,
             2399
           ],
-          "sizePreviewPx": [
-            923,
-            1469
-          ],
           "bboxNormalized": [
             0.075,
             0.369,
             0.9296,
             0.952
+          ],
+          "sizeCoordinatePx": [
+            923,
+            1469
           ]
         },
         {
@@ -913,15 +909,15 @@
             954,
             1112
           ],
-          "sizePreviewPx": [
-            828,
-            137
-          ],
           "bboxNormalized": [
             0.1167,
             0.3869,
             0.8833,
             0.4413
+          ],
+          "sizeCoordinatePx": [
+            828,
+            137
           ]
         },
         {
@@ -932,15 +928,15 @@
             1004,
             1726
           ],
-          "sizePreviewPx": [
-            878,
-            546
-          ],
           "bboxNormalized": [
             0.1167,
             0.4683,
             0.9296,
             0.6849
+          ],
+          "sizeCoordinatePx": [
+            878,
+            546
           ]
         },
         {
@@ -951,15 +947,15 @@
             946,
             1926
           ],
-          "sizePreviewPx": [
-            817,
-            134
-          ],
           "bboxNormalized": [
             0.1194,
             0.7111,
             0.8759,
             0.7643
+          ],
+          "sizeCoordinatePx": [
+            817,
+            134
           ]
         }
       ],
@@ -967,17 +963,17 @@
         "Historical 2024 onboarding screenshot; do not treat as current main-screen truth.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-ONB-05",
       "category": "historical-full-screen-onboarding-capture",
       "state": "Ad-block explainer",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-5.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -988,15 +984,15 @@
             838,
             607
           ],
-          "sizePreviewPx": [
-            593,
-            121
-          ],
           "bboxNormalized": [
             0.2269,
             0.1929,
             0.7759,
             0.2409
+          ],
+          "sizeCoordinatePx": [
+            593,
+            121
           ]
         },
         {
@@ -1007,15 +1003,15 @@
             913,
             2402
           ],
-          "sizePreviewPx": [
-            746,
-            1601
-          ],
           "bboxNormalized": [
             0.1546,
             0.3179,
             0.8454,
             0.9532
+          ],
+          "sizeCoordinatePx": [
+            746,
+            1601
           ]
         },
         {
@@ -1026,15 +1022,15 @@
             1040,
             2121
           ],
-          "sizePreviewPx": [
-            1000,
-            224
-          ],
           "bboxNormalized": [
             0.037,
             0.7528,
             0.963,
             0.8417
+          ],
+          "sizeCoordinatePx": [
+            1000,
+            224
           ]
         },
         {
@@ -1045,15 +1041,15 @@
             1080,
             2407
           ],
-          "sizePreviewPx": [
-            1080,
-            24
-          ],
           "bboxNormalized": [
             0,
             0.9456,
             1,
             0.9552
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            24
           ]
         }
       ],
@@ -1061,17 +1057,17 @@
         "Historical 2024 onboarding screenshot; do not treat as current main-screen truth.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "AA-ONB-06",
       "category": "historical-full-screen-onboarding-capture",
       "state": "Set default browser",
       "sourceUrl": "https://www.androidauthority.com/wp-content/uploads/2024/10/arc-search-browser-android-onboarding-6.jpg",
-      "previewCanvasPx": [
-        1080,
-        2520
-      ],
       "confidence": "medium-low-scaled-to-source",
       "regions": [
         {
@@ -1082,15 +1078,15 @@
             762,
             1146
           ],
-          "sizePreviewPx": [
-            444,
-            484
-          ],
           "bboxNormalized": [
             0.2944,
             0.2627,
             0.7056,
             0.4548
+          ],
+          "sizeCoordinatePx": [
+            444,
+            484
           ]
         },
         {
@@ -1101,15 +1097,15 @@
             807,
             1737
           ],
-          "sizePreviewPx": [
-            532,
-            181
-          ],
           "bboxNormalized": [
             0.2546,
             0.6175,
             0.7472,
             0.6893
+          ],
+          "sizeCoordinatePx": [
+            532,
+            181
           ]
         },
         {
@@ -1120,15 +1116,15 @@
             1040,
             2207
           ],
-          "sizePreviewPx": [
-            997,
-            134
-          ],
           "bboxNormalized": [
             0.0398,
             0.8226,
             0.963,
             0.8758
+          ],
+          "sizeCoordinatePx": [
+            997,
+            134
           ]
         },
         {
@@ -1139,15 +1135,15 @@
             1080,
             2520
           ],
-          "sizePreviewPx": [
-            1080,
-            124
-          ],
           "bboxNormalized": [
             0,
             0.9508,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            1080,
+            124
           ]
         }
       ],
@@ -1156,17 +1152,17 @@
         "Historical 2024 onboarding screenshot; use only as a reference for that flow.",
         "Region boxes were scaled from manually inspected 428x959 preview estimates into the downloaded 1080x2520 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-1080x2520-source",
+      "coordinateCanvasPx": [
+        1080,
+        2520
+      ]
     },
     {
       "id": "COMSS-TRIPTYCH-01",
       "category": "three-screen-composite",
       "state": "onboarding example, search suggestions, site controls",
       "sourceUrl": "https://cdn.comss.net/img/092024/arcsearch_android-screen1.png",
-      "previewCanvasPx": [
-        512,
-        512
-      ],
       "confidence": "low",
       "regions": [
         {
@@ -1177,15 +1173,15 @@
             171,
             512
           ],
-          "sizePreviewPx": [
-            171,
-            512
-          ],
           "bboxNormalized": [
             0,
             0,
             0.334,
             1
+          ],
+          "sizeCoordinatePx": [
+            171,
+            512
           ]
         },
         {
@@ -1196,15 +1192,15 @@
             341,
             512
           ],
-          "sizePreviewPx": [
-            170,
-            512
-          ],
           "bboxNormalized": [
             0.334,
             0,
             0.666,
             1
+          ],
+          "sizeCoordinatePx": [
+            170,
+            512
           ]
         },
         {
@@ -1215,15 +1211,15 @@
             512,
             512
           ],
-          "sizePreviewPx": [
-            171,
-            512
-          ],
           "bboxNormalized": [
             0.666,
             0,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            171,
+            512
           ]
         },
         {
@@ -1234,21 +1230,25 @@
             333,
             229
           ],
-          "sizePreviewPx": [
-            111,
-            33
-          ],
           "bboxNormalized": [
             0.4336,
             0.3828,
             0.6504,
             0.4473
+          ],
+          "sizeCoordinatePx": [
+            111,
+            33
           ]
         }
       ],
       "observations": [
         "Three panels compressed into one square composite; use only for component/state inventory.",
         "Not valid for per-row sizing or exact color sampling."
+      ],
+      "coordinateCanvasPx": [
+        512,
+        512
       ]
     },
     {
@@ -1256,10 +1256,6 @@
       "category": "marketing-composite",
       "state": "home, Browse for Me, webpage/tab states",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=95&url=%2Fimages%2Farc%2Farc-hero-mockup.png&w=3840",
-      "previewCanvasPx": [
-        1000,
-        563
-      ],
       "confidence": "low",
       "regions": [
         {
@@ -1270,15 +1266,15 @@
             296,
             563
           ],
-          "sizePreviewPx": [
-            296,
-            471
-          ],
           "bboxNormalized": [
             0,
             0.1634,
             0.296,
             1
+          ],
+          "sizeCoordinatePx": [
+            296,
+            471
           ]
         },
         {
@@ -1289,15 +1285,15 @@
             748,
             563
           ],
-          "sizePreviewPx": [
-            475,
-            563
-          ],
           "bboxNormalized": [
             0.273,
             0,
             0.748,
             1
+          ],
+          "sizeCoordinatePx": [
+            475,
+            563
           ]
         },
         {
@@ -1308,15 +1304,15 @@
             711,
             142
           ],
-          "sizePreviewPx": [
-            403,
-            60
-          ],
           "bboxNormalized": [
             0.308,
             0.1456,
             0.711,
             0.2522
+          ],
+          "sizeCoordinatePx": [
+            403,
+            60
           ]
         },
         {
@@ -1327,15 +1323,15 @@
             711,
             421
           ],
-          "sizePreviewPx": [
-            404,
-            250
-          ],
           "bboxNormalized": [
             0.307,
             0.3037,
             0.711,
             0.7478
+          ],
+          "sizeCoordinatePx": [
+            404,
+            250
           ]
         },
         {
@@ -1346,15 +1342,15 @@
             699,
             519
           ],
-          "sizePreviewPx": [
-            392,
-            68
-          ],
           "bboxNormalized": [
             0.307,
             0.8011,
             0.699,
             0.9218
+          ],
+          "sizeCoordinatePx": [
+            392,
+            68
           ]
         },
         {
@@ -1365,21 +1361,25 @@
             1000,
             563
           ],
-          "sizePreviewPx": [
-            294,
-            469
-          ],
           "bboxNormalized": [
             0.706,
             0.167,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            294,
+            469
           ]
         }
       ],
       "observations": [
         "Phone devices overlap; center phone is clipped at top/bottom of composite.",
         "Coordinates refer only to the marketing canvas; never convert to app dp."
+      ],
+      "coordinateCanvasPx": [
+        1000,
+        563
       ]
     },
     {
@@ -1387,10 +1387,6 @@
       "category": "marketing-composite",
       "state": "Browse for Me image answer example",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-1.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1401,15 +1397,15 @@
             373,
             660
           ],
-          "sizePreviewPx": [
-            289,
-            520
-          ],
           "bboxNormalized": [
             0.07,
             0.2121,
             0.3108,
             1
+          ],
+          "sizeCoordinatePx": [
+            289,
+            520
           ]
         },
         {
@@ -1420,15 +1416,15 @@
             848,
             660
           ],
-          "sizePreviewPx": [
-            488,
-            619
-          ],
           "bboxNormalized": [
             0.3,
             0.0621,
             0.7067,
             1
+          ],
+          "sizeCoordinatePx": [
+            488,
+            619
           ]
         },
         {
@@ -1439,15 +1435,15 @@
             802,
             142
           ],
-          "sizePreviewPx": [
-            405,
-            56
-          ],
           "bboxNormalized": [
             0.3308,
             0.1303,
             0.6683,
             0.2152
+          ],
+          "sizeCoordinatePx": [
+            405,
+            56
           ]
         },
         {
@@ -1458,15 +1454,15 @@
             834,
             455
           ],
-          "sizePreviewPx": [
-            438,
-            298
-          ],
           "bboxNormalized": [
             0.33,
             0.2379,
             0.695,
             0.6894
+          ],
+          "sizeCoordinatePx": [
+            438,
+            298
           ]
         },
         {
@@ -1477,15 +1473,15 @@
             820,
             563
           ],
-          "sizePreviewPx": [
-            424,
-            74
-          ],
           "bboxNormalized": [
             0.33,
             0.7409,
             0.6833,
             0.853
+          ],
+          "sizeCoordinatePx": [
+            424,
+            74
           ]
         }
       ],
@@ -1493,17 +1489,17 @@
         "Overlapping portfolio composite; component ratios corroborate AA-BFM screenshots.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "DESIGN-CONTENT-10",
       "category": "marketing-onboarding-composite",
       "state": "intro, feature explainers, app icon selection",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-10.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1514,15 +1510,15 @@
             496,
             660
           ],
-          "sizePreviewPx": [
-            405,
-            605
-          ],
           "bboxNormalized": [
             0.0758,
             0.0833,
             0.4133,
             1
+          ],
+          "sizeCoordinatePx": [
+            405,
+            605
           ]
         },
         {
@@ -1533,15 +1529,15 @@
             931,
             660
           ],
-          "sizePreviewPx": [
-            410,
-            604
-          ],
           "bboxNormalized": [
             0.4342,
             0.0848,
             0.7758,
             1
+          ],
+          "sizeCoordinatePx": [
+            410,
+            604
           ]
         },
         {
@@ -1552,15 +1548,15 @@
             1200,
             660
           ],
-          "sizePreviewPx": [
-            236,
-            604
-          ],
           "bboxNormalized": [
             0.8033,
             0.0848,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            236,
+            604
           ]
         }
       ],
@@ -1568,17 +1564,17 @@
         "Panels clipped by composite edges; intended as narrative artwork.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "DESIGN-CONTENT-13",
       "category": "marketing-composite",
       "state": "text-first versus image/card answer layouts",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-13.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1589,15 +1585,15 @@
             576,
             660
           ],
-          "sizePreviewPx": [
-            380,
-            598
-          ],
           "bboxNormalized": [
             0.1633,
             0.0939,
             0.48,
             1
+          ],
+          "sizeCoordinatePx": [
+            380,
+            598
           ]
         },
         {
@@ -1608,15 +1604,15 @@
             1009,
             660
           ],
-          "sizePreviewPx": [
-            378,
-            598
-          ],
           "bboxNormalized": [
             0.5258,
             0.0939,
             0.8408,
             1
+          ],
+          "sizeCoordinatePx": [
+            378,
+            598
           ]
         }
       ],
@@ -1625,17 +1621,17 @@
         "Content is rendered in page-like sections, not generic chat bubbles.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "DESIGN-CONTENT-15",
       "category": "marketing-composite",
       "state": "tab carousel",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-15.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1646,15 +1642,15 @@
             794,
             660
           ],
-          "sizePreviewPx": [
-            387,
-            632
-          ],
           "bboxNormalized": [
             0.3392,
             0.0424,
             0.6617,
             1
+          ],
+          "sizeCoordinatePx": [
+            387,
+            632
           ]
         },
         {
@@ -1665,15 +1661,15 @@
             722,
             660
           ],
-          "sizePreviewPx": [
-            246,
-            468
-          ],
           "bboxNormalized": [
             0.3967,
             0.2909,
             0.6017,
             1
+          ],
+          "sizeCoordinatePx": [
+            246,
+            468
           ]
         },
         {
@@ -1684,15 +1680,15 @@
             468,
             660
           ],
-          "sizePreviewPx": [
-            60,
-            468
-          ],
           "bboxNormalized": [
             0.34,
             0.2909,
             0.39,
             1
+          ],
+          "sizeCoordinatePx": [
+            60,
+            468
           ]
         },
         {
@@ -1703,15 +1699,15 @@
             792,
             660
           ],
-          "sizePreviewPx": [
-            72,
-            468
-          ],
           "bboxNormalized": [
             0.6,
             0.2909,
             0.66,
             1
+          ],
+          "sizeCoordinatePx": [
+            72,
+            468
           ]
         }
       ],
@@ -1720,17 +1716,17 @@
         "Perspective is baked into phone/composite, so use only to infer relative organization.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "DESIGN-CONTENT-17",
       "category": "marketing-composite",
       "state": "Browse for Me loading skeleton",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-17.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1741,15 +1737,15 @@
             816,
             660
           ],
-          "sizePreviewPx": [
-            425,
-            505
-          ],
           "bboxNormalized": [
             0.3258,
             0.2348,
             0.68,
             1
+          ],
+          "sizeCoordinatePx": [
+            425,
+            505
           ]
         },
         {
@@ -1760,15 +1756,15 @@
             786,
             267
           ],
-          "sizePreviewPx": [
-            366,
-            45
-          ],
           "bboxNormalized": [
             0.35,
             0.3364,
             0.655,
             0.4045
+          ],
+          "sizeCoordinatePx": [
+            366,
+            45
           ]
         },
         {
@@ -1779,15 +1775,15 @@
             793,
             475
           ],
-          "sizePreviewPx": [
-            377,
-            185
-          ],
           "bboxNormalized": [
             0.3467,
             0.4394,
             0.6608,
             0.7197
+          ],
+          "sizeCoordinatePx": [
+            377,
+            185
           ]
         },
         {
@@ -1798,15 +1794,15 @@
             784,
             533
           ],
-          "sizePreviewPx": [
-            366,
-            28
-          ],
           "bboxNormalized": [
             0.3483,
             0.7652,
             0.6533,
             0.8076
+          ],
+          "sizeCoordinatePx": [
+            366,
+            28
           ]
         },
         {
@@ -1817,15 +1813,15 @@
             780,
             660
           ],
-          "sizePreviewPx": [
-            362,
-            107
-          ],
           "bboxNormalized": [
             0.3483,
             0.8379,
             0.65,
             1
+          ],
+          "sizeCoordinatePx": [
+            362,
+            107
           ]
         }
       ],
@@ -1834,17 +1830,17 @@
         "Visible card carousel has a right-edge clipped card.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "DESIGN-CONTENT-21",
       "category": "marketing-composite",
       "state": "home, Browse for Me, site controls triptych",
       "sourceUrl": "https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-21.webp&w=3840",
-      "previewCanvasPx": [
-        1200,
-        660
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -1855,15 +1851,15 @@
             598,
             660
           ],
-          "sizePreviewPx": [
-            598,
-            610
-          ],
           "bboxNormalized": [
             0,
             0.0758,
             0.4983,
             1
+          ],
+          "sizeCoordinatePx": [
+            598,
+            610
           ]
         },
         {
@@ -1874,15 +1870,15 @@
             972,
             660
           ],
-          "sizePreviewPx": [
-            361,
-            610
-          ],
           "bboxNormalized": [
             0.5092,
             0.0758,
             0.81,
             1
+          ],
+          "sizeCoordinatePx": [
+            361,
+            610
           ]
         },
         {
@@ -1893,15 +1889,15 @@
             1200,
             660
           ],
-          "sizePreviewPx": [
-            212,
-            610
-          ],
           "bboxNormalized": [
             0.8233,
             0.0758,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            212,
+            610
           ]
         }
       ],
@@ -1909,17 +1905,17 @@
         "Marketing layout intentionally crops panels; use as state inventory not absolute UI bounds.",
         "Region boxes were scaled from manually inspected 1000x563 preview estimates into the downloaded 1200x660 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source"
+      "measurementCoordinateBasis": "manual-composite-preview-estimate-scaled-to-downloaded-1200x660-source",
+      "coordinateCanvasPx": [
+        1200,
+        660
+      ]
     },
     {
       "id": "PLAY-01",
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Home/search suggestions (promo composite)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-0",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -1930,15 +1926,15 @@
             445,
             698
           ],
-          "sizePreviewPx": [
-            384,
-            516
-          ],
           "bboxNormalized": [
             0.1206,
             0.2022,
             0.8794,
             0.7756
+          ],
+          "sizeCoordinatePx": [
+            384,
+            516
           ]
         },
         {
@@ -1949,15 +1945,15 @@
             445,
             698
           ],
-          "sizePreviewPx": [
-            384,
-            299
-          ],
           "bboxNormalized": [
             0.1206,
             0.4433,
             0.8794,
             0.7756
+          ],
+          "sizeCoordinatePx": [
+            384,
+            299
           ]
         },
         {
@@ -1968,15 +1964,15 @@
             425,
             471
           ],
-          "sizePreviewPx": [
-            344,
-            53
-          ],
           "bboxNormalized": [
             0.1601,
             0.4644,
             0.8399,
             0.5233
+          ],
+          "sizeCoordinatePx": [
+            344,
+            53
           ]
         },
         {
@@ -1987,15 +1983,15 @@
             425,
             523
           ],
-          "sizePreviewPx": [
-            342,
-            37
-          ],
           "bboxNormalized": [
             0.164,
             0.54,
             0.8399,
             0.5811
+          ],
+          "sizeCoordinatePx": [
+            342,
+            37
           ]
         },
         {
@@ -2006,15 +2002,15 @@
             425,
             577
           ],
-          "sizePreviewPx": [
-            342,
-            37
-          ],
           "bboxNormalized": [
             0.164,
             0.6,
             0.8399,
             0.6411
+          ],
+          "sizeCoordinatePx": [
+            342,
+            37
           ]
         },
         {
@@ -2025,15 +2021,15 @@
             425,
             631
           ],
-          "sizePreviewPx": [
-            342,
-            38
-          ],
           "bboxNormalized": [
             0.164,
             0.6589,
             0.8399,
             0.7011
+          ],
+          "sizeCoordinatePx": [
+            342,
+            38
           ]
         },
         {
@@ -2044,21 +2040,25 @@
             425,
             685
           ],
-          "sizePreviewPx": [
-            342,
-            38
-          ],
           "bboxNormalized": [
             0.164,
             0.7189,
             0.8399,
             0.7611
+          ],
+          "sizeCoordinatePx": [
+            342,
+            38
           ]
         }
       ],
       "observations": [
         "Higher-resolution store promo inspected; the phone/screen is a composite and the lower state is cropped/faded by marketing treatment.",
         "Search field is visually ~90% of the inner screen width; suggestion rows pair a left search icon/text with a separate right Browse for Me pill."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2066,10 +2066,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Browse for Me image answer (promo composite)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-1",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2080,15 +2076,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            691
-          ],
           "bboxNormalized": [
             0.1206,
             0.2322,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            691
           ]
         },
         {
@@ -2099,15 +2095,15 @@
             425,
             323
           ],
-          "sizePreviewPx": [
-            343,
-            53
-          ],
           "bboxNormalized": [
             0.1621,
             0.3,
             0.8399,
             0.3589
+          ],
+          "sizeCoordinatePx": [
+            343,
+            53
           ]
         },
         {
@@ -2118,15 +2114,15 @@
             427,
             564
           ],
-          "sizePreviewPx": [
-            345,
-            217
-          ],
           "bboxNormalized": [
             0.1621,
             0.3856,
             0.8439,
             0.6267
+          ],
+          "sizeCoordinatePx": [
+            345,
+            217
           ]
         },
         {
@@ -2137,15 +2133,15 @@
             428,
             648
           ],
-          "sizePreviewPx": [
-            346,
-            60
-          ],
           "bboxNormalized": [
             0.1621,
             0.6533,
             0.8458,
             0.72
+          ],
+          "sizeCoordinatePx": [
+            346,
+            60
           ]
         },
         {
@@ -2156,21 +2152,25 @@
             425,
             900
           ],
-          "sizePreviewPx": [
-            338,
-            224
-          ],
           "bboxNormalized": [
             0.1719,
             0.7511,
             0.8399,
             1
+          ],
+          "sizeCoordinatePx": [
+            338,
+            224
           ]
         }
       ],
       "observations": [
         "Image carousel uses two large portrait cards and a cropped third card.",
         "The heading begins immediately after the image row; content continues below the visible promotional crop."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2178,10 +2178,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Site Settings blocker controls (promo composite)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-2",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2192,15 +2188,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            690
-          ],
           "bboxNormalized": [
             0.1206,
             0.2333,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            690
           ]
         },
         {
@@ -2211,15 +2207,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            382
-          ],
           "bboxNormalized": [
             0.1206,
             0.5756,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            382
           ]
         },
         {
@@ -2230,15 +2226,15 @@
             342,
             587
           ],
-          "sizePreviewPx": [
-            254,
-            32
-          ],
           "bboxNormalized": [
             0.1739,
             0.6167,
             0.6759,
             0.6522
+          ],
+          "sizeCoordinatePx": [
+            254,
+            32
           ]
         },
         {
@@ -2249,15 +2245,15 @@
             290,
             647
           ],
-          "sizePreviewPx": [
-            202,
-            22
-          ],
           "bboxNormalized": [
             0.1739,
             0.6944,
             0.5731,
             0.7189
+          ],
+          "sizeCoordinatePx": [
+            202,
+            22
           ]
         },
         {
@@ -2268,15 +2264,15 @@
             425,
             709
           ],
-          "sizePreviewPx": [
-            336,
-            44
-          ],
           "bboxNormalized": [
             0.1759,
             0.7389,
             0.8399,
             0.7878
+          ],
+          "sizeCoordinatePx": [
+            336,
+            44
           ]
         },
         {
@@ -2287,15 +2283,15 @@
             426,
             765
           ],
-          "sizePreviewPx": [
-            337,
-            37
-          ],
           "bboxNormalized": [
             0.1759,
             0.8089,
             0.8419,
             0.85
+          ],
+          "sizeCoordinatePx": [
+            337,
+            37
           ]
         },
         {
@@ -2306,15 +2302,15 @@
             426,
             829
           ],
-          "sizePreviewPx": [
-            337,
-            40
-          ],
           "bboxNormalized": [
             0.1759,
             0.8767,
             0.8419,
             0.9211
+          ],
+          "sizeCoordinatePx": [
+            337,
+            40
           ]
         },
         {
@@ -2325,21 +2321,25 @@
             190,
             881
           ],
-          "sizePreviewPx": [
-            102,
-            22
-          ],
           "bboxNormalized": [
             0.1739,
             0.9544,
             0.3755,
             0.9789
+          ],
+          "sizeCoordinatePx": [
+            102,
+            22
           ]
         }
       ],
       "observations": [
         "Panel begins at roughly 58% of promo canvas height; this is only a composite proportion, not a dp or live bottom-sheet measurement.",
         "Three independent switches are visible; the sheet continues below the image crop."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2347,10 +2347,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Tab switcher / auto-archive (promo composite)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-3",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2361,15 +2357,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            693
-          ],
           "bboxNormalized": [
             0.1206,
             0.23,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            693
           ]
         },
         {
@@ -2380,15 +2376,15 @@
             111,
             879
           ],
-          "sizePreviewPx": [
-            50,
-            514
-          ],
           "bboxNormalized": [
             0.1206,
             0.4056,
             0.2194,
             0.9767
+          ],
+          "sizeCoordinatePx": [
+            50,
+            514
           ]
         },
         {
@@ -2399,15 +2395,15 @@
             383,
             879
           ],
-          "sizePreviewPx": [
-            260,
-            512
-          ],
           "bboxNormalized": [
             0.2431,
             0.4078,
             0.7569,
             0.9767
+          ],
+          "sizeCoordinatePx": [
+            260,
+            512
           ]
         },
         {
@@ -2418,21 +2414,25 @@
             444,
             879
           ],
-          "sizePreviewPx": [
-            58,
-            514
-          ],
           "bboxNormalized": [
             0.7628,
             0.4056,
             0.8775,
             0.9767
+          ],
+          "sizeCoordinatePx": [
+            58,
+            514
           ]
         }
       ],
       "observations": [
         "Active page preview is approximately 260 px wide in this 506 px marketing canvas; adjacent previews are much narrower slivers.",
         "Stacked/overlapping previews; not an equal-width card grid."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2440,10 +2440,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Voice-search promo illustration",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-4",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2454,15 +2450,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            692
-          ],
           "bboxNormalized": [
             0.1206,
             0.2311,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            692
           ]
         },
         {
@@ -2473,15 +2469,15 @@
             326,
             333
           ],
-          "sizePreviewPx": [
-            304,
-            67
-          ],
           "bboxNormalized": [
             0.0435,
             0.2956,
             0.6443,
             0.37
+          ],
+          "sizeCoordinatePx": [
+            304,
+            67
           ]
         },
         {
@@ -2492,15 +2488,15 @@
             480,
             421
           ],
-          "sizePreviewPx": [
-            304,
-            65
-          ],
           "bboxNormalized": [
             0.3478,
             0.3956,
             0.9486,
             0.4678
+          ],
+          "sizeCoordinatePx": [
+            304,
+            65
           ]
         },
         {
@@ -2511,15 +2507,15 @@
             350,
             540
           ],
-          "sizePreviewPx": [
-            328,
-            64
-          ],
           "bboxNormalized": [
             0.0435,
             0.5289,
             0.6917,
             0.6
+          ],
+          "sizeCoordinatePx": [
+            328,
+            64
           ]
         },
         {
@@ -2530,15 +2526,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            370
-          ],
           "bboxNormalized": [
             0.1206,
             0.5889,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            370
           ]
         },
         {
@@ -2549,15 +2545,15 @@
             289,
             722
           ],
-          "sizePreviewPx": [
-            62,
-            66
-          ],
           "bboxNormalized": [
             0.4486,
             0.7289,
             0.5711,
             0.8022
+          ],
+          "sizeCoordinatePx": [
+            62,
+            66
           ]
         },
         {
@@ -2568,15 +2564,15 @@
             330,
             783
           ],
-          "sizePreviewPx": [
-            151,
-            24
-          ],
           "bboxNormalized": [
             0.3538,
             0.8433,
             0.6522,
             0.87
+          ],
+          "sizeCoordinatePx": [
+            151,
+            24
           ]
         },
         {
@@ -2587,21 +2583,25 @@
             262,
             890
           ],
-          "sizePreviewPx": [
-            14,
-            21
-          ],
           "bboxNormalized": [
             0.4901,
             0.9656,
             0.5178,
             0.9889
+          ],
+          "sizeCoordinatePx": [
+            14,
+            21
           ]
         }
       ],
       "observations": [
         "Illustrated voice surface dominates the bottom half with nested curved layers.",
         "This static image is insufficient to infer animation durations, easing, or interaction states; live video is required."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2609,10 +2609,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Android launcher widget (not in-app screen)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-5",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2623,15 +2619,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            691
-          ],
           "bboxNormalized": [
             0.1206,
             0.2322,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            691
           ]
         },
         {
@@ -2642,15 +2638,15 @@
             480,
             645
           ],
-          "sizePreviewPx": [
-            450,
-            66
-          ],
           "bboxNormalized": [
             0.0593,
             0.6433,
             0.9486,
             0.7167
+          ],
+          "sizeCoordinatePx": [
+            450,
+            66
           ]
         },
         {
@@ -2661,15 +2657,15 @@
             189,
             715
           ],
-          "sizePreviewPx": [
-            98,
-            111
-          ],
           "bboxNormalized": [
             0.1798,
             0.6711,
             0.3735,
             0.7944
+          ],
+          "sizeCoordinatePx": [
+            98,
+            111
           ]
         },
         {
@@ -2680,20 +2676,24 @@
             431,
             812
           ],
-          "sizePreviewPx": [
-            343,
-            83
-          ],
           "bboxNormalized": [
             0.1739,
             0.81,
             0.8518,
             0.9022
+          ],
+          "sizeCoordinatePx": [
+            343,
+            83
           ]
         }
       ],
       "observations": [
         "Widget extends beyond the phone image as a promo overlay. This is Android launcher UI and must not be mistaken for a browser screen."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2701,10 +2701,6 @@
       "category": "higher-resolution-official-store-marketing-composite",
       "state": "Set-default-browser onboarding (promo composite)",
       "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-6",
-      "previewCanvasPx": [
-        506,
-        900
-      ],
       "confidence": "medium-low",
       "regions": [
         {
@@ -2715,15 +2711,15 @@
             445,
             900
           ],
-          "sizePreviewPx": [
-            384,
-            691
-          ],
           "bboxNormalized": [
             0.1206,
             0.2322,
             0.8794,
             1
+          ],
+          "sizeCoordinatePx": [
+            384,
+            691
           ]
         },
         {
@@ -2734,15 +2730,15 @@
             343,
             580
           ],
-          "sizePreviewPx": [
-            178,
-            180
-          ],
           "bboxNormalized": [
             0.3261,
             0.4444,
             0.6779,
             0.6444
+          ],
+          "sizeCoordinatePx": [
+            178,
+            180
           ]
         },
         {
@@ -2753,15 +2749,15 @@
             387,
             698
           ],
-          "sizePreviewPx": [
-            268,
-            89
-          ],
           "bboxNormalized": [
             0.2352,
             0.6767,
             0.7648,
             0.7756
+          ],
+          "sizeCoordinatePx": [
+            268,
+            89
           ]
         },
         {
@@ -2772,20 +2768,24 @@
             383,
             783
           ],
-          "sizePreviewPx": [
-            262,
-            50
-          ],
           "bboxNormalized": [
             0.2391,
             0.8144,
             0.7569,
             0.87
+          ],
+          "sizeCoordinatePx": [
+            262,
+            50
           ]
         }
       ],
       "observations": [
         "CTA may fall below the visible crop; do not infer that onboarding lacks an action."
+      ],
+      "coordinateCanvasPx": [
+        506,
+        900
       ]
     },
     {
@@ -2793,16 +2793,16 @@
       "category": "excluded-other-platform-ios-capture",
       "state": "iOS settings screen (Arc Search 1.48.0, 2026-08)",
       "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000577941_00_company.thebrowser.ArcMobile2-20260817T202647Z-autocap-16-1786999039.png",
-      "previewCanvasPx": [
-        460,
-        960
-      ],
       "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
         "Clearly iOS: iOS status indicators and iOS-style sheet.",
         "Visible settings include Auto-Open Keyboard, Archive Inactive Tabs (After 1 day), Open App Links in..., Clear Browsing Data, Sync with Arc Desktop and app/legal links.",
         "Do not use its geometry or iOS-only Call Arc row to define Android UI."
+      ],
+      "coordinateCanvasPx": [
+        460,
+        960
       ]
     },
     {
@@ -2810,14 +2810,14 @@
       "category": "excluded-other-platform-ios-capture",
       "state": "iOS Sync with Arc Desktop onboarding",
       "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000475414_00_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png",
-      "previewCanvasPx": [
-        460,
-        960
-      ],
       "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
         "iOS sign-in/sync flow; excluded from Android screen geometry."
+      ],
+      "coordinateCanvasPx": [
+        460,
+        960
       ]
     },
     {
@@ -2825,14 +2825,14 @@
       "category": "excluded-other-platform-ios-capture",
       "state": "iOS incognito search with system keyboard",
       "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000123088_05_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-incognito-1786999273.png",
-      "previewCanvasPx": [
-        460,
-        960
-      ],
       "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
         "iOS-style keyboard and iPhone status bar are visible; excluded from Android geometry."
+      ],
+      "coordinateCanvasPx": [
+        460,
+        960
       ]
     },
     {
@@ -2840,14 +2840,14 @@
       "category": "excluded-other-platform-ios-capture",
       "state": "iOS archive empty state",
       "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000122665_04_company.thebrowser.ArcMobile2-20260817T202647Z-cap-archive-1786999203.png",
-      "previewCanvasPx": [
-        460,
-        960
-      ],
       "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
         "iOS archive surface. Empty-state copy says manually closed and auto-archived tabs appear here and auto-archive frequency is configurable."
+      ],
+      "coordinateCanvasPx": [
+        460,
+        960
       ]
     },
     {
@@ -2855,14 +2855,14 @@
       "category": "excluded-other-platform-ios-capture",
       "state": "Duplicate iOS sync onboarding capture",
       "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000121877_03_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png",
-      "previewCanvasPx": [
-        460,
-        960
-      ],
       "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
         "Duplicate of the iOS sync/onboarding screen. Recorded so it is not accidentally counted as an independent state."
+      ],
+      "coordinateCanvasPx": [
+        460,
+        960
       ]
     },
     {
@@ -2870,10 +2870,6 @@
       "category": "four-full-screen-android-captures-tiled-horizontally",
       "state": "Home, search suggestions, Browse for Me answer, webpage with expanded controls",
       "sourceUrl": "https://pic.clubic.com/f80fea002247335/1200x667/smart/arc-browser-android.jpg",
-      "previewCanvasPx": [
-        1200,
-        667
-      ],
       "confidence": "medium",
       "regions": [
         {
@@ -2884,15 +2880,15 @@
             300,
             667
           ],
-          "sizePreviewPx": [
-            300,
-            667
-          ],
           "bboxNormalized": [
             0,
             0,
             0.25,
             1
+          ],
+          "sizeCoordinatePx": [
+            300,
+            667
           ]
         },
         {
@@ -2903,15 +2899,15 @@
             205,
             385
           ],
-          "sizePreviewPx": [
-            110,
-            105
-          ],
           "bboxNormalized": [
             0.0792,
             0.4198,
             0.1708,
             0.5772
+          ],
+          "sizeCoordinatePx": [
+            110,
+            105
           ]
         },
         {
@@ -2922,15 +2918,15 @@
             180,
             630
           ],
-          "sizePreviewPx": [
-            60,
-            30
-          ],
           "bboxNormalized": [
             0.1,
             0.8996,
             0.15,
             0.9445
+          ],
+          "sizeCoordinatePx": [
+            60,
+            30
           ]
         },
         {
@@ -2941,15 +2937,15 @@
             260,
             624
           ],
-          "sizePreviewPx": [
-            18,
-            22
-          ],
           "bboxNormalized": [
             0.2017,
             0.9025,
             0.2167,
             0.9355
+          ],
+          "sizeCoordinatePx": [
+            18,
+            22
           ]
         },
         {
@@ -2960,15 +2956,15 @@
             600,
             667
           ],
-          "sizePreviewPx": [
-            300,
-            667
-          ],
           "bboxNormalized": [
             0.25,
             0,
             0.5,
             1
+          ],
+          "sizeCoordinatePx": [
+            300,
+            667
           ]
         },
         {
@@ -2979,15 +2975,15 @@
             590,
             308
           ],
-          "sizePreviewPx": [
-            280,
-            47
-          ],
           "bboxNormalized": [
             0.2583,
             0.3913,
             0.4917,
             0.4618
+          ],
+          "sizeCoordinatePx": [
+            280,
+            47
           ]
         },
         {
@@ -2998,15 +2994,15 @@
             592,
             636
           ],
-          "sizePreviewPx": [
-            282,
-            314
-          ],
           "bboxNormalized": [
             0.2583,
             0.4828,
             0.4933,
             0.9535
+          ],
+          "sizeCoordinatePx": [
+            282,
+            314
           ]
         },
         {
@@ -3017,15 +3013,15 @@
             592,
             379
           ],
-          "sizePreviewPx": [
-            282,
-            44
-          ],
           "bboxNormalized": [
             0.2583,
             0.5022,
             0.4933,
             0.5682
+          ],
+          "sizeCoordinatePx": [
+            282,
+            44
           ]
         },
         {
@@ -3036,15 +3032,15 @@
             592,
             431
           ],
-          "sizePreviewPx": [
-            282,
-            44
-          ],
           "bboxNormalized": [
             0.2583,
             0.5802,
             0.4933,
             0.6462
+          ],
+          "sizeCoordinatePx": [
+            282,
+            44
           ]
         },
         {
@@ -3055,15 +3051,15 @@
             592,
             483
           ],
-          "sizePreviewPx": [
-            282,
-            44
-          ],
           "bboxNormalized": [
             0.2583,
             0.6582,
             0.4933,
             0.7241
+          ],
+          "sizeCoordinatePx": [
+            282,
+            44
           ]
         },
         {
@@ -3074,15 +3070,15 @@
             592,
             535
           ],
-          "sizePreviewPx": [
-            282,
-            44
-          ],
           "bboxNormalized": [
             0.2583,
             0.7361,
             0.4933,
             0.8021
+          ],
+          "sizeCoordinatePx": [
+            282,
+            44
           ]
         },
         {
@@ -3093,15 +3089,15 @@
             592,
             587
           ],
-          "sizePreviewPx": [
-            282,
-            44
-          ],
           "bboxNormalized": [
             0.2583,
             0.8141,
             0.4933,
             0.8801
+          ],
+          "sizeCoordinatePx": [
+            282,
+            44
           ]
         },
         {
@@ -3112,15 +3108,15 @@
             592,
             636
           ],
-          "sizePreviewPx": [
-            282,
-            41
-          ],
           "bboxNormalized": [
             0.2583,
             0.8921,
             0.4933,
             0.9535
+          ],
+          "sizeCoordinatePx": [
+            282,
+            41
           ]
         },
         {
@@ -3131,15 +3127,15 @@
             900,
             667
           ],
-          "sizePreviewPx": [
-            300,
-            667
-          ],
           "bboxNormalized": [
             0.5,
             0,
             0.75,
             1
+          ],
+          "sizeCoordinatePx": [
+            300,
+            667
           ]
         },
         {
@@ -3150,15 +3146,15 @@
             890,
             91
           ],
-          "sizePreviewPx": [
-            280,
-            45
-          ],
           "bboxNormalized": [
             0.5083,
             0.069,
             0.7417,
             0.1364
+          ],
+          "sizeCoordinatePx": [
+            280,
+            45
           ]
         },
         {
@@ -3169,15 +3165,15 @@
             900,
             260
           ],
-          "sizePreviewPx": [
-            290,
-            143
-          ],
           "bboxNormalized": [
             0.5083,
             0.1754,
             0.75,
             0.3898
+          ],
+          "sizeCoordinatePx": [
+            290,
+            143
           ]
         },
         {
@@ -3188,15 +3184,15 @@
             889,
             314
           ],
-          "sizePreviewPx": [
-            279,
-            44
-          ],
           "bboxNormalized": [
             0.5083,
             0.4048,
             0.7408,
             0.4708
+          ],
+          "sizeCoordinatePx": [
+            279,
+            44
           ]
         },
         {
@@ -3207,15 +3203,15 @@
             889,
             577
           ],
-          "sizePreviewPx": [
-            276,
-            241
-          ],
           "bboxNormalized": [
             0.5108,
             0.5037,
             0.7408,
             0.8651
+          ],
+          "sizeCoordinatePx": [
+            276,
+            241
           ]
         },
         {
@@ -3226,15 +3222,15 @@
             900,
             640
           ],
-          "sizePreviewPx": [
-            300,
-            29
-          ],
           "bboxNormalized": [
             0.5,
             0.916,
             0.75,
             0.9595
+          ],
+          "sizeCoordinatePx": [
+            300,
+            29
           ]
         },
         {
@@ -3245,15 +3241,15 @@
             1200,
             667
           ],
-          "sizePreviewPx": [
-            300,
-            667
-          ],
           "bboxNormalized": [
             0.75,
             0,
             1,
             1
+          ],
+          "sizeCoordinatePx": [
+            300,
+            667
           ]
         },
         {
@@ -3264,15 +3260,15 @@
             1200,
             295
           ],
-          "sizePreviewPx": [
-            300,
-            295
-          ],
           "bboxNormalized": [
             0.75,
             0,
             1,
             0.4423
+          ],
+          "sizeCoordinatePx": [
+            300,
+            295
           ]
         },
         {
@@ -3283,15 +3279,15 @@
             1191,
             334
           ],
-          "sizePreviewPx": [
-            279,
-            41
-          ],
           "bboxNormalized": [
             0.76,
             0.4393,
             0.9925,
             0.5007
+          ],
+          "sizeCoordinatePx": [
+            279,
+            41
           ]
         },
         {
@@ -3302,15 +3298,15 @@
             1190,
             419
           ],
-          "sizePreviewPx": [
-            277,
-            80
-          ],
           "bboxNormalized": [
             0.7608,
             0.5082,
             0.9917,
             0.6282
+          ],
+          "sizeCoordinatePx": [
+            277,
+            80
           ]
         },
         {
@@ -3321,15 +3317,15 @@
             1190,
             466
           ],
-          "sizePreviewPx": [
-            279,
-            36
-          ],
           "bboxNormalized": [
             0.7592,
             0.6447,
             0.9917,
             0.6987
+          ],
+          "sizeCoordinatePx": [
+            279,
+            36
           ]
         },
         {
@@ -3340,15 +3336,15 @@
             1190,
             509
           ],
-          "sizePreviewPx": [
-            280,
-            37
-          ],
           "bboxNormalized": [
             0.7583,
             0.7076,
             0.9917,
             0.7631
+          ],
+          "sizeCoordinatePx": [
+            280,
+            37
           ]
         },
         {
@@ -3359,15 +3355,15 @@
             1190,
             548
           ],
-          "sizePreviewPx": [
-            280,
-            37
-          ],
           "bboxNormalized": [
             0.7583,
             0.7661,
             0.9917,
             0.8216
+          ],
+          "sizeCoordinatePx": [
+            280,
+            37
           ]
         },
         {
@@ -3378,15 +3374,15 @@
             1190,
             589
           ],
-          "sizePreviewPx": [
-            280,
-            37
-          ],
           "bboxNormalized": [
             0.7583,
             0.8276,
             0.9917,
             0.8831
+          ],
+          "sizeCoordinatePx": [
+            280,
+            37
           ]
         }
       ],
@@ -3398,6 +3394,10 @@
         "Panel 3: web page-like Browse for Me layout with top query pill, portrait image carousel, blue heading, structured body and three-part bottom dock.",
         "Panel 4: webpage remains visible above a lower controls surface. Top row includes back/forward, URL/domain, link/copy and reload; action grid includes Translate, Pin, Find and Share; following rows expose Zoom, Desktop Site, Site Settings and blocked-ad/tracker status.",
         "All coordinates are within the 1200x667 montage canvas and must not be mistaken for density-scaled dp."
+      ],
+      "coordinateCanvasPx": [
+        1200,
+        667
       ]
     },
     {
@@ -3405,10 +3405,6 @@
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Intro — get what you want twice as fast",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-1.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -3419,15 +3415,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -3438,15 +3434,15 @@
             266,
             251
           ],
-          "sizePreviewPx": [
-            76,
-            67
-          ],
           "bboxNormalized": [
             0.413,
             0.1797,
             0.5783,
             0.2451
+          ],
+          "sizeCoordinatePx": [
+            76,
+            67
           ]
         },
         {
@@ -3457,15 +3453,15 @@
             360,
             548
           ],
-          "sizePreviewPx": [
-            266,
-            113
-          ],
           "bboxNormalized": [
             0.2043,
             0.4248,
             0.7826,
             0.5352
+          ],
+          "sizeCoordinatePx": [
+            266,
+            113
           ]
         },
         {
@@ -3476,15 +3472,15 @@
             411,
             974
           ],
-          "sizePreviewPx": [
-            64,
-            26
-          ],
           "bboxNormalized": [
             0.7543,
             0.9258,
             0.8935,
             0.9512
+          ],
+          "sizeCoordinatePx": [
+            64,
+            26
           ]
         },
         {
@@ -3495,15 +3491,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -3512,17 +3508,17 @@
         "Visual coordinates in the 460x1000 output, not source-native device pixels.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     },
     {
       "id": "9TO5-ONB-02",
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Feature explainer — privacy/archive/logins/navigation",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-2.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -3533,15 +3529,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -3552,15 +3548,15 @@
             345,
             264
           ],
-          "sizePreviewPx": [
-            229,
-            64
-          ],
           "bboxNormalized": [
             0.2522,
             0.1953,
             0.75,
             0.2578
+          ],
+          "sizeCoordinatePx": [
+            229,
+            64
           ]
         },
         {
@@ -3571,15 +3567,15 @@
             430,
             718
           ],
-          "sizePreviewPx": [
-            410,
-            344
-          ],
           "bboxNormalized": [
             0.0435,
             0.3652,
             0.9348,
             0.7012
+          ],
+          "sizeCoordinatePx": [
+            410,
+            344
           ]
         },
         {
@@ -3590,15 +3586,15 @@
             430,
             459
           ],
-          "sizePreviewPx": [
-            410,
-            85
-          ],
           "bboxNormalized": [
             0.0435,
             0.3652,
             0.9348,
             0.4482
+          ],
+          "sizeCoordinatePx": [
+            410,
+            85
           ]
         },
         {
@@ -3609,15 +3605,15 @@
             430,
             544
           ],
-          "sizePreviewPx": [
-            410,
-            83
-          ],
           "bboxNormalized": [
             0.0435,
             0.4502,
             0.9348,
             0.5313
+          ],
+          "sizeCoordinatePx": [
+            410,
+            83
           ]
         },
         {
@@ -3628,15 +3624,15 @@
             430,
             630
           ],
-          "sizePreviewPx": [
-            410,
-            84
-          ],
           "bboxNormalized": [
             0.0435,
             0.5332,
             0.9348,
             0.6152
+          ],
+          "sizeCoordinatePx": [
+            410,
+            84
           ]
         },
         {
@@ -3647,15 +3643,15 @@
             430,
             718
           ],
-          "sizePreviewPx": [
-            410,
-            86
-          ],
           "bboxNormalized": [
             0.0435,
             0.6172,
             0.9348,
             0.7012
+          ],
+          "sizeCoordinatePx": [
+            410,
+            86
           ]
         },
         {
@@ -3666,15 +3662,15 @@
             460,
             933
           ],
-          "sizePreviewPx": [
-            460,
-            22
-          ],
           "bboxNormalized": [
             0,
             0.8896,
             1,
             0.9111
+          ],
+          "sizeCoordinatePx": [
+            460,
+            22
           ]
         },
         {
@@ -3685,15 +3681,15 @@
             242,
             967
           ],
-          "sizePreviewPx": [
-            40,
-            12
-          ],
           "bboxNormalized": [
             0.4391,
             0.9326,
             0.5261,
             0.9443
+          ],
+          "sizeCoordinatePx": [
+            40,
+            12
           ]
         },
         {
@@ -3704,15 +3700,15 @@
             435,
             982
           ],
-          "sizePreviewPx": [
-            80,
-            48
-          ],
           "bboxNormalized": [
             0.7717,
             0.9121,
             0.9457,
             0.959
+          ],
+          "sizeCoordinatePx": [
+            80,
+            48
           ]
         },
         {
@@ -3723,15 +3719,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -3740,17 +3736,17 @@
         "Each row is about 82px high in this resized capture; vertical gaps/separators are only a few pixels.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     },
     {
       "id": "9TO5-ONB-03",
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Search field and Browse for Me tutorial",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-3.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -3761,15 +3757,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -3780,15 +3776,15 @@
             377,
             265
           ],
-          "sizePreviewPx": [
-            294,
-            65
-          ],
           "bboxNormalized": [
             0.1804,
             0.1953,
             0.8196,
             0.2588
+          ],
+          "sizeCoordinatePx": [
+            294,
+            65
           ]
         },
         {
@@ -3799,15 +3795,15 @@
             286,
             507
           ],
-          "sizePreviewPx": [
-            115,
-            23
-          ],
           "bboxNormalized": [
             0.3717,
             0.4727,
             0.6217,
             0.4951
+          ],
+          "sizeCoordinatePx": [
+            115,
+            23
           ]
         },
         {
@@ -3818,15 +3814,15 @@
             417,
             914
           ],
-          "sizePreviewPx": [
-            383,
-            326
-          ],
           "bboxNormalized": [
             0.0739,
             0.5742,
             0.9065,
             0.8926
+          ],
+          "sizeCoordinatePx": [
+            383,
+            326
           ]
         },
         {
@@ -3837,15 +3833,15 @@
             405,
             666
           ],
-          "sizePreviewPx": [
-            360,
-            60
-          ],
           "bboxNormalized": [
             0.0978,
             0.5918,
             0.8804,
             0.6504
+          ],
+          "sizeCoordinatePx": [
+            360,
+            60
           ]
         },
         {
@@ -3856,15 +3852,15 @@
             408,
             742
           ],
-          "sizePreviewPx": [
-            139,
-            58
-          ],
           "bboxNormalized": [
             0.5848,
             0.668,
             0.887,
             0.7246
+          ],
+          "sizeCoordinatePx": [
+            139,
+            58
           ]
         },
         {
@@ -3875,15 +3871,15 @@
             404,
             801
           ],
-          "sizePreviewPx": [
-            352,
-            51
-          ],
           "bboxNormalized": [
             0.113,
             0.7324,
             0.8783,
             0.7822
+          ],
+          "sizeCoordinatePx": [
+            352,
+            51
           ]
         },
         {
@@ -3894,15 +3890,15 @@
             404,
             857
           ],
-          "sizePreviewPx": [
-            352,
-            52
-          ],
           "bboxNormalized": [
             0.113,
             0.7861,
             0.8783,
             0.8369
+          ],
+          "sizeCoordinatePx": [
+            352,
+            52
           ]
         },
         {
@@ -3913,15 +3909,15 @@
             404,
             912
           ],
-          "sizePreviewPx": [
-            352,
-            52
-          ],
           "bboxNormalized": [
             0.113,
             0.8398,
             0.8783,
             0.8906
+          ],
+          "sizeCoordinatePx": [
+            352,
+            52
           ]
         },
         {
@@ -3932,15 +3928,15 @@
             460,
             933
           ],
-          "sizePreviewPx": [
-            460,
-            22
-          ],
           "bboxNormalized": [
             0,
             0.8896,
             1,
             0.9111
+          ],
+          "sizeCoordinatePx": [
+            460,
+            22
           ]
         },
         {
@@ -3951,15 +3947,15 @@
             242,
             968
           ],
-          "sizePreviewPx": [
-            40,
-            12
-          ],
           "bboxNormalized": [
             0.4391,
             0.9336,
             0.5261,
             0.9453
+          ],
+          "sizeCoordinatePx": [
+            40,
+            12
           ]
         },
         {
@@ -3970,15 +3966,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -3987,17 +3983,17 @@
         "The suggestion panel is a separate surface; each suggestion action is explicit.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     },
     {
       "id": "9TO5-ONB-04",
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Browse for Me result / loading skeleton tutorial",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-4.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -4008,15 +4004,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -4027,15 +4023,15 @@
             246,
             251
           ],
-          "sizePreviewPx": [
-            42,
-            47
-          ],
           "bboxNormalized": [
             0.4435,
             0.1992,
             0.5348,
             0.2451
+          ],
+          "sizeCoordinatePx": [
+            42,
+            47
           ]
         },
         {
@@ -4046,15 +4042,15 @@
             417,
             915
           ],
-          "sizePreviewPx": [
-            384,
-            562
-          ],
           "bboxNormalized": [
             0.0717,
             0.3447,
             0.9065,
             0.8936
+          ],
+          "sizeCoordinatePx": [
+            384,
+            562
           ]
         },
         {
@@ -4065,15 +4061,15 @@
             403,
             430
           ],
-          "sizePreviewPx": [
-            352,
-            60
-          ],
           "bboxNormalized": [
             0.1109,
             0.3613,
             0.8761,
             0.4199
+          ],
+          "sizeCoordinatePx": [
+            352,
+            60
           ]
         },
         {
@@ -4084,15 +4080,15 @@
             185,
             653
           ],
-          "sizePreviewPx": [
-            133,
-            201
-          ],
           "bboxNormalized": [
             0.113,
             0.4414,
             0.4022,
             0.6377
+          ],
+          "sizeCoordinatePx": [
+            133,
+            201
           ]
         },
         {
@@ -4103,15 +4099,15 @@
             330,
             653
           ],
-          "sizePreviewPx": [
-            133,
-            201
-          ],
           "bboxNormalized": [
             0.4283,
             0.4414,
             0.7174,
             0.6377
+          ],
+          "sizeCoordinatePx": [
+            133,
+            201
           ]
         },
         {
@@ -4122,15 +4118,15 @@
             414,
             653
           ],
-          "sizePreviewPx": [
-            73,
-            201
-          ],
           "bboxNormalized": [
             0.7413,
             0.4414,
             0.9,
             0.6377
+          ],
+          "sizeCoordinatePx": [
+            73,
+            201
           ]
         },
         {
@@ -4141,15 +4137,15 @@
             410,
             738
           ],
-          "sizePreviewPx": [
-            358,
-            57
-          ],
           "bboxNormalized": [
             0.113,
             0.665,
             0.8913,
             0.7207
+          ],
+          "sizeCoordinatePx": [
+            358,
+            57
           ]
         },
         {
@@ -4160,15 +4156,15 @@
             411,
             913
           ],
-          "sizePreviewPx": [
-            358,
-            147
-          ],
           "bboxNormalized": [
             0.1152,
             0.748,
             0.8935,
             0.8916
+          ],
+          "sizeCoordinatePx": [
+            358,
+            147
           ]
         },
         {
@@ -4179,15 +4175,15 @@
             460,
             933
           ],
-          "sizePreviewPx": [
-            460,
-            22
-          ],
           "bboxNormalized": [
             0,
             0.8896,
             1,
             0.9111
+          ],
+          "sizeCoordinatePx": [
+            460,
+            22
           ]
         },
         {
@@ -4198,15 +4194,15 @@
             242,
             968
           ],
-          "sizePreviewPx": [
-            40,
-            12
-          ],
           "bboxNormalized": [
             0.4391,
             0.9336,
             0.5261,
             0.9453
+          ],
+          "sizeCoordinatePx": [
+            40,
+            12
           ]
         },
         {
@@ -4217,15 +4213,15 @@
             435,
             982
           ],
-          "sizePreviewPx": [
-            80,
-            48
-          ],
           "bboxNormalized": [
             0.7717,
             0.9121,
             0.9457,
             0.959
+          ],
+          "sizeCoordinatePx": [
+            80,
+            48
           ]
         },
         {
@@ -4236,15 +4232,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -4253,17 +4249,17 @@
         "Third carousel item is clipped at right edge; content stack is not a grid.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     },
     {
       "id": "9TO5-ONB-05",
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Ad-block explainer",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-5.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -4274,15 +4270,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -4293,15 +4289,15 @@
             385,
             249
           ],
-          "sizePreviewPx": [
-            304,
-            69
-          ],
           "bboxNormalized": [
             0.1761,
             0.1758,
             0.837,
             0.2432
+          ],
+          "sizeCoordinatePx": [
+            304,
+            69
           ]
         },
         {
@@ -4312,15 +4308,15 @@
             393,
             910
           ],
-          "sizePreviewPx": [
-            327,
-            594
-          ],
           "bboxNormalized": [
             0.1435,
             0.3086,
             0.8543,
             0.8887
+          ],
+          "sizeCoordinatePx": [
+            327,
+            594
           ]
         },
         {
@@ -4331,15 +4327,15 @@
             432,
             809
           ],
-          "sizePreviewPx": [
-            416,
-            86
-          ],
           "bboxNormalized": [
             0.0348,
             0.7061,
             0.9391,
             0.79
+          ],
+          "sizeCoordinatePx": [
+            416,
+            86
           ]
         },
         {
@@ -4350,15 +4346,15 @@
             460,
             933
           ],
-          "sizePreviewPx": [
-            460,
-            22
-          ],
           "bboxNormalized": [
             0,
             0.8896,
             1,
             0.9111
+          ],
+          "sizeCoordinatePx": [
+            460,
+            22
           ]
         },
         {
@@ -4369,15 +4365,15 @@
             242,
             968
           ],
-          "sizePreviewPx": [
-            40,
-            12
-          ],
           "bboxNormalized": [
             0.4391,
             0.9336,
             0.5261,
             0.9453
+          ],
+          "sizeCoordinatePx": [
+            40,
+            12
           ]
         },
         {
@@ -4388,15 +4384,15 @@
             435,
             982
           ],
-          "sizePreviewPx": [
-            80,
-            48
-          ],
           "bboxNormalized": [
             0.7717,
             0.9121,
             0.9457,
             0.959
+          ],
+          "sizeCoordinatePx": [
+            80,
+            48
           ]
         },
         {
@@ -4407,15 +4403,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -4424,17 +4420,17 @@
         "The switch is visually purple with a white thumb in this light tutorial state; exact RGB not sampled.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     },
     {
       "id": "9TO5-ONB-06",
       "category": "full-screen-android-onboarding-capture-publisher-resized",
       "state": "Set as default browser",
       "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-6.png?w=460",
-      "previewCanvasPx": [
-        460,
-        1024
-      ],
       "confidence": "low-scaled-composite-preview",
       "regions": [
         {
@@ -4445,15 +4441,15 @@
             424,
             40
           ],
-          "sizePreviewPx": [
-            388,
-            21
-          ],
           "bboxNormalized": [
             0.0783,
             0.0186,
             0.9217,
             0.0391
+          ],
+          "sizeCoordinatePx": [
+            388,
+            21
           ]
         },
         {
@@ -4464,15 +4460,15 @@
             317,
             411
           ],
-          "sizePreviewPx": [
-            177,
-            173
-          ],
           "bboxNormalized": [
             0.3043,
             0.2324,
             0.6891,
             0.4014
+          ],
+          "sizeCoordinatePx": [
+            177,
+            173
           ]
         },
         {
@@ -4483,15 +4479,15 @@
             361,
             597
           ],
-          "sizePreviewPx": [
-            262,
-            94
-          ],
           "bboxNormalized": [
             0.2152,
             0.4912,
             0.7848,
             0.583
+          ],
+          "sizeCoordinatePx": [
+            262,
+            94
           ]
         },
         {
@@ -4502,15 +4498,15 @@
             390,
             690
           ],
-          "sizePreviewPx": [
-            325,
-            64
-          ],
           "bboxNormalized": [
             0.1413,
             0.6113,
             0.8478,
             0.6738
+          ],
+          "sizeCoordinatePx": [
+            325,
+            64
           ]
         },
         {
@@ -4521,15 +4517,15 @@
             433,
             845
           ],
-          "sizePreviewPx": [
-            417,
-            53
-          ],
           "bboxNormalized": [
             0.0348,
             0.7734,
             0.9413,
             0.8252
+          ],
+          "sizeCoordinatePx": [
+            417,
+            53
           ]
         },
         {
@@ -4540,15 +4536,15 @@
             460,
             933
           ],
-          "sizePreviewPx": [
-            460,
-            22
-          ],
           "bboxNormalized": [
             0,
             0.8896,
             1,
             0.9111
+          ],
+          "sizeCoordinatePx": [
+            460,
+            22
           ]
         },
         {
@@ -4559,15 +4555,15 @@
             242,
             968
           ],
-          "sizePreviewPx": [
-            40,
-            12
-          ],
           "bboxNormalized": [
             0.4391,
             0.9336,
             0.5261,
             0.9453
+          ],
+          "sizeCoordinatePx": [
+            40,
+            12
           ]
         },
         {
@@ -4578,15 +4574,15 @@
             410,
             971
           ],
-          "sizePreviewPx": [
-            30,
-            18
-          ],
           "bboxNormalized": [
             0.8261,
             0.9307,
             0.8913,
             0.9482
+          ],
+          "sizeCoordinatePx": [
+            30,
+            18
           ]
         },
         {
@@ -4597,15 +4593,15 @@
             279,
             1018
           ],
-          "sizePreviewPx": [
-            109,
-            8
-          ],
           "bboxNormalized": [
             0.3696,
             0.9863,
             0.6065,
             0.9941
+          ],
+          "sizeCoordinatePx": [
+            109,
+            8
           ]
         }
       ],
@@ -4614,7 +4610,11 @@
         "Publisher-resized 460px-width capture; all boxes are measured in this image coordinate system.",
         "Region boxes were scaled from manually inspected 460x1000 preview estimates into the downloaded 460x1024 encoded image pixel space. Region boundaries remain approximate; the transformation enables exact RGB sampling within approximate ROIs, not native dp inference."
       ],
-      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source"
+      "measurementCoordinateBasis": "manual-preview-estimate-scaled-to-downloaded-460x1024-source",
+      "coordinateCanvasPx": [
+        460,
+        1024
+      ]
     }
   ]
 }
