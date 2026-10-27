@@ -36,8 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Article
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
@@ -83,18 +82,25 @@ fun CommandPalette(
     onOpenTab: (Tab) -> Unit,
     onDismiss: () -> Unit,
     recentHistory: List<SearchHit> = emptyList(),
-    onVoiceSearch: () -> Unit = {}
+    onVoiceSearch: () -> Unit = {},
+    autoOpenKeyboard: Boolean = true,
+    isPrivateMode: Boolean = false,
+    onTogglePrivateMode: () -> Unit = {}
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(visible) {
-        if (visible) {
+    LaunchedEffect(visible, autoOpenKeyboard) {
+        if (!visible) {
+            keyboard?.hide()
+        } else if (autoOpenKeyboard) {
             withFrameNanos { }
             runCatching { focusRequester.requestFocus() }
             withFrameNanos { }
             keyboard?.show()
         } else {
+            // The preference controls auto-opening only. Tapping the field
+            // still focuses it and opens the IME normally.
             keyboard?.hide()
         }
     }
@@ -132,22 +138,8 @@ fun CommandPalette(
                     .imePadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        keyboard?.hide()
-                        onDismiss()
-                    },
-                    modifier = Modifier
-                        .padding(start = 1.dp, top = 1.dp)
-                        .size(38.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.ArrowBack,
-                        contentDescription = "Close search",
-                        tint = Color.White.copy(alpha = 0.92f)
-                    )
-                }
-
+                // Arc's search surface has no standalone top-left back button.
+                // The search capsule and suggestion panel float over the empty canvas.
                 Spacer(Modifier.weight(1f))
 
                 Surface(
@@ -161,16 +153,9 @@ fun CommandPalette(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, end = 7.dp, top = 14.dp, bottom = 14.dp),
+                                .padding(start = 16.dp, end = 7.dp, top = 8.dp, bottom = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = null,
-                                tint = Color(0xFFB9B3C5),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.size(10.dp))
                             BasicTextField(
                                 value = query,
                                 onValueChange = onQueryChange,
@@ -205,19 +190,7 @@ fun CommandPalette(
                                     inner()
                                 }
                             )
-                            if (query.isNotBlank()) {
-                                IconButton(
-                                    onClick = { onQueryChange("") },
-                                    modifier = Modifier.size(35.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Clear search",
-                                        tint = Color(0xFFB9B3C5),
-                                        modifier = Modifier.size(19.dp)
-                                    )
-                                }
-                            } else {
+                            if (query.isBlank()) {
                                 IconButton(
                                     onClick = onVoiceSearch,
                                     modifier = Modifier.size(35.dp)
@@ -229,6 +202,27 @@ fun CommandPalette(
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
+                            }
+                            if (query.isNotBlank() || isPrivateMode) {
+                                Text(
+                                    text = "Incognito",
+                                    modifier = Modifier.padding(start = 2.dp, end = 1.dp),
+                                    color = Color(0xFFE6E1EE),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 11.sp,
+                                    maxLines = 1
+                                )
+                            }
+                            IconButton(
+                                onClick = onTogglePrivateMode,
+                                modifier = Modifier.size(35.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.VisibilityOff,
+                                    contentDescription = if (isPrivateMode) "Exit incognito" else "Open incognito",
+                                    tint = if (isPrivateMode) Color(0xFFF7F4FC) else Color(0xFFB9B3C5),
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
 
@@ -249,25 +243,16 @@ fun CommandPalette(
                                     tint = Color(0xFFB9B3C5),
                                     modifier = Modifier.size(19.dp)
                                 )
-                                Column(
+                                Text(
+                                    text = query.trim(),
                                     modifier = Modifier
                                         .weight(1f)
-                                        .padding(start = 11.dp, end = 5.dp)
-                                ) {
-                                    Text(
-                                        text = query.trim(),
-                                        color = Color(0xFFF4F0FA),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "Search the web",
-                                        color = Color(0xFFAAA3B8),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontSize = 11.sp
-                                    )
-                                }
+                                        .padding(start = 11.dp, end = 5.dp),
+                                    color = Color(0xFFF4F0FA),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                                 BrowseForMeButton(
                                     enabled = !loading,
                                     onClick = {
@@ -284,7 +269,7 @@ fun CommandPalette(
                                 it.url.contains(query, ignoreCase = true)
                         }.take(4)
                         if (matchingTabs.isNotEmpty()) {
-                            PaletteSectionLabel(if (query.isBlank()) "Continue browsing" else "Open tabs")
+                            // Keep tab matches in the same unsectioned row list as the reference.
                             matchingTabs.forEach { tab ->
                                 PaletteSuggestionRow(
                                     icon = Icons.Rounded.Article,
@@ -300,16 +285,17 @@ fun CommandPalette(
 
                         val availableHistory = if (query.isBlank()) recentHistory else historyHints
                         if (availableHistory.isNotEmpty()) {
-                            PaletteSectionLabel(if (query.isBlank()) "Recent pages" else "Suggestions")
+                            // No section heading: suggestions read as one continuous list.
                             LazyColumn(
-                                modifier = Modifier.heightIn(max = 220.dp),
-                                contentPadding = PaddingValues(bottom = 7.dp)
+                                modifier = Modifier.heightIn(max = 304.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(bottom = 4.dp)
                             ) {
                                 items(availableHistory.take(6), key = { "history-${it.url}" }) { hit ->
                                     PaletteSuggestionRow(
-                                        icon = Icons.Rounded.History,
+                                        icon = Icons.Rounded.Search,
                                         title = hit.title.ifBlank { hit.url },
-                                        subtitle = hit.url,
+                                        subtitle = "",
                                         browseQuery = if (query.isBlank()) null else hit.title.ifBlank { hit.url },
                                         onBrowseForMe = {
                                             keyboard?.hide()
@@ -325,11 +311,11 @@ fun CommandPalette(
                         }
 
                         if (query.isBlank() && matchingTabs.isEmpty() && availableHistory.isEmpty()) {
-                            PaletteSectionLabel("Try Browse for Me")
                             listOf(
                                 "Summarize today's news",
-                                "Explain a complex topic",
-                                "Compare the best options"
+                                "museum shows near me",
+                                "quick chicken recipes",
+                                "fun things to do in NYC"
                             ).forEach { suggestion ->
                                 PaletteSuggestionRow(
                                     icon = Icons.Rounded.Search,
@@ -388,8 +374,9 @@ private fun PaletteSuggestionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = if (subtitle.isBlank()) 44.dp else 52.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 7.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -438,7 +425,7 @@ private fun BrowseForMeButton(
     ) {
         Text(
             text = "Browse for me",
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelSmall,
             color = Color.White,
             fontSize = 10.sp,
