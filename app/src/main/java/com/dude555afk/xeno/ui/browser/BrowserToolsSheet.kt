@@ -192,7 +192,11 @@ fun BrowserToolsSheet(
                         if (panel != null && panel != BrowserPanel.MENU) {
                             IconButton(
                                 onClick = {
-                                    onOpenPanel(if (panel == BrowserPanel.AI) BrowserPanel.SETTINGS else BrowserPanel.MENU)
+                                    when (panel) {
+                                        BrowserPanel.AI -> onOpenPanel(BrowserPanel.SETTINGS)
+                                        BrowserPanel.SETTINGS -> onDismiss()
+                                        else -> onOpenPanel(BrowserPanel.MENU)
+                                    }
                                 }
                             ) {
                                 Icon(Icons.Rounded.ArrowBack, "Back", tint = TextSecondary)
