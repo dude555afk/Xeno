@@ -113,10 +113,10 @@ fun CommandPalette(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF4D39BC),
-                            Color(0xFF9270E8),
-                            Color(0xFFEAA6CB),
-                            Color(0xFFFFD3D9)
+                            Color(0xFF8C7DE5),
+                            Color(0xFFB5A0EE),
+                            Color(0xFFF2C5E0),
+                            Color(0xFFF7DBDF)
                         )
                     )
                 )

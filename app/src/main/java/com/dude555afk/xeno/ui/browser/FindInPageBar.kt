@@ -47,7 +47,7 @@ fun FindInPageBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = Color(0xF20D0D0D),
+        color = Color(0xF8FFFFFF),
         border = androidx.compose.foundation.BorderStroke(1.dp, StrokeSubtle),
         shadowElevation = 12.dp
     ) {

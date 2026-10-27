@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -145,7 +146,7 @@ fun TabStackSheet(
                         Text(
                             text = "No open pages",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.56f)
+                            color = Color(0xFF777180)
                         )
                     }
                 } else {
@@ -178,7 +179,7 @@ fun TabStackSheet(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF292532),
+                        color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE8E2EE)),
                         onClick = onOpenSettings,
                         modifier = Modifier.size(48.dp)
@@ -200,7 +201,7 @@ fun TabStackSheet(
                     }
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF292532),
+                        color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE8E2EE)),
                         onClick = onDismiss,
                         modifier = Modifier.size(48.dp)
@@ -298,7 +299,7 @@ private fun TabCard(
                     Text(
                         text = host.ifBlank { if (tab.url.isBlank()) "Search the web" else tab.url },
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.54f),
+                        color = Color(0xFF777180),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
