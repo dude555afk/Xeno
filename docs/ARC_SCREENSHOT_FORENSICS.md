@@ -278,7 +278,7 @@ Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/q
 
 ### PLAY-04 — Tab switcher / archive promotion
 
-Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-fy246zdBHFfuqJJPfRpbPo-screenshot-3
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-3
 
 - Visible in-app area: [61, 207, 445, 900].
 - Left neighbor page: [61, 365, 111, 879], approx. 50 × 514 visible.
@@ -311,7 +311,7 @@ Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/q
 
 ### PLAY-07 — Default-browser onboarding
 
-Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-fy246zdBHFfuqJJPfRpbPo-screenshot-6
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-6
 
 - Visible in-app viewport: [61, 209, 445, 900].
 - App icon: [165, 400, 343, 580].
