@@ -22,7 +22,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_MANIFEST = HERE / "reference_measurements.json"
@@ -110,7 +110,11 @@ def representative_palette(image: Image.Image, colors: int = 12) -> list[dict[st
     return results
 
 
-def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
+def analyze_one(
+    item: dict[str, Any],
+    max_bytes: int,
+    thumbnail_dir: Path | None = None,
+) -> dict[str, Any]:
     url = item.get("sourceUrl", "")
     base: dict[str, Any] = {
         "id": item.get("id"),
@@ -211,6 +215,50 @@ def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
                 ),
             } for region in item.get("regions", [])]
 
+        if thumbnail_dir is not None:
+            # Preserve the full source image in each cell. Boxes are drawn only
+            # when the source aspect ratio matches the measurement canvas.
+            annotated = image.copy()
+            if ratio_error is not None and ratio_error <= 0.015:
+                drawer = ImageDraw.Draw(annotated)
+                stroke = max(2, round(min(width, height) / 500))
+                for region in item.get("regions", []):
+                    left, top, right, bottom = region["bbox"]
+                    box = (
+                        round(left * width / preview_w),
+                        round(top * height / preview_h),
+                        round(right * width / preview_w),
+                        round(bottom * height / preview_h),
+                    )
+                    drawer.rectangle(box, outline=(255, 38, 120), width=stroke)
+                for probe in item.get("samplePoints", []):
+                    x, y = int(probe["x"]), int(probe["y"])
+                    if 0 <= x < width and 0 <= y < height:
+                        radius = max(4, round(min(width, height) / 240))
+                        drawer.ellipse(
+                            (x-radius, y-radius, x+radius, y+radius),
+                            outline=(30, 220, 255),
+                            width=max(2, stroke),
+                        )
+
+            cell_w, cell_h = 360, 440
+            card = Image.new("RGB", (cell_w, cell_h), (26, 27, 32))
+            draw_card = ImageDraw.Draw(card)
+            font = ImageFont.load_default()
+            asset_id = str(item.get("id", "unknown"))
+            title = str(item.get("state", ""))[:48]
+            dimension_label = f"{width}x{height}  |  {len(item.get('regions', []))} boxes"
+            draw_card.text((12, 10), asset_id, fill=(255, 255, 255), font=font)
+            draw_card.text((12, 28), title, fill=(220, 222, 229), font=font)
+            draw_card.text((12, 44), dimension_label, fill=(160, 190, 205), font=font)
+            annotated.thumbnail((336, 375), Image.Resampling.LANCZOS)
+            x_off = (cell_w - annotated.width) // 2
+            y_off = 64 + (360 - annotated.height) // 2
+            card.paste(annotated, (x_off, y_off))
+            draw_card.text((12, 420), "magenta=region box, cyan=exact point", fill=(170, 178, 189), font=font)
+            thumbnail_dir.mkdir(parents=True, exist_ok=True)
+            card.save(thumbnail_dir / f"{asset_id}.jpg", quality=88, optimize=True)
+
         return {
             **base,
             "fetch": {
@@ -270,6 +318,11 @@ def main() -> int:
     parser.add_argument("--max-bytes", type=int, default=MAX_BYTES_DEFAULT)
     parser.add_argument("--delay-ms", type=int, default=150)
     parser.add_argument("--include-excluded-platforms", action="store_true")
+    parser.add_argument(
+        "--contact-sheet",
+        type=Path,
+        help="Create a contact sheet of individually annotated source images.",
+    )
     args = parser.parse_args()
 
     if args.max_bytes <= 0:
@@ -294,11 +347,41 @@ def main() -> int:
 
         results = []
         total = len(unique)
-        for index, item in enumerate(unique.values(), start=1):
-            print(f"[{index}/{total}] {item.get('id')}: fetching {urlparse(item['sourceUrl']).netloc}", flush=True)
-            results.append(analyze_one(item, args.max_bytes))
-            if index < total and args.delay_ms:
-                time.sleep(args.delay_ms / 1000)
+        with tempfile.TemporaryDirectory(prefix="arc-reference-thumbnails-") as temporary:
+            thumbnail_dir = Path(temporary) if args.contact_sheet else None
+            for index, item in enumerate(unique.values(), start=1):
+                print(f"[{index}/{total}] {item.get('id')}: fetching {urlparse(item['sourceUrl']).netloc}", flush=True)
+                results.append(analyze_one(item, args.max_bytes, thumbnail_dir))
+                if index < total and args.delay_ms:
+                    time.sleep(args.delay_ms / 1000)
+
+            if args.contact_sheet and thumbnail_dir is not None:
+                cell_w, cell_h = 360, 440
+                columns = 4
+                rows = (len(results) + columns - 1) // columns
+                sheet = Image.new("RGB", (columns * cell_w, rows * cell_h + 56), (14, 15, 18))
+                draw_sheet = ImageDraw.Draw(sheet)
+                draw_sheet.text(
+                    (20, 18),
+                    f"Arc Search Android screenshot forensics — {len(results)} source assets",
+                    fill=(245, 245, 250),
+                    font=ImageFont.load_default(),
+                )
+                for index, result in enumerate(results):
+                    name = f"{result.get('id')}.jpg"
+                    image_path = thumbnail_dir / name
+                    x = (index % columns) * cell_w
+                    y = 56 + (index // columns) * cell_h
+                    if image_path.exists():
+                        with Image.open(image_path) as thumb:
+                            sheet.paste(thumb.convert("RGB"), (x, y))
+                    else:
+                        draw_sheet.rectangle((x, y, x+cell_w-1, y+cell_h-1), fill=(55, 28, 40))
+                        draw_sheet.text((x+12, y+16), str(result.get("id")), fill=(255,255,255), font=ImageFont.load_default())
+                        draw_sheet.text((x+12, y+38), str(result.get("fetch", {}).get("error", "unavailable"))[:45], fill=(255,190,190), font=ImageFont.load_default())
+                args.contact_sheet.parent.mkdir(parents=True, exist_ok=True)
+                sheet.save(args.contact_sheet, quality=90, optimize=True)
+                print(f"Annotated contact sheet: {args.contact_sheet}", flush=True)
 
         ok = sum(1 for r in results if r.get("fetch", {}).get("status") == "ok")
         errors = [r for r in results if r.get("fetch", {}).get("status") != "ok"]
