@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -215,6 +217,7 @@ fun BrowserScreen(
                 displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
                 onOpenPalette = viewModel::openPalette,
                 onNewTab = viewModel::newTab,
+                onSwitchTab = viewModel::cycleTab,
                 onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
                 onOpenTabs = viewModel::toggleTabStack,
                 onOpenReader = viewModel::openReaderMode,
@@ -485,6 +488,7 @@ private fun FloatingBar(
     displayUrl: String,
     onOpenPalette: () -> Unit,
     onNewTab: () -> Unit,
+    onSwitchTab: (Int) -> Unit,
     onOpenMenu: () -> Unit,
     onOpenTabs: () -> Unit,
     onOpenReader: () -> Unit,
@@ -616,7 +620,22 @@ private fun FloatingBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = 10.dp)
+                .pointerInput(onSwitchTab) {
+                    var dragDistance = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragDistance += dragAmount
+                        },
+                        onDragEnd = {
+                            if (dragDistance <= -52f) onSwitchTab(1)
+                            else if (dragDistance >= 52f) onSwitchTab(-1)
+                            dragDistance = 0f
+                        },
+                        onDragCancel = { dragDistance = 0f }
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
