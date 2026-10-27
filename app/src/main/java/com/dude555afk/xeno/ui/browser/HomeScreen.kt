@@ -1,83 +1,41 @@
 package com.dude555afk.xeno.ui.browser
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.dude555afk.xeno.core.storage.CollectedPage
 
-// Measured from the encoded 1200x667 Arc Search Android home montage:
-// (15,80) #1F143C, (150,210) #44243C, (280,550) #34425F
-// on the 300x667 home panel. Stops are calibrated to projected positions
-// along Compose's top-left to bottom-right linear gradient; not Android dp.
+// Pixel samples from the 1200x667 four-panel Arc Search Android capture.
+// Points measured inside the 300x667 home panel. They are color anchors,
+// not an inferred universal Arc design system.
 private val ArcHomeTop = Color(0xFF1F143C)
 private val ArcHomeMiddle = Color(0xFF44243C)
 private val ArcHomeBottom = Color(0xFF34425F)
 
-/**
- * Search-first new-tab canvas. Xeno uses its own mark while following Arc
- * Search's sparse mobile composition, gradient atmosphere and animated centre.
- */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onNewSearch: () -> Unit,
-    onOpenTabs: () -> Unit,
     onOpenSettings: () -> Unit,
     onVoiceSearch: () -> Unit,
-    pinnedPages: List<CollectedPage> = emptyList(),
-    onOpenPinnedPage: (CollectedPage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "xeno-home-mark")
-    val breathing by transition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "xeno-home-breathing"
-    )
-
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -93,131 +51,101 @@ fun HomeScreen(
                 )
             )
     ) {
-        // The four-petal Canvas occupies about 82% of its box. The reference
-        // visible mark is ~36.7% of screen width, hence a ~44.7% parent box.
+        // The reference mark's visible bounds are ~110x105 px in a 300x667
+        // panel. Xeno's four-petal canvas fills ~82% of its parent box, so use
+        // 44.7% of viewport width for the box to produce ~36.7% visible art.
+        // The mark is centered on the viewport; no arbitrary vertical offset.
         HomeMark(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(bottom = 25.dp)
                 .size((maxWidth * 0.447f).coerceIn(135.dp, 195.dp))
-                .scale(breathing)
         )
 
-        if (pinnedPages.isNotEmpty()) {
-            LazyRow(
+        // Arc's new-tab canvas has two actions in this state: a small plus
+        // capsule centered horizontally and Settings at the right. The tab
+        // carousel control belongs to the webpage dock, not this home state.
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = maxHeight * 0.055f)
+                .size(width = (maxWidth * 0.20f).coerceIn(72.dp, 88.dp), height = 48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(7.dp),
+                color = Color(0xFF4B5268),
+                shadowElevation = 0.dp,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(bottom = 84.dp)
-                    .height(42.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(width = (maxWidth * 0.20f).coerceIn(72.dp, 88.dp), height = (maxHeight * 0.045f).coerceIn(28.dp, 34.dp))
+                    .combinedClickable(
+                        onClick = onNewSearch,
+                        onLongClick = onVoiceSearch
+                    )
             ) {
-                items(pinnedPages.take(8), key = { it.url }) { page ->
-                    Surface(
-                        onClick = { onOpenPinnedPage(page) },
-                        shape = RoundedCornerShape(18.dp),
-                        color = Color(0xCC2C2935),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-                        modifier = Modifier.widthIn(max = 210.dp)
-                    ) {
-                        Text(
-                            text = page.title.ifBlank { page.url },
-                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
-                            color = Color(0xFF41385F),
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "New search; long-press for voice search",
+                        tint = Color(0xFFECEEF6),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
 
         Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(start = 26.dp, end = 26.dp, bottom = 18.dp),
+            onClick = onOpenSettings,
             shape = CircleShape,
-            color = Color(0xC6292731),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
-            shadowElevation = 12.dp
+            color = Color.Transparent,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = maxWidth * 0.08f, bottom = maxHeight * 0.055f)
+                .size(48.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
-                horizontalArrangement = Arrangement.spacedBy(11.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DockAction(Icons.Rounded.Layers, "Open tabs", onOpenTabs)
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color(0xFF5D4BE8),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA69AFF)),
-                    shadowElevation = 4.dp,
-                    modifier = Modifier.size(width = (maxWidth * 0.20f).coerceIn(72.dp, 88.dp), height = (maxHeight * 0.045f).coerceIn(36.dp, 44.dp))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .combinedClickable(onClick = onNewSearch, onLongClick = onVoiceSearch),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = "New search; long-press for voice search",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-                DockAction(Icons.Rounded.Settings, "Settings", onOpenSettings)
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "Settings",
+                    tint = Color(0xFFD3D8E7),
+                    modifier = Modifier.size(20.dp)
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun DockAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.01f),
-        modifier = Modifier.size(48.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = label, tint = Color(0xFFECE7F7), modifier = Modifier.size(22.dp))
         }
     }
 }
 
 @Composable
 private fun HomeMark(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val cx = size.width / 2f
-        val cy = size.height / 2f
-        val petalRadius = size.minDimension * 0.23f
-        val spread = size.minDimension * 0.18f
-        val petals = listOf(
-            Offset(cx, cy - spread) to Color(0xFFFFD7E8),
-            Offset(cx + spread, cy) to Color(0xFFFFD3B8),
-            Offset(cx, cy + spread) to Color(0xFFD9C8FF),
-            Offset(cx - spread, cy) to Color(0xFFFFE8A9)
-        )
-        petals.forEach { (center, tint) ->
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFFFFF7FC), tint, tint.copy(alpha = 0.82f)),
-                    center = Offset(center.x - petalRadius * 0.22f, center.y - petalRadius * 0.25f),
-                    radius = petalRadius * 1.8f
-                ),
-                radius = petalRadius,
-                center = center
-            )
+    Box(modifier = modifier) {
+        // Custom Xeno artwork approximates the four-petal mark's bounding
+        // footprint. Motion remains static until reference video is measured;
+        // an invented breathing animation would not count as Arc parity.
+        val petalRadius = androidx.compose.ui.platform.LocalDensity.current.run {
+            0.23f
         }
-        drawCircle(Color(0xFFFFF4FA), radius = petalRadius * 0.30f, center = Offset(cx, cy))
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val radius = size.minDimension * petalRadius
+            val spread = size.minDimension * 0.18f
+            val petals = listOf(
+                Offset(cx, cy - spread) to Color(0xFFFFD7E8),
+                Offset(cx + spread, cy) to Color(0xFFFFD3B8),
+                Offset(cx, cy + spread) to Color(0xFFD9C8FF),
+                Offset(cx - spread, cy) to Color(0xFFFFE8A9)
+            )
+            petals.forEach { (center, tint) ->
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFFFFF7FC), tint, tint.copy(alpha = 0.82f)),
+                        center = Offset(center.x - radius * 0.22f, center.y - radius * 0.25f),
+                        radius = radius * 1.8f
+                    ),
+                    radius = radius,
+                    center = center
+                )
+            }
+            drawCircle(Color(0xFFFFF4FA), radius = radius * 0.30f, center = Offset(cx, cy))
+        }
     }
 }
