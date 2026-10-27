@@ -62,7 +62,11 @@ fun TranslationSheet(
                 border = androidx.compose.foundation.BorderStroke(1.dp, StrokeSubtle),
                 shadowElevation = 0.dp
             ) {
-                Column(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                ) {
                     Row(
                         Modifier.fillMaxWidth().padding(start = 20.dp, top = 14.dp, end = 12.dp, bottom = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
