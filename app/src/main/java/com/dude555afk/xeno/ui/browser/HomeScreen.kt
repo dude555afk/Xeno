@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -76,7 +77,7 @@ fun HomeScreen(
         label = "xeno-home-breathing"
     )
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(
@@ -93,7 +94,7 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(bottom = 25.dp)
-                .size(140.dp)
+                .size((maxWidth * 0.367f).coerceIn(110.dp, 160.dp))
                 .scale(breathing)
         )
 
@@ -148,7 +149,7 @@ fun HomeScreen(
                     color = Color(0xFF5D4BE8),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA69AFF)),
                     shadowElevation = 4.dp,
-                    modifier = Modifier.size(width = 76.dp, height = 40.dp)
+                    modifier = Modifier.size(width = (maxWidth * 0.20f).coerceIn(72.dp, 88.dp), height = (maxHeight * 0.045f).coerceIn(36.dp, 44.dp))
                 ) {
                     Box(
                         modifier = Modifier
