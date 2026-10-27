@@ -251,9 +251,9 @@ def analyze_one(
             draw_card.text((12, 10), asset_id, fill=(255, 255, 255), font=font)
             draw_card.text((12, 28), title, fill=(220, 222, 229), font=font)
             draw_card.text((12, 44), dimension_label, fill=(160, 190, 205), font=font)
-            annotated.thumbnail((336, 375), Image.Resampling.LANCZOS)
+            annotated.thumbnail((336, 350), Image.Resampling.LANCZOS)
             x_off = (cell_w - annotated.width) // 2
-            y_off = 64 + (360 - annotated.height) // 2
+            y_off = 64 + (350 - annotated.height) // 2
             card.paste(annotated, (x_off, y_off))
             draw_card.text((12, 420), "magenta=region box, cyan=exact point", fill=(170, 178, 189), font=font)
             thumbnail_dir.mkdir(parents=True, exist_ok=True)
