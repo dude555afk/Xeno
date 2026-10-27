@@ -350,6 +350,8 @@ fun BrowserScreen(
             thirdPartyCookiesEnabled = state.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = state.fingerprintingProtectionEnabled,
             provider = viewModel.providerConfig(),
+            webSearchEngine = state.webSearchEngine,
+            onWebSearchEngineChange = viewModel::setWebSearchEngine,
             availableModels = state.availableModels,
              availableModelsProviderId = state.availableModelsProviderId,
             modelsLoading = state.modelsLoading,

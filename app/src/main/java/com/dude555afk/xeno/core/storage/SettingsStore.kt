@@ -25,6 +25,16 @@ class SettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val cachedApiKeys = mutableMapOf<String, String>()
 
+    var webSearchEngine: String
+        get() = prefs.getString(KEY_WEB_SEARCH_ENGINE, "brave") ?: "brave"
+        set(value) {
+            val safeValue = when (value.lowercase()) {
+                "duckduckgo", "google", "bing" -> value.lowercase()
+                else -> "brave"
+            }
+            prefs.edit { putString(KEY_WEB_SEARCH_ENGINE, safeValue) }
+        }
+
     var providerId: String
         get() = prefs.getString(KEY_PROVIDER, ProviderPresets.Kilo.id) ?: ProviderPresets.Kilo.id
         set(value) {
@@ -239,6 +249,7 @@ class SettingsStore(context: Context) {
     private companion object {
         const val PREFS = "xeno_prefs"
         const val KEY_PROVIDER = "provider_id"
+        const val KEY_WEB_SEARCH_ENGINE = "web_search_engine"
 
         // Legacy single-provider keys, migrated lazily.
         const val KEY_API_KEY_LEGACY = "api_key"

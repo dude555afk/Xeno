@@ -33,23 +33,43 @@ class NavigationResolverTest {
     @Test
     fun queryIsUrlEncodedAndUnsafeSchemesAreNotExecuted() {
         assertEquals(
-            "https://duckduckgo.com/?q=hello+world",
+            "https://search.brave.com/search?q=hello+world",
             NavigationResolver.resolve("hello world")
         )
         assertEquals(
-            "https://duckduckgo.com/?q=javascript%3Aalert%281%29",
+            "https://search.brave.com/search?q=javascript%3Aalert%281%29",
             NavigationResolver.resolve("javascript:alert(1)")
         )
         assertEquals(
-            "https://duckduckgo.com/?q=999.1.1.1",
+            "https://search.brave.com/search?q=999.1.1.1",
             NavigationResolver.resolve("999.1.1.1")
+        )
+    }
+
+    @Test
+    fun selectableSearchEnginesUseTheirOwnEndpoints() {
+        assertEquals(
+            "https://duckduckgo.com/?q=hello+world",
+            NavigationResolver.resolve("hello world", "duckduckgo")
+        )
+        assertEquals(
+            "https://www.google.com/search?q=hello+world",
+            NavigationResolver.resolve("hello world", "google")
+        )
+        assertEquals(
+            "https://www.bing.com/search?q=hello+world",
+            NavigationResolver.resolve("hello world", "bing")
+        )
+        assertEquals(
+            "https://search.brave.com/search?q=hello+world",
+            NavigationResolver.resolve("hello world", "brave")
         )
     }
 
     @Test
     fun outOfRangePortsFallBackToSearch() {
         assertEquals(
-            "https://duckduckgo.com/?q=example.com%3A99999",
+            "https://search.brave.com/search?q=example.com%3A99999",
             NavigationResolver.resolve("example.com:99999")
         )
     }

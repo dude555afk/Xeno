@@ -90,6 +90,8 @@ fun BrowserToolsSheet(
     thirdPartyCookiesEnabled: Boolean,
     fingerprintingProtectionEnabled: Boolean,
     provider: ProviderConfig,
+    webSearchEngine: String,
+    onWebSearchEngineChange: (String) -> Unit,
     availableModels: List<ModelInfo>,
     availableModelsProviderId: String?,
     modelsLoading: Boolean,
@@ -512,6 +514,36 @@ fun BrowserToolsSheet(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Text(
+                                    "Default search engine",
+                                    color = TextPrimary,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Used when you enter a search query instead of a website address.",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                listOf(
+                                    listOf("brave" to "Brave Search", "duckduckgo" to "DuckDuckGo"),
+                                    listOf("google" to "Google", "bing" to "Bing")
+                                ).forEach { rowChoices ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        rowChoices.forEach { (id, label) ->
+                                            FilterChip(
+                                                selected = webSearchEngine == id,
+                                                onClick = { onWebSearchEngineChange(id) },
+                                                enabled = !isPrivateMode,
+                                                label = { Text(label, maxLines = 1) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
                                 InfoCard(
                                     selectedPreset.displayName,
                                     when {

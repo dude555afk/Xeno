@@ -14,7 +14,7 @@ object NavigationResolver {
     )
     private val ipv4 = Regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$")
 
-    fun resolve(raw: String): String? {
+    fun resolve(raw: String, searchEngine: String = "brave"): String? {
         val query = raw.trim()
         if (query.isEmpty()) return null
         if (query.equals("about:blank", ignoreCase = true)) return "about:blank"
@@ -29,7 +29,13 @@ object NavigationResolver {
             return "https://$query"
         }
 
-        return "https://duckduckgo.com/?q=" + URLEncoder.encode(query, "UTF-8")
+        val endpoint = when (searchEngine.lowercase()) {
+            "duckduckgo" -> "https://duckduckgo.com/?q="
+            "google" -> "https://www.google.com/search?q="
+            "bing" -> "https://www.bing.com/search?q="
+            else -> "https://search.brave.com/search?q="
+        }
+        return endpoint + URLEncoder.encode(query, "UTF-8")
     }
 
     private fun isValidHostAndPort(value: String): Boolean {

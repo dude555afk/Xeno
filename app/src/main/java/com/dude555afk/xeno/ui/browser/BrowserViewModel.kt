@@ -110,6 +110,7 @@ data class BrowserUiState(
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
+    val webSearchEngine: String = "brave",
     val historyHints: List<SearchHit> = emptyList(),
     val tabStackVisible: Boolean = false,
     val answer: AnswerResult? = null,
@@ -187,6 +188,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
+            webSearchEngine = settings.webSearchEngine,
             thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = settings.fingerprintingProtectionEnabled,
             hasApiKey = settings.hasApiKey,
@@ -546,6 +548,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         readerJob?.cancel()
         _state.update { it.copy(readerVisible = false, readerLoading = false, readerContent = null, readerError = null) }
     }
+    fun setWebSearchEngine(engineId: String) {
+        settings.webSearchEngine = engineId
+        _state.update { it.copy(webSearchEngine = settings.webSearchEngine) }
+    }
+
     fun providerConfig(): ProviderConfig = settings.providerConfig
 
     fun providerConfigFor(id: String): ProviderConfig = settings.providerConfigFor(id)
@@ -1138,7 +1145,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val q = raw.trim()
         if (q.isEmpty()) return
 
-        val url = NavigationResolver.resolve(q) ?: return
+        val url = NavigationResolver.resolve(q, settings.webSearchEngine) ?: return
 
         closePalette()
         closeFindInPage()
