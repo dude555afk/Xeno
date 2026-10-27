@@ -117,7 +117,7 @@ def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
         "category": item.get("category"),
         "state": item.get("state"),
         "source_url": url,
-        "preview_canvas_px": item.get("previewCanvasPx"),
+        "preview_canvas_px": item.get("coordinateCanvasPx"),
         "preview_coordinate_confidence": item.get("confidence"),
     }
     request = urllib.request.Request(
@@ -149,7 +149,7 @@ def analyze_one(item: dict[str, Any], max_bytes: int) -> dict[str, Any]:
         width, height = image.size
         array = np.asarray(image, dtype=np.uint8)
 
-        preview_w, preview_h = item.get("previewCanvasPx", [0, 0])
+        preview_w, preview_h = item.get("coordinateCanvasPx", [0, 0])
         preview_ratio = (preview_w / preview_h) if preview_h else None
         image_ratio = (width / height) if height else None
         ratio_error = (
