@@ -16,6 +16,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -235,6 +237,20 @@ private fun TabCard(
             .width(cardWidth)
             .fillMaxHeight()
             .scale(scale)
+            .pointerInput(tab.id) {
+                var verticalDistance = 0f
+                detectVerticalDragGestures(
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()
+                        verticalDistance += dragAmount
+                    },
+                    onDragEnd = {
+                        if (verticalDistance < -72f) onClose()
+                        verticalDistance = 0f
+                    },
+                    onDragCancel = { verticalDistance = 0f }
+                )
+            }
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(
