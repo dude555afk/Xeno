@@ -186,10 +186,10 @@ private fun HomeMark(modifier: Modifier = Modifier) {
         val stroke = size.minDimension * 0.095f
         val white = Color(0xFFFFFCFF)
         fun ribbon(startAngle: Double): Path {
-            val sx = cx + cos(startAngle) * r.toDouble() * 0.12
-            val sy = cy + sin(startAngle) * r.toDouble() * 0.12
-            val ex = cx + cos(startAngle + 2.25) * r.toDouble() * 0.76
-            val ey = cy + sin(startAngle + 2.25) * r.toDouble() * 0.76
+            val sx = cx.toDouble() + cos(startAngle) * r.toDouble() * 0.12
+            val sy = cy.toDouble() + sin(startAngle) * r.toDouble() * 0.12
+            val ex = cx.toDouble() + cos(startAngle + 2.25) * r.toDouble() * 0.76
+            val ey = cy.toDouble() + sin(startAngle + 2.25) * r.toDouble() * 0.76
             return Path().apply {
                 moveTo(sx.toFloat(), sy.toFloat())
                 cubicTo(
