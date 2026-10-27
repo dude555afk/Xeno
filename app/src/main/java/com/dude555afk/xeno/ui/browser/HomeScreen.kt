@@ -46,7 +46,7 @@ import com.dude555afk.xeno.core.storage.CollectedPage
 
 // Measured from the encoded 1200x667 Arc Search Android home montage:
 // (15,80) #1F143C, (150,210) #44243C, (280,550) #34425F
-// on the 300x667 home panel. Stops are calibrated to the projected position
+// on the 300x667 home panel. Stops are calibrated to projected positions
 // along Compose's top-left to bottom-right linear gradient; not Android dp.
 private val ArcHomeTop = Color(0xFF1F143C)
 private val ArcHomeMiddle = Color(0xFF44243C)
@@ -93,11 +93,13 @@ fun HomeScreen(
                 )
             )
     ) {
+        // The four-petal Canvas occupies about 82% of its box. The reference
+        // visible mark is ~36.7% of screen width, hence a ~44.7% parent box.
         HomeMark(
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(bottom = 25.dp)
-                .size((maxWidth * 0.367f).coerceIn(110.dp, 160.dp))
+                .size((maxWidth * 0.447f).coerceIn(135.dp, 195.dp))
                 .scale(breathing)
         )
 
