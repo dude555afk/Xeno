@@ -11,17 +11,17 @@ This pass inspects the visible artwork asset-by-asset. It distinguishes true scr
 
 The web inspection renderer exposes image previews to the analysis environment, but the original image bytes are not mounted in the local workspace. Therefore:
 
-- The coordinates below are **manual measurements of the rendered preview canvas**, not a claim that the original JPEG/PNG has those exact native dimensions.
+- The coordinates below are **manual measurements of the rendered coordinate canvas**, not a claim that the original JPEG/PNG has those exact native dimensions.
 - Preview coordinate estimates are generally ±4–8 preview pixels, depending on the edge and image compression. Some bounding boxes are more uncertain due to antialiasing and clipped cards.
 - No HEX value is presented as machine-sampled. Any colors described are visual estimates only.
 - Exact source-native pixel dimensions, per-pixel RGB histograms, LAB values, edge radii, and frame-level animation timing require the original image/video bytes. The comparison tool is in place for those once raw files are available.
-- **Do not convert the preview coordinates directly into Compose dp.** The phone's density, scaling and screenshot export size are not known for these web-rendered previews.
+- **Do not convert the coordinate-space estimates directly into Compose dp.** The phone's density, scaling and screenshot export size are not known for these web-rendered previews.
 
 That caveat is not an excuse to stop inspecting. It marks the boundary between observed composition and measurements that would otherwise be fabricated.
 
 ## A. Genuine full-screen Android captures
 
-The following are portrait screenshots embedded as original full-screen captures by Android Authority, rather than photographs of a handset. The web renderer shows them at an approximately 428 × 959 preview canvas; that is the **preview coordinate system** used here, not a verified source-file resolution.
+The following are portrait screenshots embedded as original full-screen captures by Android Authority, rather than photographs of a handset. The web renderer shows them at an approximately 428 × 959 coordinate canvas; that is the **preview coordinate system** used here, not a verified source-file resolution.
 
 ### AA-BFM-01 — Browse for Me, top of answer
 
@@ -237,7 +237,7 @@ These are explicit gaps, not values to fill with visual guesses. The source-imag
 
 ## I. High-resolution Google Play assets: coordinate pass
 
-The seven unique promotional files were opened at approximately **506 × 900 rendered-preview coordinates** through the AppRecs image endpoint. The Play Store's own listing repeats these same seven files multiple times in the image gallery; repeated instances were not counted as new references. The image list below has asset-by-asset boxes in the JSON manifest and represents the actual displayed content, not inferred native device resolution.
+The seven unique promotional files were opened at approximately **506 × 900 rendered-coordinate-space estimates** through the AppRecs image endpoint. The Play Store's own listing repeats these same seven files multiple times in the image gallery; repeated instances were not counted as new references. The image list below has asset-by-asset boxes in the JSON manifest and represents the actual displayed content, not inferred native device resolution.
 
 ### PLAY-01 — Home/search suggestions
 
