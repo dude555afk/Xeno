@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.ime
@@ -65,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -215,6 +218,7 @@ fun BrowserScreen(
                 displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
                 onOpenPalette = viewModel::openPalette,
                 onNewTab = viewModel::newTab,
+                onSwitchTab = viewModel::cycleTab,
                 onOpenMenu = { viewModel.openPanel(BrowserPanel.MENU) },
                 onOpenTabs = viewModel::toggleTabStack,
                 onOpenReader = viewModel::openReaderMode,
@@ -294,6 +298,7 @@ fun BrowserScreen(
             onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
             onClose = viewModel::closeTab,
             onNewTab = viewModel::newTab,
+            onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) },
             onDismiss = viewModel::toggleTabStack
         )
 
@@ -485,6 +490,7 @@ private fun FloatingBar(
     displayUrl: String,
     onOpenPalette: () -> Unit,
     onNewTab: () -> Unit,
+    onSwitchTab: (Int) -> Unit,
     onOpenMenu: () -> Unit,
     onOpenTabs: () -> Unit,
     onOpenReader: () -> Unit,
@@ -616,50 +622,62 @@ private fun FloatingBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = 10.dp)
+                .pointerInput(onSwitchTab) {
+                    var dragDistance = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragDistance += dragAmount
+                        },
+                        onDragEnd = {
+                            if (dragDistance <= -52f) onSwitchTab(1)
+                            else if (dragDistance >= 52f) onSwitchTab(-1)
+                            dragDistance = 0f
+                        },
+                        onDragCancel = { dragDistance = 0f }
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color.Transparent,
                 onClick = onOpenTabs,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color.White.copy(alpha = 0.91f),
-                        modifier = Modifier.size(23.dp)
+                        tint = Color.White.copy(alpha = 0.86f),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
             Surface(
-                shape = CircleShape,
-                color = Color(0xFF303030),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                shape = RoundedCornerShape(50),
+                color = Color(0xFFF2F2F5),
                 onClick = onNewTab,
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier.size(width = 54.dp, height = 42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "New search",
-                        tint = Color.White,
-                        modifier = Modifier.size(27.dp)
+                        tint = Color(0xFF17171B),
+                        modifier = Modifier.size(25.dp)
                     )
                 }
             }
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xF2232323),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.13f)),
+                color = Color.Transparent,
                 onClick = { expanded = !expanded },
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(

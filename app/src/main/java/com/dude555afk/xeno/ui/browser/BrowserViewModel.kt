@@ -927,6 +927,19 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Cycle through the active tab stack from the bottom-bar swipe gesture.
+     * Direction -1 selects the previous card; +1 selects the next card.
+     */
+    fun cycleTab(direction: Int) {
+        val openTabs = _state.value.tabs
+        if (openTabs.size < 2) return
+        val currentIndex = openTabs.indexOfFirst { it.id == _state.value.activeTab?.id }
+        if (currentIndex < 0) return
+        val nextIndex = (currentIndex + direction).mod(openTabs.size)
+        if (nextIndex != currentIndex) selectTab(openTabs[nextIndex])
+    }
+
     fun newTab() = createTab(null)
 
     private fun newTab(initialUrl: String) = createTab(initialUrl)

@@ -16,12 +16,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -72,6 +77,7 @@ fun TabStackSheet(
     onSelect: (Tab) -> Unit,
     onClose: (Tab) -> Unit,
     onNewTab: () -> Unit,
+    onOpenSettings: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AnimatedVisibility(
@@ -124,6 +130,13 @@ fun TabStackSheet(
                             color = Color.White.copy(alpha = 0.48f)
                         )
                     }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Open settings",
+                            tint = Color.White.copy(alpha = 0.72f)
+                        )
+                    }
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
@@ -147,22 +160,30 @@ fun TabStackSheet(
                         )
                     }
                 } else {
-                    LazyRow(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxWidth()
                     ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                preview = previews[tab.id],
-                                active = tab.id == activeTabId,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
-                            )
+                        // Keep the card proportion consistent across narrow and
+                        // large Android screens instead of hard-coding a phone width.
+                        val cardWidth = (maxWidth * 0.79f).coerceIn(260.dp, 360.dp)
+                        LazyRow(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            items(tabs, key = { it.id }) { tab ->
+                                TabCard(
+                                    tab = tab,
+                                    preview = previews[tab.id],
+                                    active = tab.id == activeTabId,
+                                    cardWidth = cardWidth,
+                                    onSelect = { onSelect(tab) },
+                                    onClose = { onClose(tab) }
+                                )
+                            }
                         }
                     }
                 }
@@ -170,25 +191,34 @@ fun TabStackSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 18.dp),
-                    horizontalArrangement = Arrangement.Center,
+                        .padding(start = 22.dp, end = 18.dp, top = 8.dp, bottom = 18.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // The tab switcher is also Arc's entry point to app settings.
+                    Spacer(Modifier.size(48.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFF2C2C2E),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        color = Color(0xFFF2F2F5),
                         onClick = onNewTab,
-                        modifier = Modifier.size(width = 58.dp, height = 48.dp)
+                        modifier = Modifier.size(width = 56.dp, height = 42.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Rounded.Add,
                                 contentDescription = "New tab",
-                                tint = Color.White,
+                                tint = Color(0xFF17171B),
                                 modifier = Modifier.size(25.dp)
                             )
                         }
+                    }
+                    IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White.copy(alpha = 0.78f),
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }
@@ -201,6 +231,7 @@ private fun TabCard(
     tab: Tab,
     preview: Bitmap?,
     active: Boolean,
+    cardWidth: androidx.compose.ui.unit.Dp,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -222,9 +253,23 @@ private fun TabCard(
         ),
         onClick = onSelect,
         modifier = Modifier
-            .width(260.dp)
+            .width(cardWidth)
             .fillMaxHeight()
             .scale(scale)
+            .pointerInput(tab.id) {
+                var verticalDistance = 0f
+                detectVerticalDragGestures(
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()
+                        verticalDistance += dragAmount
+                    },
+                    onDragEnd = {
+                        if (verticalDistance < -72f) onClose()
+                        verticalDistance = 0f
+                    },
+                    onDragCancel = { verticalDistance = 0f }
+                )
+            }
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(
