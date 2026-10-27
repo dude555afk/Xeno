@@ -428,7 +428,7 @@ private fun BrowseForMeButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF5D4BE8),
+        // Median of blue BFM-pill probes is approximately #445BC5.\n        color = Color(0xFF445BC5),
         contentColor = Color.White
     ) {
         Text(
