@@ -2,7 +2,7 @@
   "title": "Arc Search Android screenshot preview measurements",
   "date": "2026-10-27",
   "coordinateConvention": "[left, top, right, bottom), preview-canvas pixels",
-  "caveat": "Coordinates were manually read from rendered web previews, not original image binaries. Preview canvas sizes do not establish source-native pixels or display density. Bounding boxes are approximate (typically ±4–8 preview px). Do not convert directly to dp or use visual color estimates as exact RGB samples.",
+  "caveat": "Coordinates were manually read from rendered web previews, not original image binaries. Preview canvas sizes do not establish source-native pixels or display density. Bounding boxes are approximate (typically ±4–8 preview px). Do not convert directly to dp or use visual color estimates as exact RGB samples. Marketing composition entries use a larger 506x900 preview where available; these bounds are relative to that promo canvas and never assert native app dp. Five modern Lazyweb screenshots are recorded as iOS-only exclusions.",
   "items": [
     {
       "id": "AA-BFM-01",
@@ -1883,114 +1883,956 @@
     },
     {
       "id": "PLAY-01",
-      "category": "official-store-marketing-composite",
-      "state": "home/search suggestions",
-      "sourceUrl": "https://play-lh.googleusercontent.com/I0kU4HZmuhG7jZv55_tCUxN1GXnoKWfv5GwEtroFSYm6RIpbJ_kN_fxDSbLalg7Q44K0sR0qw0qilmM-NXkq%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Home/search suggestions (promo composite)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-0",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            182,
+            445,
+            698
+          ],
+          "sizePreviewPx": [
+            384,
+            516
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2022,
+            0.8794,
+            0.7756
+          ]
+        },
+        {
+          "name": "search-panel-top",
+          "bbox": [
+            61,
+            399,
+            445,
+            698
+          ],
+          "sizePreviewPx": [
+            384,
+            299
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.4433,
+            0.8794,
+            0.7756
+          ]
+        },
+        {
+          "name": "search-field",
+          "bbox": [
+            81,
+            418,
+            425,
+            471
+          ],
+          "sizePreviewPx": [
+            344,
+            53
+          ],
+          "bboxNormalized": [
+            0.1601,
+            0.4644,
+            0.8399,
+            0.5233
+          ]
+        },
+        {
+          "name": "suggestion-row-1",
+          "bbox": [
+            83,
+            486,
+            425,
+            523
+          ],
+          "sizePreviewPx": [
+            342,
+            37
+          ],
+          "bboxNormalized": [
+            0.164,
+            0.54,
+            0.8399,
+            0.5811
+          ]
+        },
+        {
+          "name": "suggestion-row-2",
+          "bbox": [
+            83,
+            540,
+            425,
+            577
+          ],
+          "sizePreviewPx": [
+            342,
+            37
+          ],
+          "bboxNormalized": [
+            0.164,
+            0.6,
+            0.8399,
+            0.6411
+          ]
+        },
+        {
+          "name": "suggestion-row-3",
+          "bbox": [
+            83,
+            593,
+            425,
+            631
+          ],
+          "sizePreviewPx": [
+            342,
+            38
+          ],
+          "bboxNormalized": [
+            0.164,
+            0.6589,
+            0.8399,
+            0.7011
+          ]
+        },
+        {
+          "name": "suggestion-row-4-faded",
+          "bbox": [
+            83,
+            647,
+            425,
+            685
+          ],
+          "sizePreviewPx": [
+            342,
+            38
+          ],
+          "bboxNormalized": [
+            0.164,
+            0.7189,
+            0.8399,
+            0.7611
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Higher-resolution store promo inspected; the phone/screen is a composite and the lower state is cropped/faded by marketing treatment.",
+        "Search field is visually ~90% of the inner screen width; suggestion rows pair a left search icon/text with a separate right Browse for Me pill."
       ]
     },
     {
       "id": "PLAY-02",
-      "category": "official-store-marketing-composite",
-      "state": "Browse for Me answer",
-      "sourceUrl": "https://play-lh.googleusercontent.com/VgIqB_Xxdg1kepXRpQWk2HYOhK3HgSAKaFF9yc0zkFedsIIX1jtbrYCd8FE1VqNmSIub8Us50SLbSjhNNMvFmA%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Browse for Me image answer (promo composite)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-1",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            209,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            691
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2322,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "query-field",
+          "bbox": [
+            82,
+            270,
+            425,
+            323
+          ],
+          "sizePreviewPx": [
+            343,
+            53
+          ],
+          "bboxNormalized": [
+            0.1621,
+            0.3,
+            0.8399,
+            0.3589
+          ]
+        },
+        {
+          "name": "image-carousel",
+          "bbox": [
+            82,
+            347,
+            427,
+            564
+          ],
+          "sizePreviewPx": [
+            345,
+            217
+          ],
+          "bboxNormalized": [
+            0.1621,
+            0.3856,
+            0.8439,
+            0.6267
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            82,
+            588,
+            428,
+            648
+          ],
+          "sizePreviewPx": [
+            346,
+            60
+          ],
+          "bboxNormalized": [
+            0.1621,
+            0.6533,
+            0.8458,
+            0.72
+          ]
+        },
+        {
+          "name": "answer-body-visible",
+          "bbox": [
+            87,
+            676,
+            425,
+            900
+          ],
+          "sizePreviewPx": [
+            338,
+            224
+          ],
+          "bboxNormalized": [
+            0.1719,
+            0.7511,
+            0.8399,
+            1
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Image carousel uses two large portrait cards and a cropped third card.",
+        "The heading begins immediately after the image row; content continues below the visible promotional crop."
       ]
     },
     {
       "id": "PLAY-03",
-      "category": "official-store-marketing-composite",
-      "state": "site settings toggles",
-      "sourceUrl": "https://play-lh.googleusercontent.com/yXPryxLzcpWQPxHvXeYlTta_sNkQHZ0Vp4Nhjk-_O52Xzr31RI5ynkZY_yUh4Pn6d1mtKwsetJxrxKiXfq1a%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Site Settings blocker controls (promo composite)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-2",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            210,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            690
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2333,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "site-settings-sheet",
+          "bbox": [
+            61,
+            518,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            382
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.5756,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "sheet-heading",
+          "bbox": [
+            88,
+            555,
+            342,
+            587
+          ],
+          "sizePreviewPx": [
+            254,
+            32
+          ],
+          "bboxNormalized": [
+            0.1739,
+            0.6167,
+            0.6759,
+            0.6522
+          ]
+        },
+        {
+          "name": "hostname-label",
+          "bbox": [
+            88,
+            625,
+            290,
+            647
+          ],
+          "sizePreviewPx": [
+            202,
+            22
+          ],
+          "bboxNormalized": [
+            0.1739,
+            0.6944,
+            0.5731,
+            0.7189
+          ]
+        },
+        {
+          "name": "block-ads-row",
+          "bbox": [
+            89,
+            665,
+            425,
+            709
+          ],
+          "sizePreviewPx": [
+            336,
+            44
+          ],
+          "bboxNormalized": [
+            0.1759,
+            0.7389,
+            0.8399,
+            0.7878
+          ]
+        },
+        {
+          "name": "block-cookie-banners-row",
+          "bbox": [
+            89,
+            728,
+            426,
+            765
+          ],
+          "sizePreviewPx": [
+            337,
+            37
+          ],
+          "bboxNormalized": [
+            0.1759,
+            0.8089,
+            0.8419,
+            0.85
+          ]
+        },
+        {
+          "name": "block-trackers-row",
+          "bbox": [
+            89,
+            789,
+            426,
+            829
+          ],
+          "sizePreviewPx": [
+            337,
+            40
+          ],
+          "bboxNormalized": [
+            0.1759,
+            0.8767,
+            0.8419,
+            0.9211
+          ]
+        },
+        {
+          "name": "gestures-section-label",
+          "bbox": [
+            88,
+            859,
+            190,
+            881
+          ],
+          "sizePreviewPx": [
+            102,
+            22
+          ],
+          "bboxNormalized": [
+            0.1739,
+            0.9544,
+            0.3755,
+            0.9789
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Panel begins at roughly 58% of promo canvas height; this is only a composite proportion, not a dp or live bottom-sheet measurement.",
+        "Three independent switches are visible; the sheet continues below the image crop."
       ]
     },
     {
       "id": "PLAY-04",
-      "category": "official-store-marketing-composite",
-      "state": "tab switcher and auto-archive",
-      "sourceUrl": "https://play-lh.googleusercontent.com/FbMaRusDityz7-QysRwWuzId8f9-X_Y8xFtg-MsLXIrtUJrTpY2zbhO2LuZ8hqKrlB3v9vQgdVJ4uRs4hYQ8xQ%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Tab switcher / auto-archive (promo composite)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-3",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            207,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            693
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.23,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "left-neighbor-card-visible",
+          "bbox": [
+            61,
+            365,
+            111,
+            879
+          ],
+          "sizePreviewPx": [
+            50,
+            514
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.4056,
+            0.2194,
+            0.9767
+          ]
+        },
+        {
+          "name": "active-foreground-card",
+          "bbox": [
+            123,
+            367,
+            383,
+            879
+          ],
+          "sizePreviewPx": [
+            260,
+            512
+          ],
+          "bboxNormalized": [
+            0.2431,
+            0.4078,
+            0.7569,
+            0.9767
+          ]
+        },
+        {
+          "name": "right-neighbor-card-visible",
+          "bbox": [
+            386,
+            365,
+            444,
+            879
+          ],
+          "sizePreviewPx": [
+            58,
+            514
+          ],
+          "bboxNormalized": [
+            0.7628,
+            0.4056,
+            0.8775,
+            0.9767
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Active page preview is approximately 260 px wide in this 506 px marketing canvas; adjacent previews are much narrower slivers.",
+        "Stacked/overlapping previews; not an equal-width card grid."
       ]
     },
     {
       "id": "PLAY-05",
-      "category": "official-store-marketing-composite",
-      "state": "voice-search promotion",
-      "sourceUrl": "https://play-lh.googleusercontent.com/2ecjJuKa-jQEDiTfYvW21iR-OdfRkKdSgayNM0KMzaNwAoAqWaj15_9WzgjSQXU8EhfJ9DZr0GdR0_wqPl01%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Voice-search promo illustration",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-4",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            208,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            692
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2311,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "voice-prompt-1",
+          "bbox": [
+            22,
+            266,
+            326,
+            333
+          ],
+          "sizePreviewPx": [
+            304,
+            67
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.2956,
+            0.6443,
+            0.37
+          ]
+        },
+        {
+          "name": "voice-prompt-2",
+          "bbox": [
+            176,
+            356,
+            480,
+            421
+          ],
+          "sizePreviewPx": [
+            304,
+            65
+          ],
+          "bboxNormalized": [
+            0.3478,
+            0.3956,
+            0.9486,
+            0.4678
+          ]
+        },
+        {
+          "name": "voice-prompt-3",
+          "bbox": [
+            22,
+            476,
+            350,
+            540
+          ],
+          "sizePreviewPx": [
+            328,
+            64
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.5289,
+            0.6917,
+            0.6
+          ]
+        },
+        {
+          "name": "voice-wave-panel",
+          "bbox": [
+            61,
+            530,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            370
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.5889,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "face-mark",
+          "bbox": [
+            227,
+            656,
+            289,
+            722
+          ],
+          "sizePreviewPx": [
+            62,
+            66
+          ],
+          "bboxNormalized": [
+            0.4486,
+            0.7289,
+            0.5711,
+            0.8022
+          ]
+        },
+        {
+          "name": "voice-greeting",
+          "bbox": [
+            179,
+            759,
+            330,
+            783
+          ],
+          "sizePreviewPx": [
+            151,
+            24
+          ],
+          "bboxNormalized": [
+            0.3538,
+            0.8433,
+            0.6522,
+            0.87
+          ]
+        },
+        {
+          "name": "microphone",
+          "bbox": [
+            248,
+            869,
+            262,
+            890
+          ],
+          "sizePreviewPx": [
+            14,
+            21
+          ],
+          "bboxNormalized": [
+            0.4901,
+            0.9656,
+            0.5178,
+            0.9889
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Illustrated voice surface dominates the bottom half with nested curved layers.",
+        "This static image is insufficient to infer animation durations, easing, or interaction states; live video is required."
       ]
     },
     {
       "id": "PLAY-06",
-      "category": "official-store-marketing-composite",
-      "state": "Android home-screen widget",
-      "sourceUrl": "https://play-lh.googleusercontent.com/6hBpv85LX7AZxm98edYFWVpUnJucZEY-f-G__YKSzM4un47GofSwd1A-ll4LOELFnunm_Q9wncxGvlm7ZBf7LQ%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Android launcher widget (not in-app screen)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-5",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
-      "regions": [],
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "phone-launcher-visible",
+          "bbox": [
+            61,
+            209,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            691
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2322,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "search-widget-overflow",
+          "bbox": [
+            30,
+            579,
+            480,
+            645
+          ],
+          "sizePreviewPx": [
+            450,
+            66
+          ],
+          "bboxNormalized": [
+            0.0593,
+            0.6433,
+            0.9486,
+            0.7167
+          ]
+        },
+        {
+          "name": "arc-search-launcher-icon",
+          "bbox": [
+            91,
+            604,
+            189,
+            715
+          ],
+          "sizePreviewPx": [
+            98,
+            111
+          ],
+          "bboxNormalized": [
+            0.1798,
+            0.6711,
+            0.3735,
+            0.7944
+          ]
+        },
+        {
+          "name": "first-launcher-icon-row",
+          "bbox": [
+            88,
+            729,
+            431,
+            812
+          ],
+          "sizePreviewPx": [
+            343,
+            83
+          ],
+          "bboxNormalized": [
+            0.1739,
+            0.81,
+            0.8518,
+            0.9022
+          ]
+        }
+      ],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Widget extends beyond the phone image as a promo overlay. This is Android launcher UI and must not be mistaken for a browser screen."
       ]
     },
     {
       "id": "PLAY-07",
-      "category": "official-store-marketing-composite",
-      "state": "default-browser onboarding",
-      "sourceUrl": "https://play-lh.googleusercontent.com/uNSfZNznU9vTMZc_lVvFihDV7QGj3xBHZe7ZO7QvSffxOB8W8aRoF9n21Zlg6N7zGD75WD99jSkKyWwakkiEqw%3Dw526-h296",
+      "category": "higher-resolution-official-store-marketing-composite",
+      "state": "Set-default-browser onboarding (promo composite)",
+      "sourceUrl": "https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-6",
       "previewCanvasPx": [
-        166,
-        296
+        506,
+        900
       ],
-      "confidence": "low",
+      "confidence": "medium-low",
+      "regions": [
+        {
+          "name": "in-app-screen-visible",
+          "bbox": [
+            61,
+            209,
+            445,
+            900
+          ],
+          "sizePreviewPx": [
+            384,
+            691
+          ],
+          "bboxNormalized": [
+            0.1206,
+            0.2322,
+            0.8794,
+            1
+          ]
+        },
+        {
+          "name": "app-icon",
+          "bbox": [
+            165,
+            400,
+            343,
+            580
+          ],
+          "sizePreviewPx": [
+            178,
+            180
+          ],
+          "bboxNormalized": [
+            0.3261,
+            0.4444,
+            0.6779,
+            0.6444
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            119,
+            609,
+            387,
+            698
+          ],
+          "sizePreviewPx": [
+            268,
+            89
+          ],
+          "bboxNormalized": [
+            0.2352,
+            0.6767,
+            0.7648,
+            0.7756
+          ]
+        },
+        {
+          "name": "supporting-copy",
+          "bbox": [
+            121,
+            733,
+            383,
+            783
+          ],
+          "sizePreviewPx": [
+            262,
+            50
+          ],
+          "bboxNormalized": [
+            0.2391,
+            0.8144,
+            0.7569,
+            0.87
+          ]
+        }
+      ],
+      "observations": [
+        "CTA may fall below the visible crop; do not infer that onboarding lacks an action."
+      ]
+    },
+    {
+      "id": "LAZYWEB-IOS-SETTINGS",
+      "category": "excluded-other-platform-ios-capture",
+      "state": "iOS settings screen (Arc Search 1.48.0, 2026-08)",
+      "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000577941_00_company.thebrowser.ArcMobile2-20260817T202647Z-autocap-16-1786999039.png",
+      "previewCanvasPx": [
+        460,
+        960
+      ],
+      "confidence": "not-measured-for-android",
       "regions": [],
       "observations": [
-        "Opened individually; tall promotional image includes outer captions/background and scaled in-app content.",
-        "Component/state inventory only; no native app geometry measured."
+        "Clearly iOS: iOS status indicators and iOS-style sheet.",
+        "Visible settings include Auto-Open Keyboard, Archive Inactive Tabs (After 1 day), Open App Links in..., Clear Browsing Data, Sync with Arc Desktop and app/legal links.",
+        "Do not use its geometry or iOS-only Call Arc row to define Android UI."
+      ]
+    },
+    {
+      "id": "LAZYWEB-IOS-SYNC",
+      "category": "excluded-other-platform-ios-capture",
+      "state": "iOS Sync with Arc Desktop onboarding",
+      "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000475414_00_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png",
+      "previewCanvasPx": [
+        460,
+        960
+      ],
+      "confidence": "not-measured-for-android",
+      "regions": [],
+      "observations": [
+        "iOS sign-in/sync flow; excluded from Android screen geometry."
+      ]
+    },
+    {
+      "id": "LAZYWEB-IOS-INCOGNITO",
+      "category": "excluded-other-platform-ios-capture",
+      "state": "iOS incognito search with system keyboard",
+      "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000123088_05_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-incognito-1786999273.png",
+      "previewCanvasPx": [
+        460,
+        960
+      ],
+      "confidence": "not-measured-for-android",
+      "regions": [],
+      "observations": [
+        "iOS-style keyboard and iPhone status bar are visible; excluded from Android geometry."
+      ]
+    },
+    {
+      "id": "LAZYWEB-IOS-ARCHIVE",
+      "category": "excluded-other-platform-ios-capture",
+      "state": "iOS archive empty state",
+      "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000122665_04_company.thebrowser.ArcMobile2-20260817T202647Z-cap-archive-1786999203.png",
+      "previewCanvasPx": [
+        460,
+        960
+      ],
+      "confidence": "not-measured-for-android",
+      "regions": [],
+      "observations": [
+        "iOS archive surface. Empty-state copy says manually closed and auto-archived tabs appear here and auto-archive frequency is configurable."
+      ]
+    },
+    {
+      "id": "LAZYWEB-IOS-SYNC-DUPLICATE",
+      "category": "excluded-other-platform-ios-capture",
+      "state": "Duplicate iOS sync onboarding capture",
+      "sourceUrl": "https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000121877_03_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png",
+      "previewCanvasPx": [
+        460,
+        960
+      ],
+      "confidence": "not-measured-for-android",
+      "regions": [],
+      "observations": [
+        "Duplicate of the iOS sync/onboarding screen. Recorded so it is not accidentally counted as an independent state."
       ]
     }
   ]
