@@ -321,22 +321,25 @@ fun CommandPalette(
                         }
 
                         if (query.isBlank() && matchingTabs.isEmpty() && availableHistory.isEmpty()) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 21.dp, vertical = 23.dp),
-                                verticalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Text(
-                                    "Search the web",
-                                    color = Color(0xFF302A3D),
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    "Or use Browse for Me to turn a question into a sourced answer.",
-                                    color = Color(0xFF827B8E),
-                                    style = MaterialTheme.typography.bodySmall
+                            PaletteSectionLabel("Try Browse for Me")
+                            listOf(
+                                "Summarize today's news",
+                                "Explain a complex topic",
+                                "Compare the best options"
+                            ).forEach { suggestion ->
+                                PaletteSuggestionRow(
+                                    icon = Icons.Rounded.Search,
+                                    title = suggestion,
+                                    subtitle = "",
+                                    browseQuery = suggestion,
+                                    onBrowseForMe = {
+                                        keyboard?.hide()
+                                        onAsk(suggestion)
+                                    },
+                                    onClick = {
+                                        keyboard?.hide()
+                                        onNavigate(suggestion)
+                                    }
                                 )
                             }
                         }
