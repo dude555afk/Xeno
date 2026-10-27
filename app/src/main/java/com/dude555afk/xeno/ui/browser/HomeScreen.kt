@@ -117,16 +117,13 @@ fun HomeScreen(
 @Composable
 private fun HomeMark(modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
-        // Custom Xeno artwork approximates the four-petal mark's bounding
-        // footprint. Motion remains static until reference video is measured;
-        // an invented breathing animation would not count as Arc parity.
-        val petalRadius = androidx.compose.ui.platform.LocalDensity.current.run {
-            0.23f
-        }
+        // Custom Xeno artwork approximates the measured mark footprint.
+        // Motion remains static until the Android reference video is measured.
+        val petalRatio = 0.23f
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val radius = size.minDimension * petalRadius
+            val radius = size.minDimension * petalRatio
             val spread = size.minDimension * 0.18f
             val petals = listOf(
                 Offset(cx, cy - spread) to Color(0xFFFFD7E8),
