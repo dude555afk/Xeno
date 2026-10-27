@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.ime
@@ -196,14 +197,14 @@ fun BrowserScreen(
         // follows page scroll direction and stays out of the keyboard workflow.
         AnimatedVisibility(
             visible = state.chromeVisible && !state.paletteVisible && !keyboardVisible,
-            enter = slideInVertically(
-                initialOffsetY = { it / 3 },
-                animationSpec = tween(170)
-            ) + fadeIn(tween(150)),
-            exit = slideOutVertically(
-                targetOffsetY = { it / 3 },
-                animationSpec = tween(140)
-            ) + fadeOut(tween(110)),
+            enter = fadeIn(tween(170)) + scaleIn(
+                initialScale = 0.94f,
+                animationSpec = tween(210)
+            ),
+            exit = fadeOut(tween(130)) + scaleOut(
+                targetScale = 0.97f,
+                animationSpec = tween(150)
+            ),
             modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             FloatingBar(
@@ -637,19 +638,21 @@ private fun FloatingBar(
                 }
             }
 
+            // Arc Search's central action is a search pill, not a generic plus
+            // button. Creating a tab opens the focused search palette automatically.
             Surface(
-                shape = CircleShape,
-                color = Color(0xFF303030),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                shape = RoundedCornerShape(percent = 50),
+                color = Color(0xFF343438),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
                 onClick = onNewTab,
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier.size(width = 70.dp, height = 48.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "New search",
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = "Search or ask",
                         tint = Color.White,
-                        modifier = Modifier.size(27.dp)
+                        modifier = Modifier.size(23.dp)
                     )
                 }
             }

@@ -1,68 +1,62 @@
-# Design language
+# Xeno Design Language
 
-Borrowed from Arc, translated for touch. The rules below are the ones that
-actually make the UI feel considered.
+Xeno follows **Arc Search's mobile interaction model**, adapted for Android and Xeno's own branding. This is not the desktop Arc sidebar squeezed onto a phone. The interface should feel quiet, immediate, and built around one central action: search.
 
-## Tokens
+## Core visual rules
 
-```
-bg             #000000        true AMOLED black, never #0A0A0A
-surface        white @ 6%     elevated layer
-surface-hi     white @ 10%    active / pressed
-stroke         white @ 8%     1dp, on every card
-accent         per-space      bleeds into caret, scroll glow, active pill
+- **Content first.** Browser pages use the full viewport. Hide unnecessary chrome while reading.
+- **Quiet new-tab canvas.** No giant logo, hero gradient, or dashboard of cards. A new tab opens directly into a focused search field.
+- **Three-part floating dock.** Tabs on the left, a compact search pill in the centre, and an upward chevron on the right for page controls.
+- **Soft, neutral surfaces.** AMOLED dark surfaces are the default for Xeno, with restrained contrast and thin borders. No glowing neon outlines around every element.
+- **Pills are purposeful.** Use fully rounded geometry for the search field and dock controls; use 20–28dp corners for larger sheets and cards.
+- **Motion conveys state.** Overlays scale and fade with a spring. Avoid large, mechanical edge-slides or bouncy movement that delays interaction.
 
-radius         28dp  cards
-               20dp  inputs
-               100dp pills / buttons
+## Main screen anatomy
 
-type           bold + tight tracking for headings
-               comfortable body, min 15sp
-```
-
-## The Arc anatomy, translated
-
-| Arc | Xeno |
+| Surface | Required behaviour |
 |---|---|
-| Left sidebar tabs | Bottom sheet, compact vertical pill-cards, swipe-to-dismiss |
-| Spaces bar | Bottom nav, swipeable workspaces, each retinting the accent |
-| Command bar | Full-screen sheet, blurred backdrop, pill input docked at bottom |
-| Little Arc | Draggable peek bubble, 28dp radius, shadow + blur |
-| Spring physics | `spring(dampingRatio = 0.6f)` on overlay entrances |
-
-## The three details that sell it
-
-**1. Accent-tinted everything.**
-Not "themed." The space's color bleeds into the scroll glow, the caret, the
-selection handles, the active tab pill. Instant identity switch, and almost
-nobody bothers to do it.
-
-**2. Spring entrances, never slides.**
-Command palette and peek bubble scale from 0.92 with overshoot while the
-backdrop fades over 180ms. Nothing linear. Nothing that slides in from an
-edge like an Android dialog.
-
-**3. Chrome hides.**
-Scroll down and the bottom bar dissolves to a bare pill. Scroll up and it
-blooms back. Content-first, always.
+| New tab | Quiet, nearly empty canvas; dock remains the visual anchor |
+| Search | Opens from the centre dock action, focuses the field, and raises the keyboard |
+| Search intent | URLs navigate; questions can be sent to Ask without changing to a separate app |
+| Page dock | Tabs / search / page-controls chevron, with no permanent address toolbar |
+| Page controls | Up-chevron expands address, back/forward, reload, reader and more actions |
+| Scrolling | Dock fades and scales away while scrolling down, then returns when scrolling up |
+| Tab switcher | Native-feeling horizontal carousel with in-memory page previews |
+| Ask result | Sources and answer appear progressively; source taps navigate in the same browser |
 
 ## Motion specs
 
+Use Compose-native transitions with predictable interruption and cancellation:
+
 ```kotlin
-// overlay entrance
-spring(dampingRatio = 0.65f, stiffness = 400f)
-durationMillis = 240
-enter = scale(0.92f) + fadeIn
+// Dock appearance: restrained scale + fade
+enter = fadeIn(tween(170)) + scaleIn(
+    initialScale = 0.94f,
+    animationSpec = tween(210)
+)
+exit = fadeOut(tween(130)) + scaleOut(
+    targetScale = 0.97f,
+    animationSpec = tween(150)
+)
 
-// backdrop fade
-tween(180)
-
-// chrome hide / show
-tween(200, easing = FastOutSlowInEasing)
+// Search and sheet overlays should use a spring where appropriate.
+spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)
 ```
+
+Keep transitions short. Search focus and keyboard opening must not wait for a decorative animation to finish.
+
+## Interaction details
+
+1. Tapping the centre search pill creates a fresh tab and opens the focused search field.
+2. Back dismisses the top-most surface before navigating back or leaving the app.
+3. The chevron reveals browser tools without pinning an address bar over every page.
+4. A failed navigation must show a useful retry action instead of leaving a blank, unresponsive screen.
+5. Web content must continue receiving keyboard input and touch gestures; app chrome must not steal either.
 
 ## Non-negotiables
 
-- Material 3 foundation, but the theme is ours — don't ship defaults.
-- Translucency needs a real backdrop. Blur nothing and it looks like a bug.
-- Everything is rounded. If a corner is sharp, it's a mistake.
+- Don't put a large Xeno logo in the centre of the new-tab page.
+- Don't substitute animation polish for working navigation, extraction, or search.
+- Preserve Android-native keyboard, back, permission and intent behaviour.
+- Keep page previews in memory only. Never silently create a screenshot history.
+- Keep the implementation light: System WebView, Compose, and existing dependencies.
