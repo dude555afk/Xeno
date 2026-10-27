@@ -74,6 +74,12 @@ class ArcReferenceToolTests(unittest.TestCase):
                         0.0001,
                         (item["id"], region["name"], actual, expected),
                     )
+            for probe in item.get("samplePoints", []):
+                x, y = probe["x"], probe["y"]
+                self.assertGreaterEqual(x, 0, (item["id"], probe["name"]))
+                self.assertGreaterEqual(y, 0, (item["id"], probe["name"]))
+                self.assertLess(x, width, (item["id"], probe["name"]))
+                self.assertLess(y, height, (item["id"], probe["name"]))
 
     def test_pixel_sampler_reports_exact_local_rgb(self) -> None:
         image_path = self.work / "pixels.png"
