@@ -331,6 +331,18 @@ fun BrowserScreen(
                     .onFailure {
                         Toast.makeText(context, "Voice search is unavailable on this device.", Toast.LENGTH_SHORT).show()
                     }
+            },
+            autoOpenKeyboard = state.autoOpenKeyboard,
+            isPrivateMode = state.isPrivateMode,
+            onTogglePrivateMode = {
+                if (state.isPrivateMode) {
+                    (context as? Activity)?.finish()
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    viewModel.closePalette()
+                    context.startActivity(Intent(context, PrivateBrowserActivity::class.java))
+                } else {
+                    Toast.makeText(context, "Private browsing requires Android 9 or newer.", Toast.LENGTH_LONG).show()
+                }
             }
         )
 
