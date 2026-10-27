@@ -189,7 +189,6 @@ fun BrowserScreen(
         ) {
             HomeScreen(
                 onNewSearch = viewModel::openPalette,
-                onOpenTabs = viewModel::toggleTabStack,
                 onOpenSettings = { viewModel.openPanel(BrowserPanel.SETTINGS) },
                 onVoiceSearch = {
                     val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -200,9 +199,7 @@ fun BrowserScreen(
                         .onFailure {
                             Toast.makeText(context, "Voice search is unavailable on this device.", Toast.LENGTH_SHORT).show()
                         }
-                },
-                pinnedPages = state.pinnedPages,
-                onOpenPinnedPage = viewModel::openPinnedPage
+                }
             )
         }
 
