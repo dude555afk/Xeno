@@ -2834,6 +2834,541 @@
       "observations": [
         "Duplicate of the iOS sync/onboarding screen. Recorded so it is not accidentally counted as an independent state."
       ]
+    },
+    {
+      "id": "CLUBIC-FOUR-SCREEN-MONTAGE",
+      "category": "four-full-screen-android-captures-tiled-horizontally",
+      "state": "Home, search suggestions, Browse for Me answer, webpage with expanded controls",
+      "sourceUrl": "https://pic.clubic.com/f80fea002247335/1200x667/smart/arc-browser-android.jpg",
+      "previewCanvasPx": [
+        1200,
+        667
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "panel-1-home",
+          "bbox": [
+            0,
+            0,
+            300,
+            667
+          ],
+          "sizePreviewPx": [
+            300,
+            667
+          ],
+          "bboxNormalized": [
+            0,
+            0,
+            0.25,
+            1
+          ]
+        },
+        {
+          "name": "home-mark",
+          "bbox": [
+            95,
+            280,
+            205,
+            385
+          ],
+          "sizePreviewPx": [
+            110,
+            105
+          ],
+          "bboxNormalized": [
+            0.0792,
+            0.4198,
+            0.1708,
+            0.5772
+          ]
+        },
+        {
+          "name": "home-plus-control",
+          "bbox": [
+            120,
+            600,
+            180,
+            630
+          ],
+          "sizePreviewPx": [
+            60,
+            30
+          ],
+          "bboxNormalized": [
+            0.1,
+            0.8996,
+            0.15,
+            0.9445
+          ]
+        },
+        {
+          "name": "home-settings-control",
+          "bbox": [
+            242,
+            602,
+            260,
+            624
+          ],
+          "sizePreviewPx": [
+            18,
+            22
+          ],
+          "bboxNormalized": [
+            0.2017,
+            0.9025,
+            0.2167,
+            0.9355
+          ]
+        },
+        {
+          "name": "panel-2-search-suggestions",
+          "bbox": [
+            300,
+            0,
+            600,
+            667
+          ],
+          "sizePreviewPx": [
+            300,
+            667
+          ],
+          "bboxNormalized": [
+            0.25,
+            0,
+            0.5,
+            1
+          ]
+        },
+        {
+          "name": "query-pill",
+          "bbox": [
+            310,
+            261,
+            590,
+            308
+          ],
+          "sizePreviewPx": [
+            280,
+            47
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.3913,
+            0.4917,
+            0.4618
+          ]
+        },
+        {
+          "name": "suggestion-list",
+          "bbox": [
+            310,
+            322,
+            592,
+            636
+          ],
+          "sizePreviewPx": [
+            282,
+            314
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.4828,
+            0.4933,
+            0.9535
+          ]
+        },
+        {
+          "name": "suggestion-row-1",
+          "bbox": [
+            310,
+            335,
+            592,
+            379
+          ],
+          "sizePreviewPx": [
+            282,
+            44
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.5022,
+            0.4933,
+            0.5682
+          ]
+        },
+        {
+          "name": "suggestion-row-2",
+          "bbox": [
+            310,
+            387,
+            592,
+            431
+          ],
+          "sizePreviewPx": [
+            282,
+            44
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.5802,
+            0.4933,
+            0.6462
+          ]
+        },
+        {
+          "name": "suggestion-row-3",
+          "bbox": [
+            310,
+            439,
+            592,
+            483
+          ],
+          "sizePreviewPx": [
+            282,
+            44
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.6582,
+            0.4933,
+            0.7241
+          ]
+        },
+        {
+          "name": "suggestion-row-4",
+          "bbox": [
+            310,
+            491,
+            592,
+            535
+          ],
+          "sizePreviewPx": [
+            282,
+            44
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.7361,
+            0.4933,
+            0.8021
+          ]
+        },
+        {
+          "name": "suggestion-row-5",
+          "bbox": [
+            310,
+            543,
+            592,
+            587
+          ],
+          "sizePreviewPx": [
+            282,
+            44
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.8141,
+            0.4933,
+            0.8801
+          ]
+        },
+        {
+          "name": "suggestion-row-6-visible",
+          "bbox": [
+            310,
+            595,
+            592,
+            636
+          ],
+          "sizePreviewPx": [
+            282,
+            41
+          ],
+          "bboxNormalized": [
+            0.2583,
+            0.8921,
+            0.4933,
+            0.9535
+          ]
+        },
+        {
+          "name": "panel-3-browse-for-me",
+          "bbox": [
+            600,
+            0,
+            900,
+            667
+          ],
+          "sizePreviewPx": [
+            300,
+            667
+          ],
+          "bboxNormalized": [
+            0.5,
+            0,
+            0.75,
+            1
+          ]
+        },
+        {
+          "name": "query-pill-browse-for-me",
+          "bbox": [
+            610,
+            46,
+            890,
+            91
+          ],
+          "sizePreviewPx": [
+            280,
+            45
+          ],
+          "bboxNormalized": [
+            0.5083,
+            0.069,
+            0.7417,
+            0.1364
+          ]
+        },
+        {
+          "name": "image-carousel",
+          "bbox": [
+            610,
+            117,
+            900,
+            260
+          ],
+          "sizePreviewPx": [
+            290,
+            143
+          ],
+          "bboxNormalized": [
+            0.5083,
+            0.1754,
+            0.75,
+            0.3898
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            610,
+            270,
+            889,
+            314
+          ],
+          "sizePreviewPx": [
+            279,
+            44
+          ],
+          "bboxNormalized": [
+            0.5083,
+            0.4048,
+            0.7408,
+            0.4708
+          ]
+        },
+        {
+          "name": "answer-body",
+          "bbox": [
+            613,
+            336,
+            889,
+            577
+          ],
+          "sizePreviewPx": [
+            276,
+            241
+          ],
+          "bboxNormalized": [
+            0.5108,
+            0.5037,
+            0.7408,
+            0.8651
+          ]
+        },
+        {
+          "name": "bottom-dock",
+          "bbox": [
+            600,
+            611,
+            900,
+            640
+          ],
+          "sizePreviewPx": [
+            300,
+            29
+          ],
+          "bboxNormalized": [
+            0.5,
+            0.916,
+            0.75,
+            0.9595
+          ]
+        },
+        {
+          "name": "panel-4-site-controls",
+          "bbox": [
+            900,
+            0,
+            1200,
+            667
+          ],
+          "sizePreviewPx": [
+            300,
+            667
+          ],
+          "bboxNormalized": [
+            0.75,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "web-content-visible",
+          "bbox": [
+            900,
+            0,
+            1200,
+            295
+          ],
+          "sizePreviewPx": [
+            300,
+            295
+          ],
+          "bboxNormalized": [
+            0.75,
+            0,
+            1,
+            0.4423
+          ]
+        },
+        {
+          "name": "address-control-row",
+          "bbox": [
+            912,
+            293,
+            1191,
+            334
+          ],
+          "sizePreviewPx": [
+            279,
+            41
+          ],
+          "bboxNormalized": [
+            0.76,
+            0.4393,
+            0.9925,
+            0.5007
+          ]
+        },
+        {
+          "name": "site-action-grid",
+          "bbox": [
+            913,
+            339,
+            1190,
+            419
+          ],
+          "sizePreviewPx": [
+            277,
+            80
+          ],
+          "bboxNormalized": [
+            0.7608,
+            0.5082,
+            0.9917,
+            0.6282
+          ]
+        },
+        {
+          "name": "zoom-row",
+          "bbox": [
+            911,
+            430,
+            1190,
+            466
+          ],
+          "sizePreviewPx": [
+            279,
+            36
+          ],
+          "bboxNormalized": [
+            0.7592,
+            0.6447,
+            0.9917,
+            0.6987
+          ]
+        },
+        {
+          "name": "desktop-site-row",
+          "bbox": [
+            910,
+            472,
+            1190,
+            509
+          ],
+          "sizePreviewPx": [
+            280,
+            37
+          ],
+          "bboxNormalized": [
+            0.7583,
+            0.7076,
+            0.9917,
+            0.7631
+          ]
+        },
+        {
+          "name": "site-settings-row",
+          "bbox": [
+            910,
+            511,
+            1190,
+            548
+          ],
+          "sizePreviewPx": [
+            280,
+            37
+          ],
+          "bboxNormalized": [
+            0.7583,
+            0.7661,
+            0.9917,
+            0.8216
+          ]
+        },
+        {
+          "name": "blocked-status-row",
+          "bbox": [
+            910,
+            552,
+            1190,
+            589
+          ],
+          "sizePreviewPx": [
+            280,
+            37
+          ],
+          "bboxNormalized": [
+            0.7583,
+            0.8276,
+            0.9917,
+            0.8831
+          ]
+        }
+      ],
+      "observations": [
+        "Source URL advertises a 1200x667 output; the image tiles four Android screen states horizontally, with approximately 300px width allocated per screen panel.",
+        "No handset perspective distortion is visible, unlike the separate phone photographs. These are the most useful public Android-native geometry references in this pass, but remain publisher-resized composites rather than original device screenshots.",
+        "Panel 1: nearly empty gradient home, centered mark, plus control and settings control.",
+        "Panel 2: dark search area with query pill and six visible suggestion rows, each with separate Browse for Me pills; row intervals about 52–60 composite pixels.",
+        "Panel 3: web page-like Browse for Me layout with top query pill, portrait image carousel, blue heading, structured body and three-part bottom dock.",
+        "Panel 4: webpage remains visible above a lower controls surface. Top row includes back/forward, URL/domain, link/copy and reload; action grid includes Translate, Pin, Find and Share; following rows expose Zoom, Desktop Site, Site Settings and blocked-ad/tracker status.",
+        "All coordinates are within the 1200x667 montage canvas and must not be mistaken for density-scaled dp."
+      ]
     }
   ]
 }
