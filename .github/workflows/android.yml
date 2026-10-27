@@ -2,7 +2,7 @@ name: Android Build
 
 on:
   push:
-    branches: [main, feature/xeno-arc-search-authentic]
+    branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild]
     tags: ['v*']
   pull_request:
     branches: [main]
