@@ -269,6 +269,44 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "status_bar_background",
+          "x": 20,
+          "y": 20,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search_to_carousel_gap_background",
+          "x": 540,
+          "y": 320,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "main_content_left_margin_background",
+          "x": 20,
+          "y": 1200,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bottom_dock_left_inset",
+          "x": 20,
+          "y": 2470,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bottom_dock_right_inset",
+          "x": 1060,
+          "y": 2470,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "query_capsule_right_interior_probe",
+          "x": 1000,
+          "y": 180,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -365,6 +403,26 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "status_bar_background",
+          "x": 20,
+          "y": 20,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "content_left_margin_background",
+          "x": 20,
+          "y": 600,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bottom_dock_left_inset",
+          "x": 20,
+          "y": 2470,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -460,6 +518,26 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "status_bar_background",
+          "x": 20,
+          "y": 20,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "answer_left_margin_background",
+          "x": 20,
+          "y": 900,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bottom_dock_left_inset",
+          "x": 20,
+          "y": 2470,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -685,6 +763,14 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "blue_intro_background",
+          "x": 20,
+          "y": 1300,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -798,6 +884,20 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "coral_feature_background",
+          "x": 20,
+          "y": 300,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "pale_card_interior",
+          "x": 100,
+          "y": 1200,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -854,6 +954,20 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "indigo_tutorial_background",
+          "x": 20,
+          "y": 800,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "light_suggestion_sheet_interior",
+          "x": 100,
+          "y": 1800,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -967,6 +1081,20 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "indigo_tutorial_background",
+          "x": 20,
+          "y": 800,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "skeleton_card_1_interior",
+          "x": 300,
+          "y": 1400,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -1061,6 +1189,14 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "cyan_tutorial_background",
+          "x": 20,
+          "y": 1300,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -1156,6 +1292,20 @@
       "coordinateCanvasPx": [
         1080,
         2520
+      ],
+      "samplePoints": [
+        {
+          "name": "white_onboarding_background",
+          "x": 20,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "peach_footer_interior",
+          "x": 20,
+          "y": 2470,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -2059,6 +2209,14 @@
       "coordinateCanvasPx": [
         506,
         900
+      ],
+      "samplePoints": [
+        {
+          "name": "search_field_white_interior",
+          "x": 250,
+          "y": 440,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -2340,6 +2498,14 @@
       "coordinateCanvasPx": [
         506,
         900
+      ],
+      "samplePoints": [
+        {
+          "name": "site_settings_sheet_blank_area",
+          "x": 75,
+          "y": 880,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -3398,6 +3564,68 @@
       "coordinateCanvasPx": [
         1200,
         667
+      ],
+      "samplePoints": [
+        {
+          "name": "home_gradient_top_left",
+          "x": 15,
+          "y": 80,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home_gradient_mid",
+          "x": 150,
+          "y": 210,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "home_gradient_lower",
+          "x": 280,
+          "y": 550,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search_screen_background_top_left",
+          "x": 305,
+          "y": 60,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search_screen_background_right",
+          "x": 590,
+          "y": 100,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "search_screen_background_bottom",
+          "x": 305,
+          "y": 600,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bfm_screen_background_left_gutter",
+          "x": 605,
+          "y": 300,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "bfm_bottom_dock_inset",
+          "x": 605,
+          "y": 630,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "controls_surface_left_gutter",
+          "x": 905,
+          "y": 620,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "controls_surface_right_gutter",
+          "x": 1190,
+          "y": 620,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -3512,6 +3740,14 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "blue_intro_background",
+          "x": 10,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -3740,6 +3976,20 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "coral_feature_background",
+          "x": 10,
+          "y": 300,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "pale_card_interior",
+          "x": 35,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -3987,6 +4237,20 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "indigo_tutorial_background",
+          "x": 10,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "suggestion_sheet_interior",
+          "x": 50,
+          "y": 800,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -4253,6 +4517,20 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "indigo_tutorial_background",
+          "x": 10,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "skeleton_card_1_interior",
+          "x": 100,
+          "y": 550,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -4424,6 +4702,14 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "cyan_tutorial_background",
+          "x": 10,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     },
     {
@@ -4614,6 +4900,26 @@
       "coordinateCanvasPx": [
         460,
         1024
+      ],
+      "samplePoints": [
+        {
+          "name": "white_onboarding_background",
+          "x": 10,
+          "y": 500,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "blue_cta_interior",
+          "x": 50,
+          "y": 820,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        },
+        {
+          "name": "peach_footer_interior",
+          "x": 10,
+          "y": 950,
+          "coordinateBasis": "downloaded-source-pixel-space"
+        }
       ]
     }
   ]
