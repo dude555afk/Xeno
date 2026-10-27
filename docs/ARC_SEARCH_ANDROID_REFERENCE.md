@@ -287,3 +287,15 @@ This official help page states:
 - Arc Search for Android is scheduled to be removed from Play Store and installed devices on 2026-12-22.
 
 Implement export and clear-data as explicit, testable settings flows if included in Xeno, but preserve Xeno's own data model and privacy guarantees rather than copying Arc's internal format.
+
+
+## Screenshot-by-screenshot measurement pass
+
+The initial feature/source catalogue is supplemented by a detailed asset audit and preview-coordinate boxes:
+
+- [Screenshot forensic report](ARC_SCREENSHOT_FORENSICS.md) — per-asset classification, measured/estimated bounding boxes, ratios, findings, and explicit measurement limitations.
+- [Machine-readable measurement manifest](../tools/arc-reference/reference_measurements.json) — 25 inspected source/composite items with source URLs and region bounding boxes.
+- [Annotation utility](../tools/arc-reference/annotate_measurements.py) — scales the recorded boxes onto a local copy of a matching source image and exports an annotated image.
+- [Screenshot comparison utility](../tools/arc-reference/compare_screenshots.py) — overlay, pixel difference and metrics for matched Arc/Xeno captures.
+
+The browser-accessible images are displayed as rendered previews rather than original image files accessible to local image-processing code. Therefore the current geometry values are **manual preview-coordinate estimates** with an explicit uncertainty range. They are not source-native pixel measurements, machine-sampled colors or dp values. No exact HEX / RGB samples or animation timings are claimed. For those, source image/video bytes and capture metadata are required.
