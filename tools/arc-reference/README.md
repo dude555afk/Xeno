@@ -37,3 +37,41 @@ The tool requires matching screenshot dimensions and fails rather than silently 
 - metrics.json — image dimensions and basic pixel-error statistics, including equal-size horizontal bands
 
 These metrics are diagnostic, not a substitute for examining the overlay. Dynamic webpage text, cursors, ads, images and status-bar content can dominate the diff; annotate and mask non-target regions in a later measured comparison rather than treating raw MAE as a design score.
+
+
+## Inspect and annotate measured regions
+
+The manifest contains 30 inspected assets and 123 hand-measured preview-coordinate regions. Region boxes are approximate and explicitly labelled as preview coordinates. They are useful for comparing layout ratios and structuring capture, not for claiming exact dp or source-image dimensions.
+
+To draw the boxes over a locally saved, matching source image:
+
+```powershell
+python tools/arc-reference/annotate_measurements.py AA-BFM-01 arc-bfm-1.jpg --out artifacts/arc-bfm-1-annotated.png
+```
+
+The tool rejects aspect-ratio mismatches by default rather than silently stretching the measurements.
+
+## Sample exact RGB values from local images
+
+The browser-rendered remote previews were not available as raw local files to the analysis runtime, so no exact source HEX values were fabricated. Once the real image bytes are saved locally, sample exact points or interior rectangles:
+
+```powershell
+python tools/arc-reference/sample_pixels.py arc-bfm-1.png --point 25 80 --box "background" 10 100 18 140 --out artifacts/arc-colors.json
+```
+
+If the source image has the matching preview aspect ratio, a named manifest region can also be sampled:
+
+```powershell
+python tools/arc-reference/sample_pixels.py arc-bfm-1.jpg --asset-id AA-BFM-01 --region bottom-dock --region query-pill --out artifacts/arc-colors.json
+```
+
+Outputs include image dimensions and SHA-256, exact-point RGB/HEX, median/mean RGB for rectangles, standard deviation, p10/p90, extrema and most-common exact RGB values. Select interior regions that exclude text, shadows, icons and gradients when trying to identify a flat UI token. The script measures the local bytes supplied to it; it does not claim those bytes are original device pixels if they are from a cropped, resized or promotional image.
+
+## Known evidence limitation
+
+This environment can inspect the visual output of public image links, but the source binaries for those web-rendered previews were not mounted into the local image-processing workspace. Therefore the current repository has:
+- individually inspected screens and composite classifications
+- preview-coordinate bounding boxes, pixel sizes and normalized ratios
+- tools to annotate captures, sample raw RGB and compare matched Arc/Xeno screenshots
+
+It does **not** yet have raw Android captures from the same device, verified source-native resolution/density, exact sampled app colors or frame-timed motion measurements. The next high-confidence pass requires obtaining local original image/video bytes or recording the app directly with ADB. No estimate should be presented as a measured native dp or exact animation value.
