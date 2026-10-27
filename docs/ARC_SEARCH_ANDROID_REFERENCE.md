@@ -294,8 +294,22 @@ Implement export and clear-data as explicit, testable settings flows if included
 The initial feature/source catalogue is supplemented by a detailed asset audit and preview-coordinate boxes:
 
 - [Screenshot forensic report](ARC_SCREENSHOT_FORENSICS.md) — per-asset classification, measured/estimated bounding boxes, ratios, findings, and explicit measurement limitations.
-- [Machine-readable measurement manifest](../tools/arc-reference/reference_measurements.json) — 25 inspected source/composite items with source URLs and region bounding boxes.
+- [Machine-readable measurement manifest](../tools/arc-reference/reference_measurements.json) — 30 inspected source/composite items with source URLs and region bounding boxes.
 - [Annotation utility](../tools/arc-reference/annotate_measurements.py) — scales the recorded boxes onto a local copy of a matching source image and exports an annotated image.
 - [Screenshot comparison utility](../tools/arc-reference/compare_screenshots.py) — overlay, pixel difference and metrics for matched Arc/Xeno captures.
 
 The browser-accessible images are displayed as rendered previews rather than original image files accessible to local image-processing code. Therefore the current geometry values are **manual preview-coordinate estimates** with an explicit uncertainty range. They are not source-native pixel measurements, machine-sampled colors or dp values. No exact HEX / RGB samples or animation timings are claimed. For those, source image/video bytes and capture metadata are required.
+
+
+### Screenshot forensic findings from the follow-up pass
+
+The screenshot report now has asset-by-asset entries for:
+- three Browse for Me answer screenshots (including scrolled states) and one webpage-with-dock screenshot from Android Authority / 9to5Google;
+- six historical Android onboarding screenshots;
+- all seven unique official Play promotional assets measured on an approximately 506 × 900 rendered canvas, with 123 named region boxes in the machine-readable manifest;
+- seven designer portfolio composites and a three-panel comparison composite;
+- five modern Lazyweb captures classified as iOS and explicitly excluded from Android geometry.
+
+The public Play gallery shows repeated instances of its seven unique assets; those repeats are not counted as new designs or new screens.
+
+**Important:** these are hand-measured rendered-preview coordinates, not pixel values sampled from original file bytes. The exact source image binaries are not available to the local image-processing runtime in this session. Exact raw RGB, original dimensions, density-to-dp conversion and animation measurements remain intentionally unclaimed. The repo now includes tools to perform those analyses once local source captures are available.
