@@ -85,3 +85,13 @@ Latest successful pixel run: https://github.com/dude555afk/Xeno/actions/runs/405
 Run artifact: `arc-reference-source-pixel-analysis` (7-day retention). This includes 31 decoded source images, 191 region ROI measurements and 45 exact point probes.
 
 The analyst must still reject points that land on text, antialiasing or a gradient boundary. The manifest's coordinates and ROI selection are inspectable. No raw image binaries are stored in the generated analysis artifact.
+
+
+## Full-resolution annotated source audit
+
+The analysis workflow also creates:
+- `annotated-contact-sheet.jpg`: a four-column index of the downloaded source images, each named by manifest ID.
+- `annotated-sources/*.webp`: full-resolution, lossless WebP derivatives for every image successfully downloaded. Magenta rectangles show the measured regions; cyan circles show exact color probes. Images with aspect-ratio mismatch receive no incorrectly stretched region boxes.
+- `source_pixel_analysis.json`: original byte hashes/dimensions, exact color probes, and per-region pixel statistics.
+
+Download the artifact from the [Analyze Arc Reference Pixels workflow](https://github.com/dude555afk/Xeno/actions/workflows/analyze-arc-reference-assets.yml). The full-resolution annotations make it possible to inspect a source one at a time, while the contact sheet makes omissions and mislabeled UI states easier to catch. Original source files are fetched temporarily in the runner and are not included directly; the artifact contains the annotated derivatives and measurements.
