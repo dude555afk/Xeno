@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -147,22 +148,30 @@ fun TabStackSheet(
                         )
                     }
                 } else {
-                    LazyRow(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxWidth()
                     ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                preview = previews[tab.id],
-                                active = tab.id == activeTabId,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
-                            )
+                        // Keep the card proportion consistent across narrow and
+                        // large Android screens instead of hard-coding a phone width.
+                        val cardWidth = (maxWidth * 0.79f).coerceIn(260.dp, 360.dp)
+                        LazyRow(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            items(tabs, key = { it.id }) { tab ->
+                                TabCard(
+                                    tab = tab,
+                                    preview = previews[tab.id],
+                                    active = tab.id == activeTabId,
+                                    cardWidth = cardWidth,
+                                    onSelect = { onSelect(tab) },
+                                    onClose = { onClose(tab) }
+                                )
+                            }
                         }
                     }
                 }
@@ -201,6 +210,7 @@ private fun TabCard(
     tab: Tab,
     preview: Bitmap?,
     active: Boolean,
+    cardWidth: androidx.compose.ui.unit.Dp,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -222,7 +232,7 @@ private fun TabCard(
         ),
         onClick = onSelect,
         modifier = Modifier
-            .width(260.dp)
+            .width(cardWidth)
             .fillMaxHeight()
             .scale(scale)
     ) {
