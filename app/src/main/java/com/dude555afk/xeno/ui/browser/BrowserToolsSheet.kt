@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Close
@@ -58,7 +59,7 @@ import com.dude555afk.xeno.ui.theme.TextPrimary
 import com.dude555afk.xeno.ui.theme.TextSecondary
 import java.util.Locale
 
-enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, TRANSLATE, SPACES, SITE_SETTINGS }
+enum class BrowserPanel { MENU, HISTORY, BOOKMARKS, DOWNLOADS, PRIVACY, SETTINGS, AI, TRANSLATE, SPACES, SITE_SETTINGS }
 
 data class BrowserDownload(
     val id: Long,
@@ -103,6 +104,7 @@ fun BrowserToolsSheet(
     onOpenPanel: (BrowserPanel) -> Unit,
     onAutoOpenKeyboardChange: (Boolean) -> Unit,
     onSearchEngineChange: (String) -> Unit,
+    onOpenDefaultAppsSettings: () -> Unit,
     onOpenReader: () -> Unit,
     onOpenFind: () -> Unit,
     onCopyCurrentUrl: () -> Unit,
@@ -188,7 +190,11 @@ fun BrowserToolsSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (panel != null && panel != BrowserPanel.MENU) {
-                            IconButton(onClick = { onOpenPanel(BrowserPanel.MENU) }) {
+                            IconButton(
+                                onClick = {
+                                    onOpenPanel(if (panel == BrowserPanel.AI) BrowserPanel.SETTINGS else BrowserPanel.MENU)
+                                }
+                            ) {
                                 Icon(Icons.Rounded.ArrowBack, "Back", tint = TextSecondary)
                             }
                         }
@@ -201,6 +207,7 @@ fun BrowserToolsSheet(
                                     BrowserPanel.DOWNLOADS -> "Downloads"
                                     BrowserPanel.PRIVACY -> "Privacy"
                                     BrowserPanel.SETTINGS -> "Settings"
+                                    BrowserPanel.AI -> "AI and Browse for Me"
                                     BrowserPanel.TRANSLATE -> "Translate page"
                                     BrowserPanel.SPACES -> "Spaces"
                                     BrowserPanel.SITE_SETTINGS -> "Site settings"
@@ -217,7 +224,8 @@ fun BrowserToolsSheet(
                                     BrowserPanel.BOOKMARKS -> "Your saved pages"
                                     BrowserPanel.DOWNLOADS -> "Files saved by Xeno"
                                     BrowserPanel.PRIVACY -> "Protection and local data"
-                                    BrowserPanel.SETTINGS -> "Search, privacy and AI preferences"
+                                    BrowserPanel.SETTINGS -> "Search, privacy and app preferences"
+                                    BrowserPanel.AI -> "Provider, model and request settings"
                                     BrowserPanel.TRANSLATE -> "Choose a target language"
                                     BrowserPanel.SPACES -> "Organize your workspaces"
                                     BrowserPanel.SITE_SETTINGS -> currentSiteHost
@@ -276,7 +284,7 @@ fun BrowserToolsSheet(
                             }
                             MenuAction("Translate page", "Translate article text with AI", Icons.Rounded.Article) { onOpenPanel(BrowserPanel.TRANSLATE) }
                             MenuAction("Privacy & blockers", "Tracking protection and clear data", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
-                            MenuAction("Settings", "AI provider and browser preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
+                            MenuAction("Settings", "Search, privacy and app preferences", Icons.Rounded.Settings) { onOpenPanel(BrowserPanel.SETTINGS) }
                         }
                         BrowserPanel.BOOKMARKS -> {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -497,7 +505,70 @@ fun BrowserToolsSheet(
                             InfoCard("Privacy", "Xeno extracts article text locally first. It asks before sending that text to your AI provider.")
                             Button(onClick = onTranslate, modifier = Modifier.fillMaxWidth()) { Text("Translate page") }
                         }
-                        BrowserPanel.SETTINGS -> {
+                        BrowserPanel.SETTINGS -> Column(
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(9.dp)
+                        ) {
+                            InfoCard("General", "Search, browser behaviour and local data controls.")
+                            SitePermissionToggle(
+                                title = "Auto-open keyboard",
+                                subtitle = "Open search ready to type when Xeno starts",
+                                checked = autoOpenKeyboard,
+                                onChange = onAutoOpenKeyboardChange
+                            )
+                            Text(
+                                "SEARCH ENGINE",
+                                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp
+                            )
+                            listOf(
+                                "brave" to "Brave Search",
+                                "duckduckgo" to "DuckDuckGo",
+                                "google" to "Google",
+                                "bing" to "Bing",
+                                "startpage" to "Startpage"
+                            ).chunked(3).forEach { engineRow ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    engineRow.forEach { (id, label) ->
+                                        FilterChip(
+                                            selected = searchEngineId == id,
+                                            onClick = { onSearchEngineChange(id) },
+                                            label = { Text(label, maxLines = 1) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                "BROWSER",
+                                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp
+                            )
+                            MenuAction("Default browser", "Choose Xeno in Android system settings", Icons.Rounded.Settings, onOpenDefaultAppsSettings)
+                            MenuAction("Privacy and blockers", "Ads, trackers, cookies and site permissions", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
+                            MenuAction("Downloads", "${downloads.size} saved files", Icons.Rounded.Download) {
+                                onOpenPanel(BrowserPanel.DOWNLOADS)
+                                onRefreshDownloads()
+                            }
+                            MenuAction("History", "${history.size} recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
+                            if (!isPrivateMode) {
+                                MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                            }
+                            MenuAction("Spaces", "${spaces.size} browsing spaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
+                            MenuAction("AI and Browse for Me", "${provider.displayName} · ${provider.model}", Icons.Rounded.AutoAwesome) { onOpenPanel(BrowserPanel.AI) }
+                            MenuAction("Clear browsing data", "Clear history, cookies and cache on this device", Icons.Rounded.DeleteOutline, onClearBrowsingData)
+                        }
+                        BrowserPanel.AI -> {
                             var selectedProviderId by remember(provider.id, panel) { mutableStateOf(provider.id) }
                             var baseUrl by remember(provider.baseUrl, panel) { mutableStateOf(provider.baseUrl) }
                             var model by remember(provider.model, panel) { mutableStateOf(provider.model) }
@@ -527,50 +598,6 @@ fun BrowserToolsSheet(
                                 Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                                        Text("Auto-open keyboard", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
-                                        Text("Start directly in search on launch", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    Switch(
-                                        checked = autoOpenKeyboard,
-                                        onCheckedChange = onAutoOpenKeyboardChange,
-                                        enabled = !isPrivateMode
-                                    )
-                                }
-                                Text(
-                                    text = "SEARCH ENGINE",
-                                    color = TextSecondary,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    letterSpacing = 1.sp,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 1.dp)
-                                )
-                                listOf(
-                                    "brave" to "Brave Search",
-                                    "duckduckgo" to "DuckDuckGo",
-                                    "google" to "Google",
-                                    "bing" to "Bing",
-                                    "startpage" to "Startpage"
-                                ).chunked(3).forEach { engineRow ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        engineRow.forEach { (id, label) ->
-                                            FilterChip(
-                                                selected = searchEngineId == id,
-                                                onClick = { onSearchEngineChange(id) },
-                                                label = { Text(label, maxLines = 1) },
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                    }
-                                }
                                 Text(
                                     text = "AI PROVIDER",
                                     color = TextSecondary,
