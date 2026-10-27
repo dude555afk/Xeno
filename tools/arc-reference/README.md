@@ -75,3 +75,13 @@ This environment can inspect the visual output of public image links, but the so
 - tools to annotate captures, sample raw RGB and compare matched Arc/Xeno screenshots
 
 It does **not** yet have raw Android captures from the same device, verified source-native resolution/density, exact sampled app colors or frame-timed motion measurements. The next high-confidence pass requires obtaining local original image/video bytes or recording the app directly with ADB. No estimate should be presented as a measured native dp or exact animation value.
+
+
+## Exact point probes and raw source pixel analyzer
+
+The measurement manifest supports per-asset `samplePoints` in encoded file pixel coordinates. The analyzer stores exact RGB/HEX at each probe alongside ROI center/median/mean/std/quantiles, quantized palette, encoded dimensions, byte count and SHA-256. It intentionally keeps a point's descriptive name separate from a claim that it is a universal design token.
+
+Latest successful pixel run: https://github.com/dude555afk/Xeno/actions/runs/40559673319  
+Run artifact: `arc-reference-source-pixel-analysis` (7-day retention). This includes 31 decoded source images, 191 region ROI measurements and 45 exact point probes.
+
+The analyst must still reject points that land on text, antialiasing or a gradient boundary. The manifest's coordinates and ROI selection are inspectable. No raw image binaries are stored in the generated analysis artifact.
