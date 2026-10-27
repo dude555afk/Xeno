@@ -583,3 +583,72 @@ Differences of one channel level across two separately published JPEG/WebP encod
 The latest source-analysis run is [Analyze Arc Reference Pixels, commit f1378086](https://github.com/dude555afk/Xeno/actions/runs/40559673319). Its short-retention GitHub Actions artifact contains the complete JSON results with all exact image metadata, point samples, ROI statistics and per-image palette data. The repository includes the fetch/measurement script and manifest so the data can be regenerated.
 
 The analysis does **not** claim that all 191 ROI rectangles represent pure design tokens: full-screen regions can include text, icons, clipping edges or images. Use the dedicated exact point probes and low-variance surface interiors for token investigation. Exact Android dp measurements still require device density / display metadata; animation duration/easing requires a screen recording with known frame timing.
+
+
+## R. Code-to-reference gap audit and evidence-based implementation changes
+
+This section cross-checks actual Xeno code against the measured screenshot evidence. It is a source-level comparison; the latest Xeno APK still needs a same-device screenshot capture to produce a visual diff.
+
+### R1. Home gradient: former constants did not match the screenshots
+
+**Previous Xeno values** in `HomeScreen.kt` were:
+- `#251126`
+- `#30154D`
+- `#542A82`
+- `#B64D8F`
+
+It also painted unmeasured pink/magenta radial glows over the gradient.
+
+**Measured Arc home panel** points from the 1200 × 667 Clubic montage (home sub-panel is 300 × 667):
+
+| Probe in montage canvas | Measured RGB / HEX |
+|---|---|
+| Home panel (15, 80) | (31, 20, 60) / `#1F143C` |
+| Home panel (150, 210) | (68, 36, 60) / `#44243C` |
+| Home panel (280, 550) | (52, 66, 95) / `#34425F` |
+
+Xeno’s home now uses those three sampled colors as the stops for a constrained dark-purple-to-muted-blue gradient. Stop positions were calculated from the measured points' projection onto Compose's default top-left-to-bottom-right gradient vector. The prior radial overlays were removed because their bright pink values were not supported by the sampled reference.
+
+### R2. Home mark: visual bounds, not just Compose box size
+
+In the same montage, the visible mark was hand-bounded at [95, 280, 205, 385], i.e. 110 × 105 px inside a 300 px-wide screen panel. Visible artwork width is about **36.7% of viewport width**.
+
+Xeno's custom four-petal Canvas uses circles whose overall visible bounding box is about 82% of its layout box (petal-center spread + radius). Merely setting the Compose box to 36.7% of viewport would make the visible logo too small. The new implementation therefore uses a responsive outer box of about **44.7% of viewport width** (clamped for phone sizes), which yields a visible region of roughly 36.7%. This is a ratio-based estimate, not a source-native dp measurement.
+
+### R3. Home plus control geometry
+
+Reference box: [120, 600, 180, 630] in the 300 × 667 home sub-panel:
+- visible width: 60 px = **20.0%** of viewport width;
+- visible height: 30 px = **4.50%** of viewport height.
+
+The plus capsule is now sized at approximately 20% of the available width and 4.5% of available height, with guard rails for compact/large phones. This is the correct proportion to carry across screen sizes rather than hard-coding a width that only matches one device.
+
+### R4. Search background and query capsule
+
+Three exact file-pixel probes from the dark suggestion screen sub-panel in the Clubic image are:
+
+| Probe, local to the 300 × 667 screen panel | Exact sampled HEX |
+|---|---|
+| (5, 60) | `#1C192E` |
+| (290, 100) | `#3D242A` |
+| (5, 600) | `#2D2E32` |
+
+The former Xeno command palette reused the home palette (`#251126 → #30154D → #542A82 → #B64D8F`), a clear code-level mismatch with the actual dark suggestions screenshot. It now uses those measured dark anchors and stop positions derived from their relative coordinates.
+
+The reference query capsule has measured median `#4F5052` in the Clubic screenshot ROI (low channel standard deviation about 19, partly due to icon/text edges); the command palette input surface now uses `#4F5052`. Its region in the independent 1080 × 2520 Browse for Me capture is slightly different, with a separate probe at `#42454C`, so **one value should not be treated as a universal pill token across every screenshot/state**.
+
+The query bar measures roughly 56 preview pixels high on a 428 px-wide full-screen capture, or 13.1% of viewport width. At a 393 dp-wide phone this ratio suggests about 51 dp. Xeno's query-row vertical padding has been increased to 14 dp top/bottom, producing a roughly 52 dp row with current typography; this is a source-derived estimate to check in the same-device diff.
+
+### R5. Changes committed (not yet device-diff approved)
+
+- `7e13c42e`: replace prior home colors with measured gradient palette and remove unsupported radial overlays.
+- `b7b23b54`: size home mark and plus capsule proportionally to viewport measurements.
+- `910afffd` and `e5c742b9`: use measured dark search palette and calibrate gradient stops against the exact reference probes.
+- `4942b22a`: adjust query capsule row height from source geometry.
+- `96f1ceb3` and `acd9c8c5`: correct visible mark bounds and refine the gradient projection positions.
+
+These changes are on `feature/xeno-arc-search-e2e-rebuild`; `main` remains untouched. The first implementation pass is evidence-backed but **not yet a claim of pixel-perfect parity**. The screenshot-diff acceptance loop has to run on real Xeno captures at the same device dimensions/state before approving further layout tokens.
+
+### R6. Motion audit status
+
+Static images cannot establish animation duration, easing, spring parameters, velocity thresholds, or interruption semantics. The current Xeno home-mark breathing animation (0.96×–1.04× over 2600 ms) is still unmeasured and is **not approved as Arc motion parity**. Official Android release notes say the fidget-spinner rotation was made smoother in v1.8.1; the next animation pass must frame-analyze a genuine Android screen recording/launch demo rather than equate a generic breathing effect with the original behavior.
