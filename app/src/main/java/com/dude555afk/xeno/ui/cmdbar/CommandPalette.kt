@@ -117,7 +117,9 @@ fun CommandPalette(
                     Brush.linearGradient(
                         colorStops = arrayOf(
                             0.0f to Color(0xFF1C192E),
-                            0.24f to Color(0xFF3D242A),
+                            0.078f to Color(0xFF1C192E),
+                            0.286f to Color(0xFF3D242A),
+                            0.751f to Color(0xFF2D2E32),
                             1.0f to Color(0xFF2D2E32)
                         )
                     )
