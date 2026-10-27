@@ -42,19 +42,19 @@ fun ReaderSheet(
 ) {
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
         Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.70f)).clickable(
+            Modifier.fillMaxSize().background(Color(0xFFFCFAFE)).clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.TopCenter
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.92f).clickable(
+                modifier = Modifier.fillMaxSize().clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { },
-                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = Color(0xFFFAF8F1),
+                shape = RoundedCornerShape(0.dp),
+                color = Color(0xFFFCFAFE),
                 border = StrokeSubtle.let { androidx.compose.foundation.BorderStroke(1.dp, Color.Black.copy(alpha = 0.08f)) }
             ) {
                 Column(Modifier.fillMaxSize()) {

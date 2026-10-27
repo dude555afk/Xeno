@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -79,22 +83,23 @@ fun SummarySheet(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Color(0xFFFCFAFE))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.TopCenter
         ) {
             Surface(
-                shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = Color(0xFF0A0A0A),
+                shape = RoundedCornerShape(0.dp),
+                color = Color(0xFFFCFAFE),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color(0xFFE7E2EC)),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.8f)
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
@@ -107,7 +112,7 @@ fun SummarySheet(
                             .padding(vertical = Dimens.spaceM)
                             .size(width = 36.dp, height = 4.dp)
                             .background(
-                                Color.White.copy(alpha = 0.2f),
+                                Color(0xFFDCD5E6),
                                 RoundedCornerShape(percent = 50)
                             )
                     )
@@ -138,7 +143,7 @@ fun SummarySheet(
                             if (streamText.isNotBlank()) {
                                 Surface(
                                     shape = PillShape,
-                                    color = Color.White.copy(alpha = 0.06f),
+                                    color = Color(0xFFF0ECF7),
                                     onClick = onCopy
                                 ) {
                                     Row(
@@ -193,7 +198,7 @@ fun SummarySheet(
                                 val selected = option == tone
                                 Surface(
                                     shape = PillShape,
-                                    color = if (selected) accent else Color.White.copy(alpha = 0.06f),
+                                    color = if (selected) accent else Color(0xFFF0ECF7),
                                     onClick = { onToneChange(option) }
                                 ) {
                                     Text(

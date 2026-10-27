@@ -45,22 +45,22 @@ fun TranslationSheet(
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
         Box(
             Modifier.fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.70f))
+                .background(Color(0xFFFCFAFE))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.TopCenter
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f).clickable(
+                modifier = Modifier.fillMaxSize().clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { },
-                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = Color(0xFF0B0B0B),
+                shape = RoundedCornerShape(0.dp),
+                color = Color(0xFFFCFAFE),
                 border = androidx.compose.foundation.BorderStroke(1.dp, StrokeSubtle),
-                shadowElevation = 20.dp
+                shadowElevation = 0.dp
             ) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
