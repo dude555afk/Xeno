@@ -188,14 +188,7 @@ fun TabStackSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // The tab switcher is also Arc's entry point to app settings.
-                    IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = "Settings",
-                            tint = Color.White.copy(alpha = 0.78f),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    Spacer(Modifier.size(48.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
                         color = Color(0xFFF2F2F5),
@@ -211,7 +204,14 @@ fun TabStackSheet(
                             )
                         }
                     }
-                    Spacer(Modifier.size(48.dp))
+                    IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White.copy(alpha = 0.78f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }
