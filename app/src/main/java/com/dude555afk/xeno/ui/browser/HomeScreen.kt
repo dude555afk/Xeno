@@ -40,14 +40,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.storage.CollectedPage
-import kotlin.math.cos
-import kotlin.math.sin
 
 private val ArcLilac = Color(0xFF251126)
 private val ArcPurple = Color(0xFF30154D)
@@ -214,39 +208,25 @@ private fun HomeMark(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val cx = size.width / 2f
         val cy = size.height / 2f
-        val r = size.minDimension * 0.42f
-        val stroke = size.minDimension * 0.095f
-        val white = Color(0xFFFFFCFF)
-        fun ribbon(startAngle: Double): Path {
-            val sx = cx.toDouble() + cos(startAngle) * r.toDouble() * 0.12
-            val sy = cy.toDouble() + sin(startAngle) * r.toDouble() * 0.12
-            val ex = cx.toDouble() + cos(startAngle + 2.25) * r.toDouble() * 0.76
-            val ey = cy.toDouble() + sin(startAngle + 2.25) * r.toDouble() * 0.76
-            return Path().apply {
-                moveTo(sx.toFloat(), sy.toFloat())
-                cubicTo(
-                    (cx.toDouble() + cos(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
-                    (cy.toDouble() + sin(startAngle + 0.58) * r.toDouble() * 1.02).toFloat(),
-                    (cx.toDouble() + cos(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
-                    (cy.toDouble() + sin(startAngle + 1.12) * r.toDouble() * 0.88).toFloat(),
-                    ex.toFloat(), ey.toFloat()
-                )
-                cubicTo(
-                    (cx.toDouble() + cos(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
-                    (cy.toDouble() + sin(startAngle + 2.72) * r.toDouble() * 0.48).toFloat(),
-                    (cx.toDouble() + cos(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
-                    (cy.toDouble() + sin(startAngle + 3.24) * r.toDouble() * 0.20).toFloat(),
-                    sx.toFloat(), sy.toFloat()
-                )
-            }
-        }
-        listOf(-90.0, 30.0, 150.0).forEachIndexed { index, angle ->
-            drawPath(
-                path = ribbon(Math.toRadians(angle)),
-                color = white.copy(alpha = if (index == 1) 0.86f else 0.97f),
-                style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val petalRadius = size.minDimension * 0.23f
+        val spread = size.minDimension * 0.18f
+        val petals = listOf(
+            Offset(cx, cy - spread) to Color(0xFFFFD7E8),
+            Offset(cx + spread, cy) to Color(0xFFFFD3B8),
+            Offset(cx, cy + spread) to Color(0xFFD9C8FF),
+            Offset(cx - spread, cy) to Color(0xFFFFE8A9)
+        )
+        petals.forEach { (center, tint) ->
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFFFFF7FC), tint, tint.copy(alpha = 0.82f)),
+                    center = Offset(center.x - petalRadius * 0.22f, center.y - petalRadius * 0.25f),
+                    radius = petalRadius * 1.8f
+                ),
+                radius = petalRadius,
+                center = center
             )
         }
-        drawCircle(white, radius = stroke * 0.63f, center = Offset(cx, cy))
+        drawCircle(Color(0xFFFFF4FA), radius = petalRadius * 0.30f, center = Offset(cx, cy))
     }
 }
