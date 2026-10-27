@@ -262,3 +262,28 @@ These sources expand the source set beyond the core specification. They are usef
 ### Why the original designer images are still not a pixel spec
 
 The designer assets establish component hierarchy and reveal content that the code currently must support. However, phone frames, marketing backgrounds, image scaling and overlays contaminate absolute coordinates and color samples. We can use them to decide what state to recreate; we should not convert their coordinates directly into Compose dp values or quote them as measured Android UI dimensions. Absolute measurement remains a capture task.
+
+
+## 12. Current Xeno code audit against the evidence
+
+This is a source-code inspection, not a claim of visual/device verification.
+
+- The current HomeScreen implementation uses a hard-coded four-color full-screen gradient and scales its home mark from 0.96× to 1.04× on a 2,600 ms repeating reverse tween. That is an implementation choice, not a measured Arc animation. The Android release notes specifically describe smoothing the fidget spinner; measure the original motion before choosing idle rotation, breathing or no idle movement.
+- The four current home gradient constants are custom Xeno values. They must be sampled and compared against the app pixels in the correct Arc state before being accepted as close.
+- The current home surface can show pinned-page chips and a bottom dock. The design assets show a search field with suggestions and per-row Browse for Me actions in the search state, while the tab switcher and Browse for Me result have their own distinct layouts. These states must be mapped and compared separately rather than blending them into one generic screen.
+- The previous docs/DESIGN.md hard-coded animation timings and an AMOLED-dark default without evidence. Its header now explicitly marks it as legacy; use this reference document as the authority for visual research.
+- The code currently compiles in a successful Android CI run for commit b544c71d, but newer commits in this research pass are documentation/tooling changes and were still running CI at the time of this note. Neither result proves the reference UI is visually accurate.
+- Pixel-level output remains intentionally unclaimed: there is no raw Arc device screenshot/recording paired with a Xeno capture in the repository yet. An honest visual-diff score needs those matched assets.
+
+## 13. Additional first-party help-center behavior
+
+**[O] Arc Search cross-platform help / current sunset FAQ:**  
+https://resources.arc.net/hc/en-us/articles/25482329571479-Arc-for-iOS-Android-Arc-Search
+
+This official help page states:
+- Until 2026-11-23, users can sign in to see synced Spaces, pinned tabs and Today tabs; sign-in/sync then stop. Treat sync as a sunset dependency, not a feature Xeno should rely on.
+- Android tab export path: Tab Switcher → Settings → Storage → Export data. Browse for Me and Incognito tabs are excluded from the exported open-tab list.
+- Clear browsing data path: Tab Switcher → Settings → Clear Browsing Data.
+- Arc Search for Android is scheduled to be removed from Play Store and installed devices on 2026-12-22.
+
+Implement export and clear-data as explicit, testable settings flows if included in Xeno, but preserve Xeno's own data model and privacy guarantees rather than copying Arc's internal format.
