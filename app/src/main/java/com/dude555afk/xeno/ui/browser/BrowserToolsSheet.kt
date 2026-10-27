@@ -166,23 +166,23 @@ fun BrowserToolsSheet(
                 animationSpec = androidx.compose.animation.core.tween(150)
             )
     ) {
-        val isMenuSheet = panel == BrowserPanel.MENU
+        val isBottomSheet = panel == BrowserPanel.MENU || panel == BrowserPanel.SITE_SETTINGS
         Box(
             Modifier.fillMaxSize()
-                .background(if (isMenuSheet) Color.Black.copy(alpha = 0.22f) else Color(0xFFF8F6FB))
+                .background(if (isBottomSheet) Color.Black.copy(alpha = 0.22f) else Color(0xFFF8F6FB))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
-            contentAlignment = if (isMenuSheet) Alignment.BottomCenter else Alignment.TopCenter
+            contentAlignment = if (isBottomSheet) Alignment.BottomCenter else Alignment.TopCenter
         ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .imePadding()
-                    .fillMaxHeight(if (isMenuSheet) 0.84f else 1f)
+                    .fillMaxHeight(if (isBottomSheet) 0.84f else 1f)
                     .then(
-                        if (isMenuSheet) Modifier
+                        if (isBottomSheet) Modifier
                         else Modifier
                             .windowInsetsPadding(WindowInsets.statusBars)
                             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -191,10 +191,10 @@ fun BrowserToolsSheet(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
                     ) { },
-                shape = if (isMenuSheet) RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp) else RoundedCornerShape(0.dp),
+                shape = if (isBottomSheet) RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp) else RoundedCornerShape(0.dp),
                 color = Color(0xFFFCFAFE),
                 border = BorderStroke(1.dp, StrokeSubtle),
-                shadowElevation = if (isMenuSheet) 18.dp else 0.dp
+                shadowElevation = if (isBottomSheet) 18.dp else 0.dp
             ) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
