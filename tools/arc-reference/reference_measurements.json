@@ -2,7 +2,7 @@
   "title": "Arc Search Android screenshot preview measurements",
   "date": "2026-10-27",
   "coordinateConvention": "[left, top, right, bottom), preview-canvas pixels",
-  "caveat": "Coordinates were manually read from rendered web previews, not original image binaries. Preview canvas sizes do not establish source-native pixels or display density. Bounding boxes are approximate (typically ±4–8 preview px). Do not convert directly to dp or use visual color estimates as exact RGB samples. Marketing composition entries use a larger 506x900 preview where available; these bounds are relative to that promo canvas and never assert native app dp. Five modern Lazyweb screenshots are recorded as iOS-only exclusions.",
+  "caveat": "Coordinates were manually read from rendered web previews, not original image binaries. Preview canvas sizes do not establish source-native pixels or display density. Bounding boxes are approximate (typically ±4–8 preview px). Do not convert directly to dp or use visual color estimates as exact RGB samples. Marketing composition entries use a larger 506x900 preview where available; these bounds are relative to that promo canvas and never assert native app dp. Five modern Lazyweb screenshots are recorded as iOS-only exclusions. Six 9to5Google Android beta onboarding frames are included at publisher-resized 460px-wide coordinates. They are full-bleed captures without perspective, but still resampled files, not source-device raw pixels.",
   "items": [
     {
       "id": "AA-BFM-01",
@@ -3368,6 +3368,1210 @@
         "Panel 3: web page-like Browse for Me layout with top query pill, portrait image carousel, blue heading, structured body and three-part bottom dock.",
         "Panel 4: webpage remains visible above a lower controls surface. Top row includes back/forward, URL/domain, link/copy and reload; action grid includes Translate, Pin, Find and Share; following rows expose Zoom, Desktop Site, Site Settings and blocked-ad/tracker status.",
         "All coordinates are within the 1200x667 montage canvas and must not be mistaken for density-scaled dp."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-01",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Intro — get what you want twice as fast",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-1.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "app-mark",
+          "bbox": [
+            190,
+            180,
+            266,
+            245
+          ],
+          "sizePreviewPx": [
+            76,
+            65
+          ],
+          "bboxNormalized": [
+            0.413,
+            0.18,
+            0.5783,
+            0.245
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            94,
+            425,
+            360,
+            535
+          ],
+          "sizePreviewPx": [
+            266,
+            110
+          ],
+          "bboxNormalized": [
+            0.2043,
+            0.425,
+            0.7826,
+            0.535
+          ]
+        },
+        {
+          "name": "lets-go-action",
+          "bbox": [
+            347,
+            926,
+            411,
+            951
+          ],
+          "sizePreviewPx": [
+            64,
+            25
+          ],
+          "bboxNormalized": [
+            0.7543,
+            0.926,
+            0.8935,
+            0.951
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "Full-screen portrait Android onboarding capture resized to 460px width by the publisher.",
+        "Visual coordinates in the 460x1000 output, not source-native device pixels."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-02",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Feature explainer — privacy/archive/logins/navigation",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-2.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            116,
+            195,
+            345,
+            258
+          ],
+          "sizePreviewPx": [
+            229,
+            63
+          ],
+          "bboxNormalized": [
+            0.2522,
+            0.195,
+            0.75,
+            0.258
+          ]
+        },
+        {
+          "name": "feature-card-stack",
+          "bbox": [
+            20,
+            365,
+            430,
+            701
+          ],
+          "sizePreviewPx": [
+            410,
+            336
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.365,
+            0.9348,
+            0.701
+          ]
+        },
+        {
+          "name": "feature-row-1",
+          "bbox": [
+            20,
+            365,
+            430,
+            448
+          ],
+          "sizePreviewPx": [
+            410,
+            83
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.365,
+            0.9348,
+            0.448
+          ]
+        },
+        {
+          "name": "feature-row-2",
+          "bbox": [
+            20,
+            450,
+            430,
+            531
+          ],
+          "sizePreviewPx": [
+            410,
+            81
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.45,
+            0.9348,
+            0.531
+          ]
+        },
+        {
+          "name": "feature-row-3",
+          "bbox": [
+            20,
+            533,
+            430,
+            615
+          ],
+          "sizePreviewPx": [
+            410,
+            82
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.533,
+            0.9348,
+            0.615
+          ]
+        },
+        {
+          "name": "feature-row-4",
+          "bbox": [
+            20,
+            617,
+            430,
+            701
+          ],
+          "sizePreviewPx": [
+            410,
+            84
+          ],
+          "bboxNormalized": [
+            0.0435,
+            0.617,
+            0.9348,
+            0.701
+          ]
+        },
+        {
+          "name": "footer-wave",
+          "bbox": [
+            0,
+            890,
+            460,
+            911
+          ],
+          "sizePreviewPx": [
+            460,
+            21
+          ],
+          "bboxNormalized": [
+            0,
+            0.89,
+            1,
+            0.911
+          ]
+        },
+        {
+          "name": "progress-indicator",
+          "bbox": [
+            202,
+            933,
+            242,
+            944
+          ],
+          "sizePreviewPx": [
+            40,
+            11
+          ],
+          "bboxNormalized": [
+            0.4391,
+            0.933,
+            0.5261,
+            0.944
+          ]
+        },
+        {
+          "name": "next-button",
+          "bbox": [
+            355,
+            912,
+            435,
+            959
+          ],
+          "sizePreviewPx": [
+            80,
+            47
+          ],
+          "bboxNormalized": [
+            0.7717,
+            0.912,
+            0.9457,
+            0.959
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "Four feature rows with icon, title and supporting line.",
+        "Each row is about 82px high in this resized capture; vertical gaps/separators are only a few pixels."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-03",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Search field and Browse for Me tutorial",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-3.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            83,
+            195,
+            377,
+            259
+          ],
+          "sizePreviewPx": [
+            294,
+            64
+          ],
+          "bboxNormalized": [
+            0.1804,
+            0.195,
+            0.8196,
+            0.259
+          ]
+        },
+        {
+          "name": "try-it-out-label",
+          "bbox": [
+            171,
+            473,
+            286,
+            495
+          ],
+          "sizePreviewPx": [
+            115,
+            22
+          ],
+          "bboxNormalized": [
+            0.3717,
+            0.473,
+            0.6217,
+            0.495
+          ]
+        },
+        {
+          "name": "example-search-panel",
+          "bbox": [
+            34,
+            574,
+            417,
+            893
+          ],
+          "sizePreviewPx": [
+            383,
+            319
+          ],
+          "bboxNormalized": [
+            0.0739,
+            0.574,
+            0.9065,
+            0.893
+          ]
+        },
+        {
+          "name": "search-field",
+          "bbox": [
+            45,
+            592,
+            405,
+            650
+          ],
+          "sizePreviewPx": [
+            360,
+            58
+          ],
+          "bboxNormalized": [
+            0.0978,
+            0.592,
+            0.8804,
+            0.65
+          ]
+        },
+        {
+          "name": "browse-for-me-example-pill",
+          "bbox": [
+            269,
+            668,
+            408,
+            725
+          ],
+          "sizePreviewPx": [
+            139,
+            57
+          ],
+          "bboxNormalized": [
+            0.5848,
+            0.668,
+            0.887,
+            0.725
+          ]
+        },
+        {
+          "name": "suggestion-row-1",
+          "bbox": [
+            52,
+            732,
+            404,
+            782
+          ],
+          "sizePreviewPx": [
+            352,
+            50
+          ],
+          "bboxNormalized": [
+            0.113,
+            0.732,
+            0.8783,
+            0.782
+          ]
+        },
+        {
+          "name": "suggestion-row-2",
+          "bbox": [
+            52,
+            786,
+            404,
+            837
+          ],
+          "sizePreviewPx": [
+            352,
+            51
+          ],
+          "bboxNormalized": [
+            0.113,
+            0.786,
+            0.8783,
+            0.837
+          ]
+        },
+        {
+          "name": "suggestion-row-3",
+          "bbox": [
+            52,
+            840,
+            404,
+            891
+          ],
+          "sizePreviewPx": [
+            352,
+            51
+          ],
+          "bboxNormalized": [
+            0.113,
+            0.84,
+            0.8783,
+            0.891
+          ]
+        },
+        {
+          "name": "footer-wave",
+          "bbox": [
+            0,
+            890,
+            460,
+            911
+          ],
+          "sizePreviewPx": [
+            460,
+            21
+          ],
+          "bboxNormalized": [
+            0,
+            0.89,
+            1,
+            0.911
+          ]
+        },
+        {
+          "name": "progress-indicator",
+          "bbox": [
+            202,
+            934,
+            242,
+            945
+          ],
+          "sizePreviewPx": [
+            40,
+            11
+          ],
+          "bboxNormalized": [
+            0.4391,
+            0.934,
+            0.5261,
+            0.945
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "A curved annotation arrow points from instructional text into the distinct Browse for Me button.",
+        "The suggestion panel is a separate surface; each suggestion action is explicit."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-04",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Browse for Me result / loading skeleton tutorial",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-4.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "success-checkmark",
+          "bbox": [
+            204,
+            199,
+            246,
+            245
+          ],
+          "sizePreviewPx": [
+            42,
+            46
+          ],
+          "bboxNormalized": [
+            0.4435,
+            0.199,
+            0.5348,
+            0.245
+          ]
+        },
+        {
+          "name": "answer-panel",
+          "bbox": [
+            33,
+            345,
+            417,
+            894
+          ],
+          "sizePreviewPx": [
+            384,
+            549
+          ],
+          "bboxNormalized": [
+            0.0717,
+            0.345,
+            0.9065,
+            0.894
+          ]
+        },
+        {
+          "name": "query-field",
+          "bbox": [
+            51,
+            361,
+            403,
+            420
+          ],
+          "sizePreviewPx": [
+            352,
+            59
+          ],
+          "bboxNormalized": [
+            0.1109,
+            0.361,
+            0.8761,
+            0.42
+          ]
+        },
+        {
+          "name": "carousel-card-1",
+          "bbox": [
+            52,
+            441,
+            185,
+            638
+          ],
+          "sizePreviewPx": [
+            133,
+            197
+          ],
+          "bboxNormalized": [
+            0.113,
+            0.441,
+            0.4022,
+            0.638
+          ]
+        },
+        {
+          "name": "carousel-card-2",
+          "bbox": [
+            197,
+            441,
+            330,
+            638
+          ],
+          "sizePreviewPx": [
+            133,
+            197
+          ],
+          "bboxNormalized": [
+            0.4283,
+            0.441,
+            0.7174,
+            0.638
+          ]
+        },
+        {
+          "name": "carousel-card-3-visible",
+          "bbox": [
+            341,
+            441,
+            414,
+            638
+          ],
+          "sizePreviewPx": [
+            73,
+            197
+          ],
+          "bboxNormalized": [
+            0.7413,
+            0.441,
+            0.9,
+            0.638
+          ]
+        },
+        {
+          "name": "answer-heading",
+          "bbox": [
+            52,
+            665,
+            410,
+            721
+          ],
+          "sizePreviewPx": [
+            358,
+            56
+          ],
+          "bboxNormalized": [
+            0.113,
+            0.665,
+            0.8913,
+            0.721
+          ]
+        },
+        {
+          "name": "answer-body",
+          "bbox": [
+            53,
+            748,
+            411,
+            892
+          ],
+          "sizePreviewPx": [
+            358,
+            144
+          ],
+          "bboxNormalized": [
+            0.1152,
+            0.748,
+            0.8935,
+            0.892
+          ]
+        },
+        {
+          "name": "footer-wave",
+          "bbox": [
+            0,
+            890,
+            460,
+            911
+          ],
+          "sizePreviewPx": [
+            460,
+            21
+          ],
+          "bboxNormalized": [
+            0,
+            0.89,
+            1,
+            0.911
+          ]
+        },
+        {
+          "name": "progress-indicator",
+          "bbox": [
+            202,
+            934,
+            242,
+            945
+          ],
+          "sizePreviewPx": [
+            40,
+            11
+          ],
+          "bboxNormalized": [
+            0.4391,
+            0.934,
+            0.5261,
+            0.945
+          ]
+        },
+        {
+          "name": "next-button",
+          "bbox": [
+            355,
+            912,
+            435,
+            959
+          ],
+          "sizePreviewPx": [
+            80,
+            47
+          ],
+          "bboxNormalized": [
+            0.7717,
+            0.912,
+            0.9457,
+            0.959
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "Gray image skeletons occupy the same portrait card space as final images, and the title/body area is already reserved.",
+        "Third carousel item is clipped at right edge; content stack is not a grid."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-05",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Ad-block explainer",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-5.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            81,
+            176,
+            385,
+            243
+          ],
+          "sizePreviewPx": [
+            304,
+            67
+          ],
+          "bboxNormalized": [
+            0.1761,
+            0.176,
+            0.837,
+            0.243
+          ]
+        },
+        {
+          "name": "website-preview",
+          "bbox": [
+            66,
+            309,
+            393,
+            889
+          ],
+          "sizePreviewPx": [
+            327,
+            580
+          ],
+          "bboxNormalized": [
+            0.1435,
+            0.309,
+            0.8543,
+            0.889
+          ]
+        },
+        {
+          "name": "block-ads-callout",
+          "bbox": [
+            16,
+            706,
+            432,
+            790
+          ],
+          "sizePreviewPx": [
+            416,
+            84
+          ],
+          "bboxNormalized": [
+            0.0348,
+            0.706,
+            0.9391,
+            0.79
+          ]
+        },
+        {
+          "name": "footer-wave",
+          "bbox": [
+            0,
+            890,
+            460,
+            911
+          ],
+          "sizePreviewPx": [
+            460,
+            21
+          ],
+          "bboxNormalized": [
+            0,
+            0.89,
+            1,
+            0.911
+          ]
+        },
+        {
+          "name": "progress-indicator",
+          "bbox": [
+            202,
+            934,
+            242,
+            945
+          ],
+          "sizePreviewPx": [
+            40,
+            11
+          ],
+          "bboxNormalized": [
+            0.4391,
+            0.934,
+            0.5261,
+            0.945
+          ]
+        },
+        {
+          "name": "next-button",
+          "bbox": [
+            355,
+            912,
+            435,
+            959
+          ],
+          "sizePreviewPx": [
+            80,
+            47
+          ],
+          "bboxNormalized": [
+            0.7717,
+            0.912,
+            0.9457,
+            0.959
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "Floating Block ads control overlaps the sample website; this is a tutorial composition, not live Site Settings geometry.",
+        "The switch is visually purple with a white thumb in this light tutorial state; exact RGB not sampled."
+      ]
+    },
+    {
+      "id": "9TO5-ONB-06",
+      "category": "full-screen-android-onboarding-capture-publisher-resized",
+      "state": "Set as default browser",
+      "sourceUrl": "https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-6.png?w=460",
+      "previewCanvasPx": [
+        460,
+        1000
+      ],
+      "confidence": "medium",
+      "regions": [
+        {
+          "name": "status-bar",
+          "bbox": [
+            36,
+            19,
+            424,
+            39
+          ],
+          "sizePreviewPx": [
+            388,
+            20
+          ],
+          "bboxNormalized": [
+            0.0783,
+            0.019,
+            0.9217,
+            0.039
+          ]
+        },
+        {
+          "name": "app-icon",
+          "bbox": [
+            140,
+            232,
+            317,
+            401
+          ],
+          "sizePreviewPx": [
+            177,
+            169
+          ],
+          "bboxNormalized": [
+            0.3043,
+            0.232,
+            0.6891,
+            0.401
+          ]
+        },
+        {
+          "name": "headline",
+          "bbox": [
+            99,
+            491,
+            361,
+            583
+          ],
+          "sizePreviewPx": [
+            262,
+            92
+          ],
+          "bboxNormalized": [
+            0.2152,
+            0.491,
+            0.7848,
+            0.583
+          ]
+        },
+        {
+          "name": "supporting-copy",
+          "bbox": [
+            65,
+            611,
+            390,
+            674
+          ],
+          "sizePreviewPx": [
+            325,
+            63
+          ],
+          "bboxNormalized": [
+            0.1413,
+            0.611,
+            0.8478,
+            0.674
+          ]
+        },
+        {
+          "name": "default-browser-button",
+          "bbox": [
+            16,
+            773,
+            433,
+            825
+          ],
+          "sizePreviewPx": [
+            417,
+            52
+          ],
+          "bboxNormalized": [
+            0.0348,
+            0.773,
+            0.9413,
+            0.825
+          ]
+        },
+        {
+          "name": "footer-wave",
+          "bbox": [
+            0,
+            890,
+            460,
+            911
+          ],
+          "sizePreviewPx": [
+            460,
+            21
+          ],
+          "bboxNormalized": [
+            0,
+            0.89,
+            1,
+            0.911
+          ]
+        },
+        {
+          "name": "progress-indicator",
+          "bbox": [
+            202,
+            934,
+            242,
+            945
+          ],
+          "sizePreviewPx": [
+            40,
+            11
+          ],
+          "bboxNormalized": [
+            0.4391,
+            0.934,
+            0.5261,
+            0.945
+          ]
+        },
+        {
+          "name": "skip-action",
+          "bbox": [
+            380,
+            931,
+            410,
+            948
+          ],
+          "sizePreviewPx": [
+            30,
+            17
+          ],
+          "bboxNormalized": [
+            0.8261,
+            0.931,
+            0.8913,
+            0.948
+          ]
+        },
+        {
+          "name": "system-gesture-bar",
+          "bbox": [
+            170,
+            986,
+            279,
+            994
+          ],
+          "sizePreviewPx": [
+            109,
+            8
+          ],
+          "bboxNormalized": [
+            0.3696,
+            0.986,
+            0.6065,
+            0.994
+          ]
+        }
+      ],
+      "observations": [
+        "One primary full-width action plus Skip; onboarding CTA differs from the in-app Settings rows.",
+        "Publisher-resized 460px-width capture; all boxes are measured in this image coordinate system."
       ]
     }
   ]
