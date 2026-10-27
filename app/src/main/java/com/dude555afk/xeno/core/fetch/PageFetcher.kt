@@ -5,6 +5,7 @@ import com.dude555afk.xeno.core.model.AnswerSource
 import com.dude555afk.xeno.core.model.ExtractedContent
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -35,21 +36,32 @@ class PageFetcher(
                 sources.take(maxSources).map { source ->
                     async {
                         gate.withPermit {
-                            val webView = createWebView(source.url)
                             try {
-                                val extracted = reader.extract(
-                                    webView = webView,
-                                    url = source.url,
-                                    timeoutMs = 20_000L
-                                )
-                                val usable = if (extracted.isJunk) null else extracted
-                                source.copy(
-                                    fetched = true,
-                                    extracted = usable,
-                                    title = if (source.title.isBlank() && usable != null) usable.title else source.title
-                                )
-                            } finally {
-                                runCatching { webView.destroy() }
+                                val webView = createWebView()
+                                try {
+                                    val extracted = reader.extract(
+                                        webView = webView,
+                                        url = source.url,
+                                        timeoutMs = 20_000L
+                                    )
+                                    val usable = extracted.takeUnless { it.isJunk }
+                                    source.copy(
+                                        fetched = true,
+                                        extracted = usable,
+                                        title = if (source.title.isBlank() && usable != null) usable.title else source.title
+                                    )
+                                } finally {
+                                    runCatching {
+                                        webView.stopLoading()
+                                        webView.destroy()
+                                    }
+                                }
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                // One hostile/broken page must not cancel extraction
+                                // for every other source in the answer.
+                                source.copy(fetched = true, extracted = null)
                             }
                         }
                     }
@@ -57,7 +69,7 @@ class PageFetcher(
             }
         }
 
-    private fun createWebView(url: String): android.webkit.WebView =
+    private fun createWebView(): android.webkit.WebView =
         android.webkit.WebView(context).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -71,7 +83,7 @@ class PageFetcher(
      */
     private fun effectiveConcurrency(): Int {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
-            ?: return 3
+            ?: return 2
         val info = android.app.ActivityManager.MemoryInfo()
         am.getMemoryInfo(info)
 
@@ -79,7 +91,7 @@ class PageFetcher(
             info.lowMemory -> 1
             info.availMem < LOW_MEM_THRESHOLD -> 1
             info.totalMem < 4L * 1024 * 1024 * 1024 -> 2
-            else -> 3
+            else -> 2
         }
     }
 

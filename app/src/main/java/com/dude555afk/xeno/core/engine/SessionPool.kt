@@ -36,10 +36,17 @@ class SessionPool(
      */
     @SuppressLint("SetJavaScriptEnabled")
     fun acquire(key: String, parent: ViewGroup? = null): WebView {
-        touch(key)
-        sessions[key]?.let { return it }
+        sessions[key]?.let { view ->
+            touch(key)
+            attachToParent(key, view, parent)
+            resume(key)
+            return view
+        }
 
-        trimTo(maxLiveSessions - 1)
+        // Make room before allocating a new WebView. Existing active sessions
+        // were touched when selected, so the least-recently-used inactive
+        // session is evicted first.
+        trimTo((maxLiveSessions - 1).coerceAtLeast(0))
 
         val view = WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -49,10 +56,19 @@ class SessionPool(
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.databaseEnabled = true
-            // Popups are routed to the OS instead of a second session, but the
-            // flag has to be true for window.open to reach us at all.
+            settings.allowFileAccess = false
+            settings.allowContentAccess = false
+            settings.allowFileAccessFromFileURLs = false
+            settings.allowUniversalAccessFromFileURLs = false
+            settings.safeBrowsingEnabled = true
+            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            // User-initiated popup windows are captured by WebChromeClient
+            // and opened as regular Xeno tabs.
             settings.setSupportMultipleWindows(true)
-            settings.mediaPlaybackRequiresUserGesture = false
+            // Sign-in, checkout and other user-tapped flows commonly use window.open.
+            // The ChromeClient still rejects popups without a user gesture.
+            settings.javaScriptCanOpenWindowsAutomatically = true
+            settings.mediaPlaybackRequiresUserGesture = true
             settings.loadWithOverviewMode = true
             settings.useWideViewPort = true
             isVerticalScrollBarEnabled = false
@@ -60,12 +76,60 @@ class SessionPool(
             overScrollMode = WebView.OVER_SCROLL_NEVER
         }
         sessions[key] = view
-        lastUsed[key] = System.currentTimeMillis()
-        parent?.addView(view)
+        touch(key)
+        attachToParent(key, view, parent)
         return view
     }
 
+    /**
+     * Only one WebView may be visible in the browser host. Reparenting a
+     * retained session removes the previous view from that host without
+     * destroying its page state.
+     */
+    private fun attachToParent(key: String, view: WebView, parent: ViewGroup?) {
+        if (parent == null) return
+
+        sessions.forEach { (otherKey, otherView) ->
+            if (otherView !== view && otherView.parent === parent) {
+                parent.removeView(otherView)
+                park(otherKey)
+            }
+        }
+
+        (view.parent as? ViewGroup)
+            ?.takeIf { it !== parent }
+            ?.removeView(view)
+
+        if (view.parent !== parent) {
+            (view.parent as? ViewGroup)?.removeView(view)
+            parent.addView(view)
+        }
+    }
+
+    /** Park and detach a session while keeping it available for later reuse. */
+    fun detach(key: String) {
+        park(key)
+        val view = sessions[key] ?: return
+        (view.parent as? ViewGroup)?.removeView(view)
+    }
+
+    fun detachAll() {
+        sessions.keys.toList().forEach(::detach)
+    }
+
     fun peek(key: String): WebView? = sessions[key]
+
+    /**
+     * Remove a WebView whose renderer has exited. Android documents that a
+     * renderer-dead WebView must not be reused, so only detach it and drop all
+     * pool references; do not call stopLoading/loadUrl/destroy on it.
+     */
+    fun discardCrashed(key: String, crashedView: WebView) {
+        if (sessions[key] !== crashedView) return
+        (crashedView.parent as? ViewGroup)?.removeView(crashedView)
+        sessions.remove(key)
+        lastUsed.remove(key)
+    }
 
     fun liveKeys(): Set<String> = sessions.keys.toSet()
 
@@ -81,7 +145,6 @@ class SessionPool(
         sessions[key]?.let { view ->
             runCatching {
                 view.onPause()
-                view.pauseTimers()
             }
         }
     }
@@ -90,7 +153,6 @@ class SessionPool(
     fun resume(key: String) {
         sessions[key]?.let { view ->
             runCatching {
-                view.resumeTimers()
                 view.onResume()
             }
         }
@@ -113,16 +175,21 @@ class SessionPool(
     /**
      * Trim down to [target] live sessions, dropping least-recently-used first.
      *
-     * Never destroys the currently active tab's session — that would be
-     * visible to the user as a blank screen.
+     * Callers should pass the active key in [keep]; this pool does not infer
+     * which session is visible because detached sessions are also valid.
      */
     fun trimTo(target: Int, keep: Set<String> = emptySet()) {
-        if (sessions.size <= target) return
+        val boundedTarget = target.coerceAtLeast(0)
+        if (sessions.size <= boundedTarget) return
 
-        val ordered = lastUsed.entries.sortedBy { it.value }.map { it.key }
+        // Ignore stale LRU keys: the list must reflect real sessions only.
+        val ordered = lastUsed.entries
+            .filter { it.key in sessions }
+            .sortedBy { it.value }
+            .map { it.key }
         var count = sessions.size
         for (key in ordered) {
-            if (count <= target) break
+            if (count <= boundedTarget) break
             if (key in keep) continue
             destroy(key)
             count--
@@ -138,17 +205,17 @@ class SessionPool(
      * cannot see. Parking preserves everything that matters and costs nothing.
      *
      * Only at CRITICAL/COMPLETE — i.e. the LMK is about to kill us anyway — do
-     * we start destroying sessions, and even then we keep one.
+     * we start destroying sessions. The caller protects the visible session.
      */
-    fun onTrimMemory(level: Int) {
+    fun onTrimMemory(level: Int, keep: Set<String> = emptySet()) {
         when {
-            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0)
-            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> trimTo(1)
+            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0, keep)
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> trimTo(1, keep)
             level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
-                sessions.keys.forEach(::park)
-                trimTo(1)
+                sessions.keys.filter { it !in keep }.forEach(::park)
+                trimTo(maxOf(1, keep.size), keep)
             }
-            else -> sessions.keys.forEach(::park)
+            else -> sessions.keys.filter { it !in keep }.forEach(::park)
         }
     }
 
