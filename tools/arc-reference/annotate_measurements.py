@@ -2,7 +2,7 @@
 """Draw the manually measured preview boxes over a locally saved source image.
 
 Use only images you are entitled to use. Source URLs and measurements live in
-reference_measurements.json. Boxes scale from preview coordinates to the local
+reference_measurements.json. Boxes scale from coordinate-space estimates to the local
 image after checking that the image aspect ratio matches.
 """
 
@@ -44,7 +44,7 @@ def main() -> int:
         with Image.open(args.image) as source:
             image = source.convert("RGB")
 
-        preview_w, preview_h = item["previewCanvasPx"]
+        preview_w, preview_h = item["coordinateCanvasPx"]
         image_w, image_h = image.size
         preview_ratio = preview_w / preview_h
         image_ratio = image_w / image_h
