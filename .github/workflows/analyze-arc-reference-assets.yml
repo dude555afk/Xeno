@@ -32,6 +32,7 @@ jobs:
           python tools/arc-reference/fetch_source_pixels.py \
             --manifest tools/arc-reference/reference_measurements.json \
             --out artifacts/arc-reference/source_pixel_analysis.json \
+            --contact-sheet artifacts/arc-reference/annotated-contact-sheet.jpg \
             --delay-ms 150
 
       - name: Upload derived measurements only
@@ -39,6 +40,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: arc-reference-source-pixel-analysis
-          path: artifacts/arc-reference/source_pixel_analysis.json
+          path: |
+            artifacts/arc-reference/source_pixel_analysis.json
+            artifacts/arc-reference/annotated-contact-sheet.jpg
           if-no-files-found: warn
           retention-days: 7
