@@ -233,3 +233,116 @@ Because all three screen states are compressed into one square image, this sourc
 - The current app version's full Settings screens and current dynamic states not shown in public images.
 
 These are explicit gaps, not values to fill with visual guesses. The source-image manifest in `tools/arc-reference/reference_measurements.json` gives the corresponding screenshot identities and coordinate boxes.
+
+
+## I. High-resolution Google Play assets: coordinate pass
+
+The seven unique promotional files were opened at approximately **506 × 900 rendered-preview coordinates** through the AppRecs image endpoint. The Play Store's own listing repeats these same seven files multiple times in the image gallery; repeated instances were not counted as new references. The image list below has asset-by-asset boxes in the JSON manifest and represents the actual displayed content, not inferred native device resolution.
+
+### PLAY-01 — Home/search suggestions
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-0
+
+- Promotional in-app viewport: [61, 182, 445, 698], approx. 384 × 516 preview pixels.
+- Search field: [81, 418, 425, 471], approx. 344 × 53.
+- Suggestion row boxes: y=486–523, 540–577, 593–631, 647–685; ~53–54 px between row starts.
+- Layout: the query field sits above a list of suggestions. Each visible suggestion places search icon/text on the left and an independent Browse for Me action on the right.
+- Confidence: low-to-medium because the screenshot is embedded in a marketing frame and the bottom portion is faded/cropped.
+
+### PLAY-02 — Browse for Me answer
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-1
+
+- In-app viewport estimate: [61, 209, 445, 900].
+- Query field: [82, 270, 425, 323], approx. 343 × 53.
+- Image carousel: [82, 347, 427, 564], approx. 345 × 217. Third card is clipped at x=427.
+- Answer heading: [82, 588, 428, 648], approx. 346 × 60.
+- Body visible region: [87, 676, 425, 900].
+- The 24 px gap between query-field lower bound (323) and image-carousel start (347) is consistent with the 24 px query-to-carousel gap seen in AA-BFM-01 after allowing for different scaling.
+- Confidence: medium-low due to composite crop.
+
+### PLAY-03 — Site Settings
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-2
+
+- Visible screen: [61, 210, 445, 900].
+- Bottom sheet: [61, 518, 445, 900], starting around 57.6% of the promo-canvas height.
+- Heading: [88, 555, 342, 587].
+- Host label: [88, 625, 290, 647].
+- Block-ads row: [89, 665, 425, 709].
+- Cookie-banner row: [89, 728, 426, 765].
+- Tracker row: [89, 789, 426, 829].
+- Next section label: [88, 859, 190, 881].
+- The three blocker rows have approximate vertical centers 687, 746.5 and 809 px. The first-to-second center distance is ~59.5 px and second-to-third is ~62.5 px in this promotional image. **These are not live dp row heights.**
+- The sheet is truncated by the lower image boundary. Its actual expanded height, drag threshold and close motion cannot be measured from this still.
+
+### PLAY-04 — Tab switcher / archive promotion
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-fy246zdBHFfuqJJPfRpbPo-screenshot-3
+
+- Visible in-app area: [61, 207, 445, 900].
+- Left neighbor page: [61, 365, 111, 879], approx. 50 × 514 visible.
+- Active foreground card: [123, 367, 383, 879], approx. 260 × 512.
+- Right neighbor: [386, 365, 444, 879], approx. 58 × 514.
+- Foreground card appears around 67.7% of the promotional in-app viewport width. Adjacent cards are only narrow visible slivers because of overlap/clipping.
+- Conclusion: a horizontally navigable, depth-layered card composition, not a uniform grid. Exact transform, z-order depth and fling physics still require a video or live app.
+
+### PLAY-05 — Voice-search promo
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-4
+
+- Prompt cards: [22, 266, 326, 333], [176, 356, 480, 421], [22, 476, 350, 540].
+- Listening/wave panel: [61, 530, 445, 900].
+- Face mark: [227, 656, 289, 722].
+- Greeting: [179, 759, 330, 783].
+- Microphone: [248, 869, 262, 890].
+- The cards appear at different horizontal offsets and partially extend beyond the in-app viewport. The lower half is dominated by nested curved layers.
+- A static promo cannot reveal speech partial-result timing, scale interpolation, easing or haptic synchronization; treat motion as unmeasured.
+
+### PLAY-06 — Android launcher widget (not an in-app screen)
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-y246zdBHFfuqJJPfRpbPo-screenshot-5
+
+- Phone/launcher area: [61, 209, 445, 900].
+- Widget promo treatment: [30, 579, 480, 645] extends past phone width, confirming it is a composited marketing overlay.
+- Arc launcher icon: [91, 604, 189, 715].
+- Icon row below: [88, 729, 431, 812].
+- Excluded from browser UI design-token measurements because Android launcher UI and marketing treatment are included.
+
+### PLAY-07 — Default-browser onboarding
+
+Source: https://apprecs.org/gp/img/screenshots/webp/900/company.thebrowser.arc/qUGA9A0DeUFksLL68HEtF-fy246zdBHFfuqJJPfRpbPo-screenshot-6
+
+- Visible in-app viewport: [61, 209, 445, 900].
+- App icon: [165, 400, 343, 580].
+- Headline: [119, 609, 387, 698].
+- Supporting copy: [121, 733, 383, 783].
+- CTA may be outside the visible promo crop; its absence from this image is not proof that the real onboarding lacks it.
+
+### Comparison with full-screen Android Authority captures
+
+The full-screen AA-BFM-01 query field is 391/428 = 91.4% of canvas width. PLAY-02's query field is 343/506 = 67.8% of the full promotional canvas, but 343/384 = 89.3% of the estimated **inner in-app viewport** width. This demonstrates why bounds must be measured against the in-app viewport rather than the outer promotional canvas. The two estimates agree within ~2.1 percentage points despite different sources and image scaling.
+
+## J. Other-platform screen audit: do not mix iOS into Android measurements
+
+Five modern screenshots found through the Lazyweb gallery were inspected. All use iPhone/iOS-style status indicators, system keyboard and/or ArcMobile2 bundle context, so they are recorded in the manifest as excluded sources rather than Android targets:
+
+- Settings (Auto-Open Keyboard, Archive Inactive Tabs set to one day, Open App Links in, Clear Browsing Data, Sync with Arc Desktop): https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000577941_00_company.thebrowser.ArcMobile2-20260817T202647Z-autocap-16-1786999039.png
+- Sync onboarding: https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/auto/compare/2026-08-17/1787000475414_00_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png
+- Incognito search with iOS keyboard: https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000123088_05_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-incognito-1786999273.png
+- Archive empty state: https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000122665_04_company.thebrowser.ArcMobile2-20260817T202647Z-cap-archive-1786999203.png
+- Duplicate sync capture: https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/object/public/screenshots/uploaded_arc_search/tabs/compare/2026-08-17/1787000121877_03_company.thebrowser.ArcMobile2-20260817T202647Z-cap-tab-sync-1786999157.png
+
+The gallery reports more entries, but only these initial five were visible for inspection without login in this pass. Do not claim that all 84 gallery entries were inspected.
+
+## K. Revised evidence accounting
+
+The current manifest contains **30 asset records and 123 measured region boxes**:
+- 4 full-screen Android UI screenshots (3 Browse for Me states + one live web-page state).
+- 6 full-screen Android onboarding screenshots (historical 2024 flow).
+- 7 official-store marketing composites (unique assets; duplicates not counted as unique evidence).
+- 7 designer portfolio composites.
+- 1 three-state compressed composite.
+- 5 iOS-only captures explicitly excluded from Android geometry.
+
+These are manual preview-coordinate estimates, with relative boxes and sizes; they are not raw source-native pixel measurements. Exact RGB sampling, true source resolutions, Android dp conversion, corner-radius radii and animation timings are not claimed in this pass.
