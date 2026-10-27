@@ -60,6 +60,8 @@ import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.model.toEntity
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.BookmarkStore
+import com.dude555afk.xeno.core.storage.CollectedPage
+import com.dude555afk.xeno.core.storage.PageCollectionStore
 import com.dude555afk.xeno.core.storage.HistoryEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
 import com.dude555afk.xeno.core.storage.SitePermissionStore
@@ -130,6 +132,9 @@ data class BrowserUiState(
     val historyEntries: List<HistoryEntity> = emptyList(),
     val bookmarks: List<Bookmark> = emptyList(),
     val downloads: List<BrowserDownload> = emptyList(),
+    val archiveEntries: List<CollectedPage> = emptyList(),
+    val pinnedPages: List<CollectedPage> = emptyList(),
+    val archiveRetentionHours: Int = 24,
     val summaryConsentVisible: Boolean = false,
     val summaryConsentUrl: String = "",
     val summaryConsentTitle: String = "",
@@ -165,6 +170,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val db = XenoDatabase.get(app)
     private val settings = SettingsStore(app)
     private val bookmarkStore = BookmarkStore(app)
+    private val pageCollectionStore = PageCollectionStore(app)
     private val sitePermissionStore = SitePermissionStore(app, isPrivateMode)
 
     /**
@@ -191,6 +197,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             blockingEnabled = settings.blockingEnabled,
             autoOpenKeyboard = settings.autoOpenKeyboard,
             searchEngineId = settings.searchEngineId,
+            archiveRetentionHours = settings.archiveRetentionHours,
+            archiveEntries = if (isPrivateMode) emptyList() else pageCollectionStore.archivedPages(),
+            pinnedPages = if (isPrivateMode) emptyList() else pageCollectionStore.pinnedPages(),
             thirdPartyCookiesEnabled = if (isPrivateMode) false else settings.thirdPartyCookiesEnabled,
             fingerprintingProtectionEnabled = settings.fingerprintingProtectionEnabled,
             hasApiKey = settings.hasApiKey,
@@ -303,6 +312,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         ?.takeIf { it.spaceId == spaceId }
                         ?.let(::syncSessionToTab)
                     refreshBackState()
+                    archiveInactiveTabs(
+                        spaceId,
+                        _state.value.activeTab?.takeIf { it.spaceId == spaceId }?.id
+                    )
                 }
         }
     }
@@ -396,6 +409,85 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closePanel() { _state.update { it.copy(panel = null) } }
+
+    fun pinCurrentPage() {
+        if (isPrivateMode) return
+        val snapshot = _state.value
+        val url = snapshot.load.url.ifBlank { snapshot.activeTab?.url.orEmpty() }
+        if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        val title = snapshot.load.title.ifBlank { snapshot.activeTab?.displayTitle.orEmpty() }
+        pageCollectionStore.pin(url, title)
+        _state.update { it.copy(pinnedPages = pageCollectionStore.pinnedPages(), panel = null) }
+    }
+
+    fun unpinPage(page: CollectedPage) {
+        if (isPrivateMode) return
+        pageCollectionStore.unpin(page.url)
+        _state.update { it.copy(pinnedPages = pageCollectionStore.pinnedPages()) }
+    }
+
+    fun openPinnedPage(page: CollectedPage) {
+        closePanel()
+        navigate(page.url)
+    }
+
+    fun archiveCurrentTab() {
+        if (isPrivateMode) return
+        val tab = _state.value.activeTab?.takeIf {
+            it.url.startsWith("https://") || it.url.startsWith("http://")
+        } ?: return
+        val title = _state.value.load.title.ifBlank { tab.displayTitle }
+        pageCollectionStore.archive(tab.url, title)
+        _state.update { it.copy(archiveEntries = pageCollectionStore.archivedPages(), panel = null) }
+        closeTab(tab)
+    }
+
+    fun openArchivedPage(page: CollectedPage) {
+        if (!isPrivateMode) {
+            pageCollectionStore.removeArchived(page.url)
+            _state.update { it.copy(archiveEntries = pageCollectionStore.archivedPages()) }
+        }
+        closePanel()
+        navigate(page.url)
+    }
+
+    fun removeArchivedPage(page: CollectedPage) {
+        if (isPrivateMode) return
+        pageCollectionStore.removeArchived(page.url)
+        _state.update { it.copy(archiveEntries = pageCollectionStore.archivedPages()) }
+    }
+
+    fun setArchiveRetentionHours(hours: Int) {
+        if (isPrivateMode) return
+        settings.archiveRetentionHours = hours
+        _state.update { it.copy(archiveRetentionHours = settings.archiveRetentionHours) }
+        _state.value.activeSpace?.id?.let { spaceId ->
+            archiveInactiveTabs(spaceId, _state.value.activeTab?.id)
+        }
+    }
+
+    private fun archiveInactiveTabs(spaceId: Long, activeTabId: Long?) {
+        if (isPrivateMode) return
+        val retentionMillis = settings.archiveRetentionHours * 60L * 60L * 1000L
+        viewModelScope.launch {
+            val cutoff = System.currentTimeMillis() - retentionMillis
+            val stale = db.tabDao().all().filter { tab ->
+                tab.spaceId == spaceId &&
+                    tab.id != activeTabId &&
+                    tab.url.isNotBlank() &&
+                    tab.url != "about:blank" &&
+                    tab.lastActiveAt <= cutoff
+            }
+            if (stale.isEmpty()) return@launch
+            stale.forEach { tab ->
+                pageCollectionStore.archive(tab.url, tab.title)
+                db.tabDao().deleteById(tab.id)
+                desktopSiteTabIds.remove(tab.id)
+                pool.destroy("tab-${tab.id}")
+            }
+            _state.update { it.copy(archiveEntries = pageCollectionStore.archivedPages()) }
+        }
+    }
 
     fun setTranslationLanguage(language: String) {
         _state.update { it.copy(translationLanguage = language) }
