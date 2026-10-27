@@ -223,3 +223,25 @@ A build is “visual-pass” only when the reference state, Xeno state, comparis
 - Mobile feature video/transcript mirror (platform verification needed): https://glasp.co/youtube/p/we-added-your-top-requests-to-our-new-mobile-browser-arc-search
 - Mobile recorded demo (platform verification needed): https://3degreesnorth.com.au/videos/arc-search-mobile-app-demo-and-review/
 - Arc lifecycle notice: https://arc.net/
+
+
+## 10. Original designer asset index and visual observations
+
+These are original portfolio assets linked by the Android designer's case study. They are much stronger references than unrelated Arc iOS screenshots, but still include device mockups, cropping, compositing and promotional backgrounds. Use them to catalogue states and hierarchy; do not derive final dp values directly from the composite.
+
+- **Hero UI / tab carousel:** https://nataliealmosa.ca/_next/image?q=95&url=%2Fimages%2Farc%2Farc-hero-mockup.png&w=3840
+- **Browse for Me result and image cards:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-1.webp&w=3840
+- **Onboarding and app icon choices:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-10.webp&w=3840
+- **Text-first answer and image/list answer comparison:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-13.webp&w=3840
+- **Active tab card and neighboring tabs:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-15.webp&w=3840
+- **Browse for Me image carousel / loading skeleton:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-17.webp&w=3840
+- **Home, Browse for Me and site settings promo sequence:** https://nataliealmosa.ca/_next/image?q=75&url=%2Fimages%2Farc%2Farc-content-image-21.webp&w=3840
+
+### Direct observations to carry into live capture
+
+- The home screen reference is not just a centered logo: the visible UI includes a soft purple/pink atmosphere, a low/mid-screen search field and suggestion rows with separate Browse for Me affordances. Exact placement varies with keyboard and viewport state and must be captured live.
+- Browse for Me is not a plain text-only chat sheet. References show a search/query header, horizontally clipped image cards, strong section titles, content blocks and source cards. Different intents use different answer shapes, including image/list-style results and text-first answers.
+- The tab switcher is a layered preview/card surface with neighboring tabs partially visible, not a generic grid of equally sized tab thumbnails.
+- Site Settings exposes distinct controls for blocking ads, cookie banners and trackers. The panel's exact sizing, icon design, background, row height and toggle colors still need raw capture.
+- Onboarding and the in-app home background should not be conflated with the decorative gradients around marketing mockups. Sample colors only from the app pixels, not the surrounding promo art.
+- No exact coordinates or HEX values have been measured from these assets. The pixel-measurement section remains blocked on raw captures from the app or uncomposited screen recordings.
