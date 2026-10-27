@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.ui.cmdbar
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -103,6 +104,11 @@ fun CommandPalette(
             // still focuses it and opens the IME normally.
             keyboard?.hide()
         }
+    }
+
+    BackHandler(enabled = visible) {
+        keyboard?.hide()
+        onDismiss()
     }
 
     AnimatedVisibility(
