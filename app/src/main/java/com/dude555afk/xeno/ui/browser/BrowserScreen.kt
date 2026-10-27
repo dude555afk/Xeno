@@ -399,6 +399,13 @@ fun BrowserScreen(
             onOpenPanel = viewModel::openPanel,
             onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
             onSearchEngineChange = viewModel::setSearchEngine,
+            onOpenDefaultAppsSettings = {
+                runCatching {
+                    context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                }.onFailure {
+                    Toast.makeText(context, "Open Android Settings to choose the default browser.", Toast.LENGTH_SHORT).show()
+                }
+            },
             onOpenReader = viewModel::openReaderMode,
             onOpenFind = viewModel::openFindInPage,
             onCopyCurrentUrl = viewModel::copyCurrentUrl,
