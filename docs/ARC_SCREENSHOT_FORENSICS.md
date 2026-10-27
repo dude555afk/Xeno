@@ -436,3 +436,93 @@ https://www.clubic.com/actualite-539771-arc-search-le-navigateur-qui-veut-reinve
 This separates two explicit intents that Xeno must not accidentally merge:
 - **Search submit:** navigate to the configured search engine.
 - **Browse for Me action:** invoke multi-source retrieval and render the structured answer.
+
+
+## O. Six individually opened Android beta onboarding captures (9to5Google)
+
+Source set: https://9to5google.com/2024/10/04/arc-search-for-android-is-now-available-in-beta/  
+Each image is served at `w=460`, so the measurement coordinate system used here is a **460 × 1000 publisher-resized image canvas**. They are full-screen Android screenshots with no phone perspective; unlike product-marketing composites, the tutorial elements occupy the screen directly. They are still resized images, not raw device framebuffer pixels.
+
+### 9TO5-ONB-01 — intro
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-1.png?w=460
+
+- Mark: [190, 180, 266, 245], approx. 76 × 65 px.
+- Headline: [94, 425, 360, 535], approx. 266 × 110 px, three lines centered.
+- “Let's go” action: [347, 926, 411, 951], small right-aligned bottom action.
+- System gesture bar: [170, 986, 279, 994].
+- Large empty gap between the brand mark and headline is intentional in this onboarding state; do not treat it as the live new-tab layout.
+
+### 9TO5-ONB-02 — feature explainer stack
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-2.png?w=460
+
+- Headline: [116, 195, 345, 258].
+- Four-row feature panel: [20, 365, 430, 701], approx. 410 × 336 px.
+- Row boxes: [20,365,430,448], [20,450,430,531], [20,533,430,615], [20,617,430,701].
+- The rows are approximately 82 px tall in this resized image with thin inter-row seams. Each row aligns an icon, bold label and lower-contrast description.
+- The wavy footer begins near y=890, followed by progress dots and a bright “Next” control at [355,912,435,959].
+- Engineering implication: build a row component with a fixed height/insets and consistent icon/text columns; do not lay each row out independently.
+
+### 9TO5-ONB-03 — query suggestions and Browse for Me
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-3.png?w=460
+
+- Main headline: [83, 195, 377, 259].
+- Instruction label “Try it out!”: [171, 473, 286, 495].
+- Example search panel: [34,574,417,893], approx. 383 × 319 px.
+- Search field: [45,592,405,650], 360 × 58 px.
+- Browse for Me example action: [269,668,408,725], 139 × 57 px.
+- Three visible row areas: [52,732,404,782], [52,786,404,837], [52,840,404,891].
+- The annotation arrow connects the tutorial text to the specific Browse for Me chip. That design demonstrates separate intent/actions: selecting a suggestion and invoking Browse for Me should not be implemented as one undifferentiated row tap.
+
+### 9TO5-ONB-04 — Browse for Me answer and skeleton state
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-4.png?w=460
+
+- Answer panel: [33,345,417,894].
+- Query field: [51,361,403,420], 352 × 59 px.
+- Portrait cards: first [52,441,185,638], second [197,441,330,638], third visible crop [341,441,414,638].
+- The first two cards are roughly 133 × 197 px; the third is clipped at the right edge.
+- Answer heading: [52,665,410,721]; body region: [53,748,411,892].
+- Vertical intervals from query field to cards, cards to heading, and heading to body are consistent and content-bearing space is reserved before loading completes.
+- Implementation implication: skeleton and final-answer layouts must share the same geometry to prevent a jump when images/text resolve. A central spinner is not equivalent.
+
+### 9TO5-ONB-05 — ad-block explanation
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-5.png?w=460
+
+- Headline: [81,176,385,243].
+- Website card: [66,309,393,889].
+- Floating blocker card: [16,706,432,790], approximately 416 × 84 px.
+- The blocker card is overlaid above website content with a purple switch and white thumb in this light tutorial state.
+- It is an explainer overlay, not the actual site-controls sheet. Reusing its bounds as the site-controls panel would be a category error.
+
+### 9TO5-ONB-06 — default-browser onboarding
+
+Source: https://9to5google.com/wp-content/uploads/sites/4/2024/10/Arc-Search-for-Android-beta-6.png?w=460
+
+- App icon: [140,232,317,401].
+- Headline: [99,491,361,583].
+- Supporting copy: [65,611,390,674].
+- Main full-width button: [16,773,433,825].
+- Footer wave starts near y=890; progress dots are around [202,934,242,945]; Skip is [380,931,410,948].
+- Onboarding has one dominant CTA and a secondary Skip action. This differs structurally from global App Settings, which is a scrollable list.
+
+### Cross-check against the other onboarding set
+
+The same six tutorial topics also appear as smaller rendered captures from Android Authority, which is a useful cross-source check. The 9to5Google images make the search panel, skeleton cards, feature row stack and bottom action area easier to estimate. Because both sets are publisher-resized, their coordinates do not prove native density. Treat their close alignment as corroboration for layout ratios, not an exact dp source.
+
+## P. Revised evidence count
+
+The current JSON manifest now contains **37 source-asset records and 208 named region boxes**:
+- 4 standalone full-screen Android interface captures (Browse for Me and a real webpage).
+- 6 Android Authority onboarding captures.
+- 6 9to5Google Android beta onboarding captures.
+- 7 official Play Store marketing composites.
+- 7 designer portfolio composites.
+- 1 four-panel horizontal Android UI montage.
+- 1 three-panel compressed UI montage.
+- 5 iOS-only screenshots explicitly excluded from Android geometry.
+
+The manifest boxes were checked for bounds and internal width/height/normalized-coordinate consistency. Coordinates remain manually read from displayed image canvases, with uncertainty; they are not exact raw-image RGB or dp measurements.
