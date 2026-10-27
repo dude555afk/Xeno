@@ -84,8 +84,11 @@ fun AnswerSheet(
     // Keep the newest text in view as it streams. Keyed on length rather than
     // content so a token arriving mid-animation does not cancel the scroll.
     LaunchedEffect(markdown.length) {
-        val count = sources.size + parsed.blocks.size + 1
-        if (count > 0) runCatching { listState.animateScrollToItem(count - 1) }
+        val answerItemCount = 1 + parsed.blocks.size +
+            if (streaming && markdown.isEmpty()) 1 else 0
+        if (answerItemCount > 0) {
+            runCatching { listState.animateScrollToItem(answerItemCount - 1) }
+        }
     }
 
     AnimatedVisibility(
