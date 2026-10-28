@@ -72,7 +72,7 @@ val hasSigningMaterial: Boolean =
 
 android {
     namespace = "com.dude555afk.xeno"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.dude555afk.xeno"

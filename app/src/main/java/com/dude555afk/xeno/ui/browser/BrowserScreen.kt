@@ -158,7 +158,7 @@ fun BrowserScreen(
     Box(Modifier.fillMaxSize().background(Color.Black)) {
 
         // The page. The factory returns a container so the session pool can do
-        // the actual WebView ownership — reusing a view across recompositions
+        // the actual GeckoView session ownership — reusing a view across recompositions
         // is the whole point.
         AndroidView(
             modifier = Modifier.fillMaxSize(),

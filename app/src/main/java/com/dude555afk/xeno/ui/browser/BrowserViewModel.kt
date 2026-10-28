@@ -209,7 +209,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var modelsJob: Job? = null
     private val desktopSiteTabIds = mutableSetOf<Long>()
 
-    /** A lightweight WebView is retained per recently used tab (pool cap: two). */
+    /** A GeckoView session is retained per recently used tab (pool cap: two). */
     private var activeSessionKey: String? = null
     private var webHost: ViewGroup? = null
 
@@ -1052,7 +1052,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Capture a small real WebView snapshot before the current page is detached.
+     * Capture a small GeckoView snapshot before the current page is detached.
      * These thumbnails are memory-only and capped, so they never create a trail
      * of saved browsing screenshots on disk.
      */
@@ -1418,7 +1418,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: WebView plumbing
 
     /**
-     * Bind the WebView host. Called once from the composable.
+     * Bind the browser host. Called once from the composable.
      *
      * The session lives under a stable key so re-composition reuses the same
      * view instead of allocating a fresh ~200 MB engine.
@@ -1438,9 +1438,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (tab.id > 0L) "tab-${tab.id}" else SESSION_KEY
 
     /**
-     * Activate the selected tab's retained WebView. The pool keeps at most two
-     * sessions; older tabs are cheaply restored from their persisted URL when
-     * selected again instead of allocating a WebView for every tab.
+     * Activate the selected tab's retained Gecko session. The pool keeps at most
+     * two sessions; older tabs are restored from their persisted URL when selected.
      */
     private fun syncSessionToTab(tab: Tab) {
         val key = sessionKey(tab)
@@ -1806,9 +1805,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Called only when the isolated private activity is finishing. Its WebView
-     * profile, cookies, storage, HTTP auth, transient tabs and separate database
-     * are cleared without touching the normal browser profile/database.
+     * Called only when the isolated private activity is finishing. Gecko's private
+     * profile, transient tabs and separate database are cleared without touching
+     * the normal browser profile/database.
      */
     fun clearPrivateSessionData() {
         if (!isPrivateMode) return

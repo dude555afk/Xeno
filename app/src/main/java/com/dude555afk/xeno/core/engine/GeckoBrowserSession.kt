@@ -41,6 +41,9 @@ class GeckoBrowserSession(
             .build()
     )
 
+    val width: Int get() = view.width
+    val height: Int get() = view.height
+
     var url: String = ""
         private set
     var title: String = ""
@@ -92,7 +95,7 @@ class GeckoBrowserSession(
                 session: GeckoSession,
                 url: String?,
                 perms: List<GeckoSession.PermissionDelegate.ContentPermission>,
-                hasUserGesture: Boolean
+                hasUserGesture: Boolean?
             ) {
                 this@GeckoBrowserSession.url = url.orEmpty()
             }
