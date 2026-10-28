@@ -152,7 +152,10 @@ class GeckoBrowserSession(
                 session: GeckoSession,
                 response: WebResponse
             ) {
-                listener?.onDownloadRequested(response.uri, response.contentType)
+                val contentType = response.headers.entries
+                    .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
+                    ?.value
+                listener?.onDownloadRequested(response.uri, contentType)
             }
         })
 
