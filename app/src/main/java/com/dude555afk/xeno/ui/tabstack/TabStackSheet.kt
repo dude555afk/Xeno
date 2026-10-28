@@ -2,6 +2,7 @@ package com.dude555afk.xeno.ui.tabstack
 
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
@@ -24,7 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Tab
 
@@ -161,6 +163,9 @@ fun TabStackSheet(
                         val listState = rememberLazyListState()
                         // Keep the focused card centered, including the first and last tabs.
                         val cardSidePadding = ((maxWidth - 260.dp) / 2).coerceAtLeast(30.dp)
+                        // Reference card bounds are about 260:512; preserve that ratio
+                        // while shrinking to 88% of the available height on compact screens.
+                        val cardHeight = minOf(260.dp / 0.508f, maxHeight * 0.88f)
                         LaunchedEffect(activeTabId, tabs.map { it.id }) {
                             val selectedIndex = tabs.indexOfFirst { it.id == activeTabId }
                             if (selectedIndex >= 0) {
@@ -179,6 +184,7 @@ fun TabStackSheet(
                                     tab = tab,
                                     preview = previews[tab.id],
                                     active = tab.id == activeTabId,
+                                    cardHeight = cardHeight,
                                     onSelect = { onSelect(tab) },
                                     onClose = { onClose(tab) }
                                 )
@@ -238,6 +244,7 @@ private fun TabCard(
     tab: Tab,
     preview: Bitmap?,
     active: Boolean,
+    cardHeight: Dp,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -246,6 +253,11 @@ private fun TabCard(
         animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium),
         label = "tabScale"
     )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (active) 14.dp else 2.dp,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium),
+        label = "tabDepth"
+    )
     val host = runCatching {
         android.net.Uri.parse(tab.url).host?.removePrefix("www.").orEmpty()
     }.getOrDefault("")
@@ -253,6 +265,7 @@ private fun TabCard(
     Surface(
         shape = RoundedCornerShape(26.dp),
         color = Color(0xFF25232D),
+        shadowElevation = shadowElevation,
         border = BorderStroke(
             if (active) 1.5.dp else 1.dp,
             if (active) Color(0xFF8B7AFF) else Color(0xFF3D3948)
@@ -260,7 +273,7 @@ private fun TabCard(
         onClick = onSelect,
         modifier = Modifier
             .width(260.dp)
-            .fillMaxHeight()
+            .height(cardHeight)
             .scale(scale)
     ) {
         Column(Modifier.fillMaxSize()) {
