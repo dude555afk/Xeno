@@ -86,20 +86,40 @@ jobs:
           echo ""
           echo "=== ci-logs push (best-effort, console has same content) ==="
 
-      - name: Stage APK for upload
+      - name: Stage ARM64 debug APK
         if: success()
         run: |
           set -eu
           mkdir -p artifacts
-          cp -v app/build/outputs/apk/debug/*.apk artifacts/
-          ls -la artifacts/
+          APK="app/build/outputs/apk/debug/app-arm64-v8a-debug.apk"
+          test -f "$APK"
+          cp -v "$APK" artifacts/xeno-arm64-v8a-debug.apk
+          du -h artifacts/*.apk
 
-      - name: Upload debug APK
+      - name: Upload ARM64 debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: xeno-debug
-          path: artifacts/*.apk
+          name: xeno-debug-arm64-v8a
+          path: artifacts/xeno-arm64-v8a-debug.apk
+          if-no-files-found: error
+
+      - name: Stage alternative ABI debug APKs
+        if: success()
+        run: |
+          set -eu
+          mkdir -p artifacts-other-abis
+          find app/build/outputs/apk/debug -maxdepth 1 -type f -name 'app-*-debug.apk' \
+            ! -name 'app-arm64-v8a-debug.apk' -exec cp -v {} artifacts-other-abis/ \;
+          test -n "$(find artifacts-other-abis -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          du -h artifacts-other-abis/*.apk
+
+      - name: Upload alternative ABI debug APKs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeno-debug-other-abis
+          path: artifacts-other-abis/*.apk
           if-no-files-found: error
 
       - name: Publish build log (best-effort)
@@ -161,13 +181,25 @@ jobs:
           set -o pipefail
           gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release.log
 
-      - name: Stage release APK
+      - name: Stage ARM64 release APK
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           set -eu
           mkdir -p artifacts-release
-          cp -v app/build/outputs/apk/release/*.apk artifacts-release/
-          ls -la artifacts-release/
+          APK="app/build/outputs/apk/release/app-arm64-v8a-release.apk"
+          test -f "$APK"
+          cp -v "$APK" artifacts-release/xeno-arm64-v8a-release.apk
+          du -h artifacts-release/*.apk
+
+      - name: Stage alternative ABI release APKs
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          mkdir -p artifacts-release-other-abis
+          find app/build/outputs/apk/release -maxdepth 1 -type f -name 'app-*-release.apk' \
+            ! -name 'app-arm64-v8a-release.apk' -exec cp -v {} artifacts-release-other-abis/ \;
+          test -n "$(find artifacts-release-other-abis -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          du -h artifacts-release-other-abis/*.apk
 
       - name: Verify release APK signature
         if: startsWith(github.ref, 'refs/tags/v')
@@ -188,6 +220,14 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: xeno-release
+          name: xeno-release-arm64-v8a
           path: artifacts-release/*.apk
+          if-no-files-found: error
+
+      - name: Upload alternative ABI release APKs
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeno-release-other-abis
+          path: artifacts-release-other-abis/*.apk
           if-no-files-found: error
