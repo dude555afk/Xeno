@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Computer
@@ -676,29 +677,25 @@ fun BrowserToolsSheet(
                                     }
                                 }
                             }
-                            Text(
-                                "BROWSER",
-                                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
-                            )
-                            MenuAction("Default browser", "Choose Xeno in Android system settings", Icons.Rounded.Settings, onOpenDefaultAppsSettings)
-                            MenuAction("Privacy and blockers", "Ads, trackers, cookies and site permissions", Icons.Rounded.Shield) { onOpenPanel(BrowserPanel.PRIVACY) }
-                            MenuAction("Downloads", "${downloads.size} saved files", Icons.Rounded.Download) {
+                            ArcSettingsSectionLabel("GLOBAL")
+                            ArcSettingsRow("Global Site Settings", "Ads, trackers, cookies and site permissions") { onOpenPanel(BrowserPanel.PRIVACY) }
+                            ArcSettingsRow("Set as Default Browser", "Choose Xeno in Android system settings") { onOpenDefaultAppsSettings() }
+
+                            ArcSettingsSectionLabel("YOUR DATA")
+                            ArcSettingsRow("Archive", "${archiveEntries.size} archived pages") { onOpenPanel(BrowserPanel.ARCHIVE) }
+                            ArcSettingsRow("Archive inactive tabs", "After ${formatArchiveRetention(archiveRetentionHours)}") { onOpenPanel(BrowserPanel.ARCHIVE) }
+                            ArcSettingsRow("Downloads", "${downloads.size} saved files") {
                                 onOpenPanel(BrowserPanel.DOWNLOADS)
                                 onRefreshDownloads()
                             }
-                            MenuAction("History", "${history.size} recently visited pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.HISTORY) }
-                            MenuAction("Archive", "${archiveEntries.size} archived pages", Icons.Rounded.History) { onOpenPanel(BrowserPanel.ARCHIVE) }
+                            ArcSettingsRow("History", "${history.size} recently visited pages") { onOpenPanel(BrowserPanel.HISTORY) }
                             if (!isPrivateMode) {
-                                MenuAction("Bookmarks", "${bookmarks.size} saved pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.BOOKMARKS) }
-                                MenuAction("Pinned pages", "${pinnedPages.size} pinned pages", Icons.Rounded.Bookmarks) { onOpenPanel(BrowserPanel.PINNED) }
+                                ArcSettingsRow("Bookmarks", "${bookmarks.size} saved pages") { onOpenPanel(BrowserPanel.BOOKMARKS) }
+                                ArcSettingsRow("Pinned pages", "${pinnedPages.size} pinned pages") { onOpenPanel(BrowserPanel.PINNED) }
                             }
-                            MenuAction("Spaces", "${spaces.size} browsing spaces", Icons.Rounded.Workspaces) { onOpenPanel(BrowserPanel.SPACES) }
-                            MenuAction("AI and Browse for Me", "${provider.displayName} · ${provider.model}", Icons.Rounded.AutoAwesome) { onOpenPanel(BrowserPanel.AI) }
-                            MenuAction("Clear browsing data", "Clear history, cookies and cache on this device", Icons.Rounded.DeleteOutline, onClearBrowsingData)
+                            ArcSettingsRow("Spaces", "${spaces.size} browsing spaces") { onOpenPanel(BrowserPanel.SPACES) }
+                            ArcSettingsRow("AI and Browse for Me", "${provider.displayName} · ${provider.model}") { onOpenPanel(BrowserPanel.AI) }
+                            ArcSettingsRow("Clear Browsing Data", "Clear history, cookies and cache on this device") { onClearBrowsingData() }
                         }
                         BrowserPanel.AI -> {
                             var selectedProviderId by remember(provider.id, panel) { mutableStateOf(provider.id) }
@@ -1024,6 +1021,63 @@ private fun EmptyState(message: String) {
     }
 }
 
+@Composable
+private fun ArcSettingsSectionLabel(label: String) {
+    Text(
+        text = label,
+        color = TextSecondary,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.2.sp,
+        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 1.dp)
+    )
+}
+
+@Composable
+private fun ArcSettingsRow(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f).padding(end = 10.dp)) {
+                Text(title, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    subtitle,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = TextSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        HorizontalDivider(color = StrokeSubtle.copy(alpha = 0.55f), thickness = 0.6.dp)
+    }
+}
+
+private fun formatArchiveRetention(hours: Int): String = when (hours) {
+    12 -> "12 hours"
+    24 -> "1 day"
+    72 -> "3 days"
+    168 -> "7 days"
+    720 -> "30 days"
+    else -> "$hours hours"
+}
 private fun formatBytes(bytes: Long): String = when {
     bytes < 1024L -> "${bytes.coerceAtLeast(0)} B"
     bytes < 1024L * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
