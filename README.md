@@ -2,7 +2,7 @@
 
 **A lightweight, AI-powered browser for Android.**
 
-Arc-grade feel — spaces, peek bubbles, a command palette that doubles as an answer engine — at a fraction of the footprint. No Gecko, no Electron. Just the system WebView and a lot of taste.
+An Android-first browser with an Arc-inspired interface, an answer-oriented address bar, and a deliberately privacy-restricted embedded engine. This migration branch uses GeckoView for full browser-engine control; it does not ship Firefox's browser UI, account system, Sync, or Mozilla app shell.
 
 ---
 
@@ -29,7 +29,7 @@ xeno:  ┌───────────────────────�
 
 | Feature | Status |
 |---|---|
-| WebView engine + multi-session pool | 🚧 planned |
+| GeckoView engine + bounded session pool | 🚧 migration in progress |
 | Readability.js page extraction | 🚧 planned |
 | Filter-list ad blocking (uBO lists, native) | 🚧 planned |
 | Spaces (accent-tinted workspaces) | 🚧 planned |
@@ -63,7 +63,7 @@ xeno:  ┌───────────────────────�
                     │
 ┌───────────────────▼──────────────────────────┐
 │            ENGINE                             │
-│      Android System WebView                   │
+│      Mozilla GeckoView (embedded engine)      │
 └──────────────────────────────────────────────┘
 ```
 
@@ -73,8 +73,10 @@ xeno:  ┌───────────────────────�
 ## Stack
 
 - Kotlin + Jetpack Compose (Material 3), `minSdk 26`, `targetSdk 35`
-- Android System WebView (zero extra engine bytes)
-- `adblock-rust` for native filter-list blocking — uBlock Origin's lists and syntax, without the 190 MB Gecko engine
+- Mozilla GeckoView's standard `geckoview` artifact (not `geckoview-omni`, which includes the extra Glean telemetry library)
+- Gecko telemetry, telemetry uploads, crash-report uploads, experiment enrollment, and telemetry archives are disabled via an app-private runtime configuration
+- Remote debugging and debug logging are off in the runtime; App Zygote preloading is disabled to avoid unnecessary preloading on low-memory devices
+- GeckoView's core rendering engine is still a substantial bundled dependency; it cannot be reduced to WebView size without switching engines or maintaining a custom Gecko build
 - Readability.js injected in-page for clean text extraction
 - Kilo Gateway (OpenAI-compatible) as the default AI backend, BYOK for anything OpenAI-compatible
 - MiniLM ONNX via sherpa-onnx for on-device semantic search
