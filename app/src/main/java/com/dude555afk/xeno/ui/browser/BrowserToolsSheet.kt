@@ -637,8 +637,7 @@ fun BrowserToolsSheet(
                             Button(onClick = onTranslate, modifier = Modifier.fillMaxWidth()) { Text("Translate page") }
                         }
                         BrowserPanel.SETTINGS -> Column(
-                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(9.dp)
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
                         ) {
                             ArcSettingsSectionLabel("OPTIONS")
                             SitePermissionToggle(
@@ -646,6 +645,11 @@ fun BrowserToolsSheet(
                                 subtitle = "Open search ready to type when Xeno starts",
                                 checked = autoOpenKeyboard,
                                 onChange = onAutoOpenKeyboardChange
+                            )
+                            HorizontalDivider(
+                                color = StrokeSubtle.copy(alpha = 0.55f),
+                                thickness = 0.6.dp,
+                                modifier = Modifier.padding(horizontal = 10.dp)
                             )
                             ArcSettingsChoiceRow(
                                 title = "Search Engines",
