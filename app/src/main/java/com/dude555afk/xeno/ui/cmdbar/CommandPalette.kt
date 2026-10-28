@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -153,7 +154,9 @@ fun CommandPalette(
                     color = Color(0xFF4F5052),
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
                     shadowElevation = 8.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(animationSpec = androidx.compose.animation.core.tween(190))
                 ) {
                     Column {
                         Row(
