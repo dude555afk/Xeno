@@ -160,6 +160,14 @@ private object GeckoRuntimeOwner {
         profileDirectory.mkdirs()
         val settings = GeckoRuntimeSettings.Builder()
             .arguments(arrayOf("-profile", profileDirectory.absolutePath))
+            // Xeno ships an embedded engine, not a remote-debuggable Firefox app.
+            // Keep diagnostics and developer endpoints off in production.
+            .remoteDebuggingEnabled(false)
+            .debugLogging(false)
+            .consoleOutput(false)
+            .aboutConfigEnabled(false)
+            // Do not enroll this browser in Mozilla experiment/rollout systems.
+            .experimentDelegate(null)
             .build()
         return GeckoRuntime.create(appContext, settings).also { runtime = it }
     }
