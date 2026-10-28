@@ -635,7 +635,7 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color.White.copy(alpha = if (canGoBack) 0.9f else 0.28f),
+                                tint = Color(0xFF302D39).copy(alpha = if (canGoBack) 0.9f else 0.28f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -647,7 +647,7 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowForward,
                                 contentDescription = "Forward",
-                                tint = Color.White.copy(alpha = if (canGoForward) 0.9f else 0.28f),
+                                tint = Color(0xFF302D39).copy(alpha = if (canGoForward) 0.9f else 0.28f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -662,13 +662,13 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = Color(0xFFB1ABBF),
+                                tint = Color(0xFF817A91),
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(Modifier.width(7.dp))
                             Text(
                                 text = displayUrl.ifBlank { "Search or enter address" },
-                                color = if (displayUrl.isBlank()) Color(0xFFAAA3B8) else Color(0xFFF7F4FC),
+                                color = if (displayUrl.isBlank()) Color(0xFF817A91) else Color(0xFF282531),
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -679,7 +679,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                                 contentDescription = if (loading) "Stop loading" else "Reload page",
-                                tint = Color(0xFFE1DAF2),
+                                tint = Color(0xFF302D39),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -687,7 +687,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.MoreHoriz,
                                 contentDescription = "Browser menu",
-                                tint = Color(0xFFE1DAF2),
+                                tint = Color(0xFF302D39),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -795,7 +795,7 @@ private fun ExpandedTool(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = 0.82f), modifier = Modifier.size(19.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB1ABBF))
+        Icon(icon, contentDescription = label, tint = Color(0xFF373142).copy(alpha = 0.9f), modifier = Modifier.size(19.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF6F687D))
     }
 }
