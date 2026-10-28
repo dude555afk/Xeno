@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +48,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -150,22 +153,36 @@ fun TabStackSheet(
                         )
                     }
                 } else {
-                    LazyRow(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxWidth()
                     ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                preview = previews[tab.id],
-                                active = tab.id == activeTabId,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
-                            )
+                        val listState = rememberLazyListState()
+                        // Keep the focused card centered, including the first and last tabs.
+                        val cardSidePadding = ((maxWidth - 260.dp) / 2).coerceAtLeast(30.dp)
+                        LaunchedEffect(activeTabId, tabs.map { it.id }) {
+                            val selectedIndex = tabs.indexOfFirst { it.id == activeTabId }
+                            if (selectedIndex >= 0) {
+                                listState.animateScrollToItem(selectedIndex)
+                            }
+                        }
+                        LazyRow(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = cardSidePadding, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            items(tabs, key = { it.id }) { tab ->
+                                TabCard(
+                                    tab = tab,
+                                    preview = previews[tab.id],
+                                    active = tab.id == activeTabId,
+                                    onSelect = { onSelect(tab) },
+                                    onClose = { onClose(tab) }
+                                )
+                            }
                         }
                     }
                 }
@@ -185,7 +202,7 @@ fun TabStackSheet(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.Settings, "App settings", tint = Color(0xFF494153), modifier = Modifier.size(21.dp))
+                            Icon(Icons.Rounded.Settings, "App settings", tint = Color(0xFFEAE6F4), modifier = Modifier.size(21.dp))
                         }
                     }
                     Surface(
@@ -207,7 +224,7 @@ fun TabStackSheet(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.Close, "Close tab switcher", tint = Color(0xFF494153), modifier = Modifier.size(21.dp))
+                            Icon(Icons.Rounded.Close, "Close tab switcher", tint = Color(0xFFEAE6F4), modifier = Modifier.size(21.dp))
                         }
                     }
                 }
