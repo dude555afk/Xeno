@@ -1,6 +1,7 @@
 package com.dude555afk.xeno.ui.browser
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,6 +27,8 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -155,7 +158,7 @@ private fun HomeMark(modifier: Modifier = Modifier) {
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 9200, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 9200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "arc-mark-rotation"
