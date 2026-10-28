@@ -16,15 +16,10 @@ import android.net.Uri
 import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.CookieManager
-import android.webkit.GeolocationPermissions
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
 import android.webkit.URLUtil
 import android.webkit.WebStorage
-import android.webkit.WebSettings
 import android.webkit.WebViewDatabase
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -38,11 +33,9 @@ import com.dude555afk.xeno.core.ai.ChatRequest
 import com.dude555afk.xeno.core.ai.ProviderConfig
 import com.dude555afk.xeno.core.blocking.FilterListEngine
 import com.dude555afk.xeno.core.blocking.HostsList
-import com.dude555afk.xeno.core.blocking.ResourceType
 import com.dude555afk.xeno.core.engine.SessionListener
 import com.dude555afk.xeno.core.engine.SessionPool
-import com.dude555afk.xeno.core.engine.XenoAssetLoader
-import com.dude555afk.xeno.core.engine.XenoWebViewClient
+import com.dude555afk.xeno.core.engine.GeckoBrowserSession
 import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.NavigationResolver
@@ -183,9 +176,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             viewModelScope.launch(Dispatchers.Default) { engine.load(HostsList.rules) }
         }
 
-    private val assetLoader = XenoAssetLoader.create(app)
 
-    private val pool = SessionPool(app)
+    private val pool = SessionPool(app, isPrivateMode)
     private val injector = ReadabilityInjector(app)
     private val ai = AiClient()
     private val summarizer = Summarizer(ai)
@@ -216,10 +208,6 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var translationJob: Job? = null
     private var modelsJob: Job? = null
     private val desktopSiteTabIds = mutableSetOf<Long>()
-    private val defaultUserAgent = WebSettings.getDefaultUserAgent(app)
-    private val desktopUserAgent = defaultUserAgent
-        .replace(Regex("\\(Linux; Android [^)]+\\)"), "(X11; Linux x86_64)")
-        .replace(" Mobile", "")
 
     /** A lightweight WebView is retained per recently used tab (pool cap: two). */
     private var activeSessionKey: String? = null
@@ -370,7 +358,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val enabled = tab.id in desktopSiteTabIds
         _state.update { it.copy(desktopSiteEnabled = enabled) }
         activeSessionKey?.let(pool::peek)?.let { view ->
-            view.settings.userAgentString = if (enabled) desktopUserAgent else defaultUserAgent
+            view.setDesktopMode(enabled)
             view.reload()
         }
         closePanel()
@@ -703,13 +691,6 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setThirdPartyCookiesEnabled(enabled: Boolean) {
         if (!isPrivateMode) settings.thirdPartyCookiesEnabled = enabled
         _state.update { it.copy(thirdPartyCookiesEnabled = enabled) }
-        pool.liveKeys().forEach { key ->
-            pool.peek(key)?.let { view ->
-                val host = Uri.parse(view.url.orEmpty()).host.orEmpty()
-                val allowed = sitePermissionStore.read(host, enabled).thirdPartyCookiesEnabled
-                CookieManager.getInstance().setAcceptThirdPartyCookies(view, allowed)
-            }
-        }
         val activeUrl = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
         applySitePermissions(activeSessionKey?.let(pool::peek), activeUrl, activeSessionKey)
     }
@@ -748,12 +729,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val view = activeSessionKey?.let(pool::peek) ?: return
         when (capability) {
             SiteCapability.JAVASCRIPT -> {
-                view.settings.javaScriptEnabled = permissions.javaScriptEnabled
+                view.setJavaScriptEnabled(permissions.javaScriptEnabled)
                 view.reload()
             }
-            SiteCapability.THIRD_PARTY_COOKIES -> {
-                CookieManager.getInstance().setAcceptThirdPartyCookies(view, permissions.thirdPartyCookiesEnabled)
-            }
+            SiteCapability.THIRD_PARTY_COOKIES -> Unit
             SiteCapability.LOCATION, SiteCapability.CAMERA, SiteCapability.MICROPHONE -> Unit
         }
     }
@@ -763,13 +742,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         return sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
     }
 
-    private fun applySitePermissions(view: WebView?, url: String, key: String?) {
+    private fun applySitePermissions(view: GeckoBrowserSession?, url: String, key: String?) {
         val host = Uri.parse(url).host.orEmpty().lowercase()
         val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
-        view?.let {
-            it.settings.javaScriptEnabled = permissions.javaScriptEnabled
-            CookieManager.getInstance().setAcceptThirdPartyCookies(it, permissions.thirdPartyCookiesEnabled)
-        }
+        view?.setJavaScriptEnabled(permissions.javaScriptEnabled)
         if (key == null || key == activeSessionKey) {
             _state.update { it.copy(currentSiteHost = host, sitePermissions = permissions) }
         }
@@ -814,16 +790,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun clearBrowsingData() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { db.historyDao().clear() }
-            CookieManager.getInstance().removeAllCookies(null)
-            CookieManager.getInstance().flush()
-            WebStorage.getInstance().deleteAllData()
-            pool.liveKeys().forEach { key ->
-                pool.peek(key)?.let { view ->
-                    view.clearCache(true)
-                    view.clearFormData()
-                }
+            // Gecko needs every session closed before its profile data is removed.
+            pool.clearStorageData {
+                // These calls clean the short-lived legacy extractor profile while
+                // Page Extraction is migrated off WebView in the next pass.
+                CookieManager.getInstance().removeAllCookies(null)
+                CookieManager.getInstance().flush()
+                WebStorage.getInstance().deleteAllData()
+                WebViewDatabase.getInstance(getApplication()).clearHttpAuthUsernamePassword()
+                _state.update { it.copy(panel = null, historyHints = emptyList()) }
+                _state.value.activeTab?.let(::syncSessionToTab)
             }
-            _state.update { it.copy(panel = null, historyHints = emptyList()) }
         }
     }
 
@@ -1474,8 +1451,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         val view = pool.acquire(key, host)
         activeSessionKey = key
-        view.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
-            val delta = scrollY - oldScrollY
+        var previousScrollY = 0
+        view.setScrollListener { scrollY ->
+            val delta = scrollY - previousScrollY
+            previousScrollY = scrollY
             val showChrome = when {
                 scrollY <= 2 -> true
                 delta >= 6 -> false
@@ -1491,147 +1470,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
-        view.settings.userAgentString = if (tab.id in desktopSiteTabIds) desktopUserAgent else defaultUserAgent
-        applySitePermissions(view, tab.url.ifBlank { view.url.orEmpty() }, key)
-        view.webViewClient = XenoWebViewClient(
-            listener = sessionListener(tab.id, key),
-            blocker = { request ->
-                if (!_state.value.blockingEnabled) false else runCatching {
-                    filters.shouldBlock(
-                        url = request.url.toString(),
-                        documentUrl = view.url ?: "",
-                        type = ResourceType.fromRequest(request),
-                        thirdParty = !request.isForMainFrame &&
-                            filters.isThirdPartyRequest(
-                                request.url.toString(),
-                                request.requestHeaders.entries
-                                    .firstOrNull { it.key.equals("Referer", ignoreCase = true) }
-                                    ?.value
-                                    .orEmpty()
-                                    .ifBlank { view.url.orEmpty() }
-                            )
-                    )
-                }.getOrDefault(false)
-            },
-            assetLoader = assetLoader,
-            cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") },
-            fingerprintingProtection = { _state.value.fingerprintingProtectionEnabled }
-        )
-        view.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(webView: WebView?, newProgress: Int) {
-                if (activeSessionKey != key || _state.value.activeTab?.id != tab.id) return
-                _state.update {
-                    it.copy(
-                        load = it.load.copy(
-                            progress = (newProgress.coerceIn(0, 100) / 100f),
-                            url = webView?.url ?: it.load.url
-                        ),
-                        pageError = if (newProgress > 0) null else it.pageError
-                    )
-                }
-            }
-
-            override fun onPermissionRequest(request: PermissionRequest?) {
-                if (request == null) return
-                val originUri = Uri.parse(request.origin.toString())
-                val host = originUri.host.orEmpty().lowercase()
-                val secureOrigin = originUri.scheme == "https" ||
-                    host == "localhost" || host == "127.0.0.1"
-                if (!secureOrigin) {
-                    request.deny()
-                    return
-                }
-                val permissions = sitePermissionStore.read(host, _state.value.thirdPartyCookiesEnabled)
-                val granted = request.resources.filter { resource ->
-                    when (resource) {
-                        PermissionRequest.RESOURCE_VIDEO_CAPTURE ->
-                            permissions.allowCamera && hasAndroidPermission(Manifest.permission.CAMERA)
-                        PermissionRequest.RESOURCE_AUDIO_CAPTURE ->
-                            permissions.allowMicrophone && hasAndroidPermission(Manifest.permission.RECORD_AUDIO)
-                        else -> false
-                    }
-                }
-                if (granted.isNotEmpty() && granted.size == request.resources.size) {
-                    request.grant(granted.toTypedArray())
-                } else {
-                    request.deny()
-                }
-            }
-
-            override fun onGeolocationPermissionsShowPrompt(
-                origin: String?,
-                callback: GeolocationPermissions.Callback?
-            ) {
-                val originUri = Uri.parse(origin.orEmpty())
-                val host = originUri.host.orEmpty().lowercase()
-                val secureOrigin = originUri.scheme == "https" ||
-                    host == "localhost" || host == "127.0.0.1"
-                val allowed = secureOrigin && sitePermissionStore.isAllowed(
-                    host,
-                    SiteCapability.LOCATION
-                ) && (
-                    hasAndroidPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
-                        hasAndroidPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-                    )
-                callback?.invoke(origin.orEmpty(), allowed, false)
-            }
-
-            override fun onCreateWindow(
-                view: WebView?,
-                isDialog: Boolean,
-                isUserGesture: Boolean,
-                resultMsg: android.os.Message?
-            ): Boolean {
-                if (!isUserGesture || view == null || resultMsg == null) return false
-                val popup = WebView(view.context)
-                popup.settings.javaScriptEnabled = true
-                popup.settings.domStorageEnabled = true
-                popup.settings.javaScriptCanOpenWindowsAutomatically = true
-                popup.webViewClient = object : WebViewClient() {
-                    private var opened = false
-
-                    override fun shouldOverrideUrlLoading(
-                        popupView: WebView?,
-                        request: android.webkit.WebResourceRequest?
-                    ): Boolean {
-                        val target = request?.url?.toString().orEmpty()
-                        if (!opened && (target.startsWith("https://") || target.startsWith("http://"))) {
-                            opened = true
-                            newTab(target)
-                        }
-                        popupView?.stopLoading()
-                        popupView?.destroy()
-                        return true
-                    }
-
-                    @Suppress("DEPRECATION")
-                    override fun shouldOverrideUrlLoading(
-                        popupView: WebView?,
-                        url: String?
-                    ): Boolean {
-                        val target = url.orEmpty()
-                        if (!opened && (target.startsWith("https://") || target.startsWith("http://"))) {
-                            opened = true
-                            newTab(target)
-                        }
-                        popupView?.stopLoading()
-                        popupView?.destroy()
-                        return true
-                    }
-                }
-                val transport = resultMsg.obj as? WebView.WebViewTransport ?: run {
-                    popup.destroy()
-                    return false
-                }
-                transport.webView = popup
-                resultMsg.sendToTarget()
-                return true
-            }
-        }
-
-        view.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-            enqueueDownload(url, userAgent, contentDisposition, mimeType)
-        }
+        view.setDesktopMode(tab.id in desktopSiteTabIds)
+        view.setListener(sessionListener(tab.id, key))
+        applySitePermissions(view, tab.url.ifBlank { view.url }, key)
 
         if (tab.url.isBlank()) {
             if (!view.url.isNullOrBlank() && view.url != "about:blank") view.loadUrl("about:blank")
@@ -1700,13 +1541,6 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         if (!userAgent.isNullOrBlank()) request.addRequestHeader("User-Agent", userAgent)
         if (!mimeType.isNullOrBlank()) request.setMimeType(mimeType)
-        // WebView's DownloadListener does not transfer the current session's
-        // cookies to DownloadManager automatically. Use only cookies for the
-        // exact HTTPS/HTTP download host, with no logging or persistence.
-        CookieManager.getInstance().getCookie(url)
-            ?.takeIf { it.isNotBlank() }
-            ?.let { request.addRequestHeader("Cookie", it) }
-
         runCatching { manager.enqueue(request) }
             .onSuccess {
                 Toast.makeText(getApplication(), "Download started", Toast.LENGTH_SHORT).show()
@@ -1794,11 +1628,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        override fun onRenderProcessGone(view: WebView, didCrash: Boolean) {
-            // A late callback from an already-evicted view must not mark a newly
-            // recreated session as crashed.
-            if (pool.peek(key) !== view) return
-            pool.discardCrashed(key, view)
+        override fun onEngineCrashed(session: GeckoBrowserSession, didCrash: Boolean) {
+            // Ignore crash callbacks from sessions already evicted by the pool.
+            if (pool.peek(key) !== session) return
+            pool.discardCrashed(key, session)
             if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
             _state.update {
                 it.copy(
@@ -1810,6 +1643,23 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 )
             }
+        }
+
+        override fun onHistoryChanged(canGoBack: Boolean, canGoForward: Boolean) {
+            if (activeSessionKey != key || _state.value.activeTab?.id != tabId) return
+            _state.update { it.copy(canGoBack = canGoBack, canGoForward = canGoForward) }
+        }
+
+        override fun onPopupRequested(url: String) {
+            if (url.startsWith("https://") || url.startsWith("http://")) newTab(url)
+        }
+
+        override fun onCloseRequested() {
+            _state.value.tabs.firstOrNull { it.id == tabId }?.let(::closeTab)
+        }
+
+        override fun onDownloadRequested(url: String, contentType: String?) {
+            enqueueDownload(url, null, null, contentType, null)
         }
 
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
@@ -1963,17 +1813,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun clearPrivateSessionData() {
         if (!isPrivateMode) return
         runCatching {
-            pool.liveKeys().forEach { key ->
-                pool.peek(key)?.let { view ->
-                    view.stopLoading()
-                    view.clearCache(true)
-                    view.clearHistory()
-                    view.clearFormData()
-                }
-            }
-        }
-        pool.destroyAll()
-        runCatching {
+            pool.clearStorageData()
+            // Clean the short-lived extractor's WebView profile until extraction migrates.
             CookieManager.getInstance().removeAllCookies(null)
             CookieManager.getInstance().flush()
             WebStorage.getInstance().deleteAllData()
@@ -1981,6 +1822,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             sitePermissionStore.clear()
             XenoDatabase.clearPrivateDatabase(getApplication())
         }
+        pool.destroyAll()
     }
 
     override fun onCleared() {

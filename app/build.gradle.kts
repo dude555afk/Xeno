@@ -158,6 +158,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.webkit)
+    implementation(libs.mozilla.geckoview)
 
     implementation(libs.okhttp)
     implementation(libs.okhttp.sse)

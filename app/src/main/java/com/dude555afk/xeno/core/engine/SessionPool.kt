@@ -1,188 +1,100 @@
 package com.dude555afk.xeno.core.engine
 
-import android.annotation.SuppressLint
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.ViewGroup
-import android.webkit.WebView
+import org.mozilla.geckoview.GeckoRuntime
+import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.geckoview.StorageController
+import java.io.File
 import java.util.LinkedHashMap
 
 /**
- * Owns every live WebView in the app.
- *
- * The hard rule from docs/ARCHITECTURE.md: **at most 2 live sessions.** Each
- * WebView costs 150-250 MB, so a naive "one WebView per tab" design makes the
- * app fall over the moment someone opens six tabs.
- *
- * Tabs are cheap; sessions are expensive. This pool keeps tab state in the
- * database and materialises a WebView only for the active tab plus at most one
- * peek/split session.
+ * Owns live Gecko sessions for Xeno's tabs.
+ * Tabs are durable database rows; only two live engine sessions are retained.
  */
 class SessionPool(
     private val context: Context,
+    private val isPrivateMode: Boolean = false,
     private val maxLiveSessions: Int = MAX_LIVE_SESSIONS
 ) {
-
-    private val sessions = LinkedHashMap<String, WebView>()
-
-    /** Insertion-ordered so trimming drops the least recently used first. */
+    private val runtime = GeckoRuntimeOwner.get(context, isPrivateMode)
+    private val sessions = LinkedHashMap<String, GeckoBrowserSession>()
     private val lastUsed = LinkedHashMap<String, Long>()
 
-    /**
-     * Get the session for [key], creating one if we're under the cap.
-     *
-     * Never returns null — the cap is enforced by trimming *before* allocating.
-     * The one key that must survive is the caller's, and it is touched first.
-     */
-    @SuppressLint("SetJavaScriptEnabled")
-    fun acquire(key: String, parent: ViewGroup? = null): WebView {
-        sessions[key]?.let { view ->
+    fun acquire(key: String, parent: ViewGroup? = null): GeckoBrowserSession {
+        sessions[key]?.let { session ->
             touch(key)
-            attachToParent(key, view, parent)
-            resume(key)
-            return view
+            attachToParent(session, parent)
+            session.onResume()
+            return session
         }
-
-        // Make room before allocating a new WebView. Existing active sessions
-        // were touched when selected, so the least-recently-used inactive
-        // session is evicted first.
         trimTo((maxLiveSessions - 1).coerceAtLeast(0))
-
-        val view = WebView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.databaseEnabled = true
-            settings.allowFileAccess = false
-            settings.allowContentAccess = false
-            settings.allowFileAccessFromFileURLs = false
-            settings.allowUniversalAccessFromFileURLs = false
-            settings.safeBrowsingEnabled = true
-            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            // User-initiated popup windows are captured by WebChromeClient
-            // and opened as regular Xeno tabs.
-            settings.setSupportMultipleWindows(true)
-            // Sign-in, checkout and other user-tapped flows commonly use window.open.
-            // The ChromeClient still rejects popups without a user gesture.
-            settings.javaScriptCanOpenWindowsAutomatically = true
-            settings.mediaPlaybackRequiresUserGesture = true
-            settings.loadWithOverviewMode = true
-            settings.useWideViewPort = true
-            isVerticalScrollBarEnabled = false
-            isHorizontalScrollBarEnabled = false
-            overScrollMode = WebView.OVER_SCROLL_NEVER
-        }
-        sessions[key] = view
+        val session = GeckoBrowserSession(context, runtime, isPrivateMode)
+        sessions[key] = session
         touch(key)
-        attachToParent(key, view, parent)
-        return view
+        attachToParent(session, parent)
+        session.onResume()
+        return session
     }
 
-    /**
-     * Only one WebView may be visible in the browser host. Reparenting a
-     * retained session removes the previous view from that host without
-     * destroying its page state.
-     */
-    private fun attachToParent(key: String, view: WebView, parent: ViewGroup?) {
+    private fun attachToParent(session: GeckoBrowserSession, parent: ViewGroup?) {
         if (parent == null) return
-
-        sessions.forEach { (otherKey, otherView) ->
-            if (otherView !== view && otherView.parent === parent) {
-                parent.removeView(otherView)
-                park(otherKey)
+        sessions.values.forEach { other ->
+            if (other !== session && other.view.parent === parent) {
+                parent.removeView(other.view)
+                other.onPause()
             }
         }
-
-        (view.parent as? ViewGroup)
-            ?.takeIf { it !== parent }
-            ?.removeView(view)
-
-        if (view.parent !== parent) {
-            (view.parent as? ViewGroup)?.removeView(view)
-            parent.addView(view)
-        }
+        (session.view.parent as? ViewGroup)?.takeIf { it !== parent }?.removeView(session.view)
+        if (session.view.parent !== parent) parent.addView(session.view)
+        session.view.bringToFront()
     }
 
-    /** Park and detach a session while keeping it available for later reuse. */
     fun detach(key: String) {
         park(key)
-        val view = sessions[key] ?: return
-        (view.parent as? ViewGroup)?.removeView(view)
+        val session = sessions[key] ?: return
+        (session.view.parent as? ViewGroup)?.removeView(session.view)
     }
 
     fun detachAll() {
         sessions.keys.toList().forEach(::detach)
     }
 
-    fun peek(key: String): WebView? = sessions[key]
-
-    /**
-     * Remove a WebView whose renderer has exited. Android documents that a
-     * renderer-dead WebView must not be reused, so only detach it and drop all
-     * pool references; do not call stopLoading/loadUrl/destroy on it.
-     */
-    fun discardCrashed(key: String, crashedView: WebView) {
-        if (sessions[key] !== crashedView) return
-        (crashedView.parent as? ViewGroup)?.removeView(crashedView)
-        sessions.remove(key)
-        lastUsed.remove(key)
-    }
-
+    fun peek(key: String): GeckoBrowserSession? = sessions[key]
     fun liveKeys(): Set<String> = sessions.keys.toSet()
-
     fun liveCount(): Int = sessions.size
 
-    /**
-     * Pause a session but keep it — scrolling away and back should be instant.
-     *
-     * Parked sessions keep their DOM and scroll position; only timers and
-     * rAF stop. This is what makes switching tabs feel free.
-     */
+    fun discardCrashed(key: String, crashedSession: GeckoBrowserSession) {
+        if (sessions[key] !== crashedSession) return
+        (crashedSession.view.parent as? ViewGroup)?.removeView(crashedSession.view)
+        sessions.remove(key)
+        lastUsed.remove(key)
+        crashedSession.clearAndClose()
+    }
+
     fun park(key: String) {
-        sessions[key]?.let { view ->
-            runCatching {
-                view.onPause()
-            }
-        }
+        sessions[key]?.let { runCatching { it.onPause() } }
     }
 
-    /** Resume a parked session. */
     fun resume(key: String) {
-        sessions[key]?.let { view ->
-            runCatching {
-                view.onResume()
-            }
-        }
+        sessions[key]?.let { runCatching { it.onResume() } }
     }
 
-    /** Destroy a session outright and drop it from the pool. */
     fun destroy(key: String) {
-        sessions.remove(key)?.let { view ->
-            (view.parent as? ViewGroup)?.removeView(view)
-            runCatching {
-                view.stopLoading()
-                view.loadUrl("about:blank")
-                view.removeAllViews()
-                view.destroy()
-            }
+        sessions.remove(key)?.let { session ->
+            (session.view.parent as? ViewGroup)?.removeView(session.view)
+            runCatching { session.stopLoading() }
+            session.clearAndClose()
         }
         lastUsed.remove(key)
     }
 
-    /**
-     * Trim down to [target] live sessions, dropping least-recently-used first.
-     *
-     * Callers should pass the active key in [keep]; this pool does not infer
-     * which session is visible because detached sessions are also valid.
-     */
     fun trimTo(target: Int, keep: Set<String> = emptySet()) {
         val boundedTarget = target.coerceAtLeast(0)
         if (sessions.size <= boundedTarget) return
-
-        // Ignore stale LRU keys: the list must reflect real sessions only.
         val ordered = lastUsed.entries
             .filter { it.key in sessions }
             .sortedBy { it.value }
@@ -196,17 +108,6 @@ class SessionPool(
         }
     }
 
-    /**
-     * Memory-pressure cleanup, graduated by severity.
-     *
-     * The tempting move is `trimTo(0)` on any memory warning. It is wrong: at
-     * TRIM_MEMORY_RUNNING_LOW the app is foreground and the user is mid-sentence,
-     * and nuking the session loses the page they are reading for a saving they
-     * cannot see. Parking preserves everything that matters and costs nothing.
-     *
-     * Only at CRITICAL/COMPLETE — i.e. the LMK is about to kill us anyway — do
-     * we start destroying sessions. The caller protects the visible session.
-     */
     fun onTrimMemory(level: Int, keep: Set<String> = emptySet()) {
         when {
             level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> trimTo(0, keep)
@@ -216,6 +117,14 @@ class SessionPool(
                 trimTo(maxOf(1, keep.size), keep)
             }
             else -> sessions.keys.filter { it !in keep }.forEach(::park)
+        }
+    }
+
+    /** Close every GeckoSession before removing data from Gecko's profile. */
+    fun clearStorageData(onComplete: () -> Unit = {}) {
+        destroyAll()
+        runtime.storageController.clearData(StorageController.ClearFlags.ALL).accept {
+            Handler(Looper.getMainLooper()).post { onComplete() }
         }
     }
 
@@ -230,7 +139,28 @@ class SessionPool(
     }
 
     companion object {
-        /** Hard cap. Two = active tab + peek/split. */
         const val MAX_LIVE_SESSIONS = 2
+    }
+}
+
+/**
+ * GeckoRuntime is process-wide. Normal and private Android processes receive
+ * separate profile directories; private-mode sessions also use Gecko's
+ * non-persistent storage mode.
+ */
+private object GeckoRuntimeOwner {
+    @Volatile private var runtime: GeckoRuntime? = null
+
+    @Synchronized
+    fun get(context: Context, privateMode: Boolean): GeckoRuntime {
+        runtime?.let { return it }
+        val appContext = context.applicationContext
+        val profileName = if (privateMode) "gecko-private-profile" else "gecko-profile"
+        val profileDirectory = File(appContext.filesDir, profileName)
+        profileDirectory.mkdirs()
+        val settings = GeckoRuntimeSettings.Builder()
+            .arguments(arrayOf("-profile", profileDirectory.absolutePath))
+            .build()
+        return GeckoRuntime.create(appContext, settings).also { runtime = it }
     }
 }

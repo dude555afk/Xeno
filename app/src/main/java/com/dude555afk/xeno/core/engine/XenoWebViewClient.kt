@@ -19,6 +19,11 @@ interface SessionListener {
     fun onFavicon(url: String, icon: Bitmap?)
     fun onExternalNavigation(requestedUrl: String): Boolean = false
     fun onRenderProcessGone(view: WebView, didCrash: Boolean) = Unit
+    fun onEngineCrashed(session: GeckoBrowserSession, didCrash: Boolean) = Unit
+    fun onHistoryChanged(canGoBack: Boolean, canGoForward: Boolean) = Unit
+    fun onPopupRequested(url: String) = Unit
+    fun onCloseRequested() = Unit
+    fun onDownloadRequested(url: String, contentType: String?) = Unit
 }
 
 /**

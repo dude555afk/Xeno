@@ -9,6 +9,7 @@ composeBom = "2024.12.01"
 room = "2.6.1"
 okhttp = "4.12.0"
 webkit = "1.12.1"
+geckoview = "158.0.20261021001945"
 serialization = "1.7.3"
 coroutines = "1.9.0"
 
@@ -28,6 +29,7 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+mozilla-geckoview = { group = "org.mozilla.geckoview", name = "geckoview", version.ref = "geckoview" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-sse = { group = "com.squareup.okhttp3", name = "okhttp-sse", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
