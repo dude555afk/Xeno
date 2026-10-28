@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild]
+    branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild, test/xeno-runtime-smoke]
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -101,6 +101,17 @@ jobs:
           name: xeno-debug
           path: artifacts/*.apk
           if-no-files-found: error
+
+      # A build is not a runtime test. Boot a real Android emulator and verify
+      # the app Activity can start without immediately finishing/crashing.
+      - name: Android emulator startup smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          script: gradle connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Publish build log (best-effort)
         if: always()
