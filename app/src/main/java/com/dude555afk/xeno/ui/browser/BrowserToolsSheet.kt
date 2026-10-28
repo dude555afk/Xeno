@@ -647,29 +647,19 @@ fun BrowserToolsSheet(
                                 checked = autoOpenKeyboard,
                                 onChange = onAutoOpenKeyboardChange
                             )
-                            ArcSettingsSectionLabel("SEARCH ENGINE")
-                            listOf(
-                                "brave" to "Brave Search",
-                                "duckduckgo" to "DuckDuckGo",
-                                "google" to "Google",
-                                "bing" to "Bing",
-                                "startpage" to "Startpage"
-                            ).chunked(3).forEach { engineRow ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    engineRow.forEach { (id, label) ->
-                                        FilterChip(
-                                            selected = searchEngineId == id,
-                                            onClick = { onSearchEngineChange(id) },
-                                            label = { Text(label, maxLines = 1) },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                }
-                            }
+                            ArcSettingsChoiceRow(
+                                title = "Search Engines",
+                                subtitle = "Choose your default search provider",
+                                selectedId = searchEngineId,
+                                options = listOf(
+                                    "brave" to "Brave Search",
+                                    "duckduckgo" to "DuckDuckGo",
+                                    "google" to "Google",
+                                    "bing" to "Bing",
+                                    "startpage" to "Startpage"
+                                ),
+                                onSelect = onSearchEngineChange
+                            )
                             ArcSettingsSectionLabel("GLOBAL")
                             ArcSettingsRow("Global Site Settings", "Ads, trackers, cookies and site permissions") { onOpenPanel(BrowserPanel.PRIVACY) }
                             ArcSettingsRow("Set as Default Browser", "Choose Xeno in Android system settings") { onOpenDefaultAppsSettings() }
@@ -1024,6 +1014,70 @@ private fun ArcSettingsSectionLabel(label: String) {
         letterSpacing = 1.2.sp,
         modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 1.dp)
     )
+}
+
+
+@Composable
+private fun ArcSettingsChoiceRow(
+    title: String,
+    subtitle: String,
+    selectedId: String,
+    options: List<Pair<String, String>>,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selectedId }?.second ?: selectedId
+    Box(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { expanded = true }
+                    .padding(horizontal = 10.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f).padding(end = 10.dp)) {
+                    Text(title, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(3.dp))
+                    Text(subtitle, color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                }
+                Text(
+                    selectedLabel,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = "Choose $title",
+                    tint = TextSecondary,
+                    modifier = Modifier.padding(start = 4.dp).size(18.dp)
+                )
+            }
+            HorizontalDivider(color = StrokeSubtle.copy(alpha = 0.55f), thickness = 0.6.dp)
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { (id, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    trailingIcon = {
+                        if (id == selectedId) {
+                            Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(id)
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable
