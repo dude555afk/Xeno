@@ -158,8 +158,38 @@ private object GeckoRuntimeOwner {
         val profileName = if (privateMode) "gecko-private-profile" else "gecko-profile"
         val profileDirectory = File(appContext.filesDir, profileName)
         profileDirectory.mkdirs()
+
+        // Keep Mozilla telemetry and crash uploads disabled in Xeno's embedded engine.
+        // GeckoView reads this app-private config before starting the Gecko runtime.
+        val privacyConfig = File(appContext.filesDir, "geckoview-privacy.yaml")
+        val privacyPreferences = """
+            prefs:
+              toolkit.telemetry.enabled: false
+              toolkit.telemetry.unified: false
+              toolkit.telemetry.archive.enabled: false
+              toolkit.telemetry.firstShutdownPing.enabled: false
+              toolkit.telemetry.shutdownPingSender.enabled: false
+              datareporting.healthreport.uploadEnabled: false
+              datareporting.policy.dataSubmissionEnabled: false
+              datareporting.healthreport.service.enabled: false
+              datareporting.crashreporter.submitEnabled: false
+              toolkit.crashreporter.enabled: false
+              app.shield.optoutstudies.enabled: false
+              app.normandy.enabled: false
+              browser.ping-centre.telemetry: false
+              browser.newtabpage.activity-stream.telemetry: false
+              browser.newtabpage.activity-stream.feeds.telemetry: false
+        """.trimIndent()
+        if (!privacyConfig.exists() || privacyConfig.readText() != privacyPreferences) {
+            privacyConfig.writeText(privacyPreferences)
+        }
+
         val settings = GeckoRuntimeSettings.Builder()
             .arguments(arrayOf("-profile", profileDirectory.absolutePath))
+            .configFilePath(privacyConfig.absolutePath)
+            // Avoid preloading an extra Gecko process. A little slower to first paint,
+            // but more appropriate for Xeno's low-memory target.
+            .appZygoteProcessEnabled(false)
             // Xeno ships an embedded engine, not a remote-debuggable Firefox app.
             // Keep diagnostics and developer endpoints off in production.
             .remoteDebuggingEnabled(false)
