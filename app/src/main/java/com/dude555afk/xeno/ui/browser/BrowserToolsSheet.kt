@@ -1036,9 +1036,9 @@ private fun ArcSettingsChoiceRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable { expanded = true }
-                    .padding(horizontal = 10.dp, vertical = 13.dp),
+                    .padding(horizontal = 8.dp, vertical = 11.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f).padding(end = 10.dp)) {
@@ -1094,9 +1094,9 @@ private fun ArcSettingsRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 13.dp),
+                .padding(horizontal = 8.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f).padding(end = 10.dp)) {
