@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
@@ -198,7 +199,7 @@ private fun HomeMark(modifier: Modifier = Modifier) {
                 center = Offset(cx, cy)
             )
 
-            androidx.compose.ui.graphics.drawscope.rotate(rotation, pivot = Offset(cx, cy)) {
+            rotate(rotation, pivot = Offset(cx, cy)) {
                 val petals = listOf(
                     Triple(Offset(cx, cy - spread), Color(0xFFFFD7E8), 0.94f),
                     Triple(Offset(cx + spread, cy), Color(0xFFFFD3B8), 1.00f),
