@@ -42,7 +42,7 @@ jobs:
           fi
           yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
-            "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+            "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
