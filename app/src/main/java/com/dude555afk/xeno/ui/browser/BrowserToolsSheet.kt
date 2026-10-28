@@ -640,21 +640,14 @@ fun BrowserToolsSheet(
                             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(9.dp)
                         ) {
-                            InfoCard("General", "Search, browser behaviour and local data controls.")
+                            ArcSettingsSectionLabel("OPTIONS")
                             SitePermissionToggle(
                                 title = "Auto-open keyboard",
                                 subtitle = "Open search ready to type when Xeno starts",
                                 checked = autoOpenKeyboard,
                                 onChange = onAutoOpenKeyboardChange
                             )
-                            Text(
-                                "SEARCH ENGINE",
-                                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
-                            )
+                            ArcSettingsSectionLabel("SEARCH ENGINE")
                             listOf(
                                 "brave" to "Brave Search",
                                 "duckduckgo" to "DuckDuckGo",
