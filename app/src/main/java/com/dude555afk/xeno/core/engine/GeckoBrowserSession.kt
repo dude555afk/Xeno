@@ -10,6 +10,7 @@ import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.GeckoView
+import org.mozilla.geckoview.WebResponse
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -95,7 +96,7 @@ class GeckoBrowserSession(
                 session: GeckoSession,
                 url: String?,
                 perms: List<GeckoSession.PermissionDelegate.ContentPermission>,
-                hasUserGesture: Boolean?
+                hasUserGesture: Boolean
             ) {
                 this@GeckoBrowserSession.url = url.orEmpty()
             }
@@ -149,7 +150,7 @@ class GeckoBrowserSession(
 
             override fun onExternalResponse(
                 session: GeckoSession,
-                response: GeckoSession.WebResponseInfo
+                response: WebResponse
             ) {
                 listener?.onDownloadRequested(response.uri, response.contentType)
             }
@@ -173,7 +174,7 @@ class GeckoBrowserSession(
     }
 
     fun loadUrl(target: String) {
-        if (!closed.get()) session.load(GeckoSession.Loader.createLoadUri(target))
+        if (!closed.get()) session.loadUri(target)
     }
 
     fun reload() {
@@ -238,22 +239,29 @@ class GeckoBrowserSession(
             return
         }
         session.getFinder().find(query, GeckoSession.FINDER_FIND_FORWARD).accept { result ->
-            findListener?.invoke(
-                (result.current - 1).coerceAtLeast(0),
-                result.total.coerceAtLeast(0),
-                true
-            )
+            result?.let {
+                findListener?.invoke(
+                    (it.current - 1).coerceAtLeast(0),
+                    it.total.coerceAtLeast(0),
+                    true
+                )
+            }
         }
     }
 
     fun findNext(forward: Boolean) {
         if (lastFindQuery.isBlank()) return
-        session.getFinder().findNext(!forward).accept { result ->
-            findListener?.invoke(
-                (result.current - 1).coerceAtLeast(0),
-                result.total.coerceAtLeast(0),
-                true
-            )
+        session.getFinder().find(
+            null,
+            if (forward) GeckoSession.FINDER_FIND_FORWARD else GeckoSession.FINDER_FIND_BACKWARDS
+        ).accept { result ->
+            result?.let {
+                findListener?.invoke(
+                    (it.current - 1).coerceAtLeast(0),
+                    it.total.coerceAtLeast(0),
+                    true
+                )
+            }
         }
     }
 
