@@ -1,8 +1,18 @@
 package com.dude555afk.xeno.ui.browser
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
 // Pixel samples from the 1200x667 four-panel Arc Search Android capture.
@@ -60,6 +71,13 @@ fun HomeScreen(
         val controlHeight = (maxHeight * 0.045f).coerceIn(28.dp, 34.dp)
         val controlBottomInset = maxHeight * 0.055f
         val settingsEndInset = maxWidth * 0.08f
+        val controlInteraction = remember { MutableInteractionSource() }
+        val controlPressed by controlInteraction.collectIsPressedAsState()
+        val controlScale by animateFloatAsState(
+            targetValue = if (controlPressed) 0.94f else 1f,
+            animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
+            label = "home-plus-press-scale"
+        )
 
         // The reference mark's visible bounds are ~110x105 px in a 300x667
         // panel. Xeno's four-petal canvas fills ~82% of its parent box, so use
@@ -87,7 +105,10 @@ fun HomeScreen(
                 shadowElevation = 0.dp,
                 modifier = Modifier
                     .size(width = controlWidth, height = controlHeight)
+                    .graphicsLayer(scaleX = controlScale, scaleY = controlScale)
                     .combinedClickable(
+                        interactionSource = controlInteraction,
+                        indication = null,
                         onClick = onNewSearch,
                         onLongClick = onVoiceSearch
                     )
@@ -126,33 +147,86 @@ fun HomeScreen(
 
 @Composable
 private fun HomeMark(modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        // Custom Xeno artwork approximates the measured mark footprint.
-        // Motion remains static until the Android reference video is measured.
-        val petalRatio = 0.23f
+    // The Android reference uses a living four-colour mark, not a static logo.
+    // The exact source animation video is unavailable, so this is deliberately
+    // restrained: continuous rotation, a small breathing scale and a soft halo.
+    val motion = rememberInfiniteTransition(label = "arc-home-mark")
+    val rotation by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 9200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "arc-mark-rotation"
+    )
+    val breathing by motion.animateFloat(
+        initialValue = 0.975f,
+        targetValue = 1.025f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "arc-mark-breathing"
+    )
+    val haloAlpha by motion.animateFloat(
+        initialValue = 0.10f,
+        targetValue = 0.23f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "arc-mark-halo"
+    )
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val radius = size.minDimension * petalRatio
-            val spread = size.minDimension * 0.18f
-            val petals = listOf(
-                Offset(cx, cy - spread) to Color(0xFFFFD7E8),
-                Offset(cx + spread, cy) to Color(0xFFFFD3B8),
-                Offset(cx, cy + spread) to Color(0xFFD9C8FF),
-                Offset(cx - spread, cy) to Color(0xFFFFE8A9)
+            val unit = size.minDimension
+            val radius = unit * 0.126f * breathing
+            val spread = unit * 0.125f * breathing
+
+            // The halo is kept low contrast so the mark doesn't turn into a neon
+            // loading indicator on darker displays.
+            drawCircle(
+                color = Color(0xFFFFDDEB).copy(alpha = haloAlpha),
+                radius = unit * 0.245f * breathing,
+                center = Offset(cx, cy)
             )
-            petals.forEach { (center, tint) ->
+
+            androidx.compose.ui.graphics.drawscope.rotate(rotation, pivot = Offset(cx, cy)) {
+                val petals = listOf(
+                    Triple(Offset(cx, cy - spread), Color(0xFFFFD7E8), 0.94f),
+                    Triple(Offset(cx + spread, cy), Color(0xFFFFD3B8), 1.00f),
+                    Triple(Offset(cx, cy + spread), Color(0xFFD9C8FF), 0.97f),
+                    Triple(Offset(cx - spread, cy), Color(0xFFFFE8A9), 1.00f)
+                )
+                petals.forEach { (center, tint, stretch) ->
+                    val petalRadius = radius * stretch
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFFFFBFF),
+                                tint,
+                                tint.copy(alpha = 0.88f)
+                            ),
+                            center = Offset(
+                                center.x - petalRadius * 0.22f,
+                                center.y - petalRadius * 0.25f
+                            ),
+                            radius = petalRadius * 1.8f
+                        ),
+                        radius = petalRadius,
+                        center = center
+                    )
+                }
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFFF7FC), tint, tint.copy(alpha = 0.82f)),
-                        center = Offset(center.x - radius * 0.22f, center.y - radius * 0.25f),
-                        radius = radius * 1.8f
-                    ),
-                    radius = radius,
-                    center = center
+                    color = Color(0xFFFFF4FA),
+                    radius = radius * 0.29f,
+                    center = Offset(cx, cy)
                 )
             }
-            drawCircle(Color(0xFFFFF4FA), radius = radius * 0.30f, center = Offset(cx, cy))
         }
     }
 }
