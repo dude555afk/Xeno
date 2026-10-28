@@ -13,8 +13,8 @@ plugins {
  * Room/KSP args live here rather than inside `defaultConfig`.
  *
  * In the previous layout the `ksp { }` block sat nested in `android.defaultConfig`
- * and only resolved because Kotlin DSL kept the project-level KspExtension in the
- * implicit-receiver chain. It worked by accident and produced a project-wide
+ * and only resolved because Kotlin DSL kept the project-level KspExtension in
+ * the implicit-receiver chain. It worked by accident and produced a project-wide
  * config rather than the per-variant one that was clearly intended.
  */
 ksp {
@@ -44,10 +44,9 @@ ksp {
  *
  * The `import java.util.Properties` at the top of this file is load-bearing, not
  * decoration. Written inline as `java.util.Properties()` it fails to compile:
- * at project scope `java` resolves to the Java plugin extension, so
- * `java.util` is read as a member access on an unrelated object and Kotlin
- * reports "Unresolved reference: util". Importing the type sidesteps the
- * collision entirely.
+ * at project scope `java` resolves to the Java plugin extension, so `java.util`
+ * is read as a member access on an unrelated object and Kotlin reports
+ * "Unresolved reference: util". Importing the type sidesteps the collision.
  */
 val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
@@ -166,4 +165,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
