@@ -1658,7 +1658,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         override fun onDownloadRequested(url: String, contentType: String?) {
-            enqueueDownload(url, null, null, contentType, null)
+            enqueueDownload(url, null, null, contentType)
         }
 
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit

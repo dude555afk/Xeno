@@ -147,11 +147,11 @@ class GeckoBrowserSession(
                 listener?.onCloseRequested()
             }
 
-            override fun onExternalResponse(session: GeckoSession, response: org.mozilla.geckoview.WebResponse) {
-                val contentType = response.headers.entries
-                    .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
-                    ?.value
-                listener?.onDownloadRequested(response.uri, contentType)
+            override fun onExternalResponse(
+                session: GeckoSession,
+                response: GeckoSession.WebResponseInfo
+            ) {
+                listener?.onDownloadRequested(response.uri, response.contentType)
             }
         })
 
