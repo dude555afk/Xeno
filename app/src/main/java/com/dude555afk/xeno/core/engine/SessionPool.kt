@@ -161,7 +161,7 @@ private object GeckoRuntimeOwner {
 
         // Keep Mozilla telemetry and crash uploads disabled in Xeno's embedded engine.
         // GeckoView reads this app-private config before starting the Gecko runtime.
-        val privacyConfig = File(appContext.filesDir, "geckoview-privacy.yaml")
+        val privacyConfig = File(appContext.filesDir, "geckoview-privacy-$profileName.yaml")
         val privacyPreferences = """
             prefs:
               toolkit.telemetry.enabled: false
