@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild]
+    branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild, feature/xeno-gecko-arc-rebuild]
     tags: ['v*']
   pull_request:
     branches: [main]
