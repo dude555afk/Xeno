@@ -1,0 +1,92 @@
+package com.prirai.android.nira.integration
+
+import android.content.Context
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentManager
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.prirai.android.nira.R
+import com.prirai.android.nira.browser.ReaderAppearanceBottomSheet
+import mozilla.components.browser.state.selector.selectedTab
+import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.browser.toolbar.BrowserToolbar
+import mozilla.components.concept.engine.Engine
+import mozilla.components.feature.readerview.ReaderViewFeature
+import mozilla.components.feature.readerview.view.ReaderViewControlsView
+import mozilla.components.support.base.feature.LifecycleAwareFeature
+import mozilla.components.support.base.feature.UserInteractionHandler
+import mozilla.components.support.ktx.android.content.getColorFromAttr
+
+class ReaderModeIntegration(
+    context: Context,
+    engine: Engine,
+    store: BrowserStore,
+    toolbar: BrowserToolbar,
+    val controlsView: ReaderViewControlsView,
+    readerViewAppearanceButton: FloatingActionButton,
+    private val fragmentManager: FragmentManager
+) : LifecycleAwareFeature, UserInteractionHandler {
+
+    private var readerViewButtonVisible = false
+
+    private val readerViewButton: BrowserToolbar.ToggleButton = BrowserToolbar.ToggleButton(
+        image = ContextCompat.getDrawable(context, mozilla.components.ui.icons.R.drawable.mozac_ic_reader_view_24)!!.mutate().apply {
+            setTint(context.getColorFromAttr(android.R.attr.textColorPrimary))
+        },
+        imageSelected = ContextCompat.getDrawable(context, mozilla.components.ui.icons.R.drawable.mozac_ic_reader_view_fill_24)!!.mutate().apply {
+            setTint(ContextCompat.getColor(context, R.color.photonBlue40))
+        },
+        contentDescription = context.getString(R.string.mozac_reader_view_description),
+        contentDescriptionSelected = context.getString(R.string.mozac_reader_view_description_selected),
+        selected = store.state.selectedTab?.readerState?.active ?: false,
+        visible = { readerViewButtonVisible }
+    ) { enabled ->
+        if (enabled) {
+            feature.showReaderView()
+            readerViewAppearanceButton.show()
+        } else {
+            feature.hideReaderView()
+            feature.hideControls()
+            readerViewAppearanceButton.hide()
+        }
+    }
+
+    init {
+        toolbar.addPageAction(readerViewButton)
+        readerViewAppearanceButton.setOnClickListener {
+            val bottomSheet = com.prirai.android.nira.browser.ReaderAppearanceBottomSheet.newInstance(
+                feature, controlsView
+            )
+            bottomSheet.show(fragmentManager, com.prirai.android.nira.browser.ReaderAppearanceBottomSheet.TAG)
+        }
+    }
+
+    // AC 156 added an `onListenClicked` parameter to ReaderViewFeature after
+    // `onReaderViewStatusChange`, so the trailing-lambda position no longer
+    // implicitly binds to the status-change callback. Pass the callback by
+    // name to keep the intent explicit.
+    private val feature = ReaderViewFeature(
+        context = context,
+        engine = engine,
+        store = store,
+        controlsView = controlsView,
+        onReaderViewStatusChange = { available, active ->
+            readerViewButtonVisible = available
+            readerViewButton.setSelected(active)
+
+            if (active) readerViewAppearanceButton.show() else readerViewAppearanceButton.hide()
+            toolbar.invalidateActions()
+        },
+    )
+
+    override fun start() {
+        feature.start()
+    }
+
+    override fun stop() {
+        feature.stop()
+    }
+
+    override fun onBackPressed(): Boolean {
+        return feature.onBackPressed()
+    }
+}
