@@ -7,7 +7,7 @@ on:
     paths:
       - .github/workflows/import-nira-core.yml
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
     branches:
       - feature/xeno-gecko-arc-rebuild
 
