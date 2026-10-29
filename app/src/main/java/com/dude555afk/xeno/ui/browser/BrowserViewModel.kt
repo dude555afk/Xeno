@@ -1207,9 +1207,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 engine.answer(query, settings.providerConfig).collect { result ->
                     _state.update {
+                        // A non-empty chunk does not mean the stream has finished.
+                        // Keep the loading state active until collect completes below.
                         it.copy(
                             answer = result,
-                            answerStreaming = result.markdown.isBlank()
+                            answerStreaming = true
                         )
                     }
                 }
