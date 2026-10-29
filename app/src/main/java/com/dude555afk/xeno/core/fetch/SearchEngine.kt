@@ -177,7 +177,7 @@ class SearchEngine(private val context: Context) {
                   var u = new URL(href, location.href);
                   if (u.hostname.toLowerCase() === 'duckduckgo.com' && u.pathname === '/l/') {
                     var target = u.searchParams.get('uddg');
-                    if (target) href = decodeURIComponent(target);
+                    if (target) href = target;
                   }
                 } catch (e) {}
                 return href;

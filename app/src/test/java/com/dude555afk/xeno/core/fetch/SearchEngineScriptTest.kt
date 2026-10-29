@@ -17,4 +17,13 @@ class SearchEngineScriptTest {
             assertTrue(script.contains("!/^https?:\\/\\//i.test"))
         }
     }
+    @Test
+    fun ddgRedirectTargetIsNotDecodedTwice() {
+        // URLSearchParams.get() already percent-decodes the uddg parameter.
+        // A second decode corrupts destination URLs whose own query contains
+        // encoded percent sequences (and can throw on malformed sequences).
+        assertTrue(SearchEngine.SCRAPE_DDG.contains("u.searchParams.get('uddg')"))
+        assertTrue(!SearchEngine.SCRAPE_DDG.contains("decodeURIComponent(target)"))
+    }
+
 }
