@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -607,6 +608,22 @@ private fun FloatingBar(
                         dragDistance = 0f
                     },
                     onDragCancel = { dragDistance = 0f }
+                )
+            }
+            .pointerInput(tabs, activeTabId) {
+                var verticalDistance = 0f
+                detectVerticalDragGestures(
+                    onVerticalDrag = { change, amount ->
+                        verticalDistance += amount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        // Candy-style gesture: pull the floating chrome upward to open
+                        // the visual tab coverflow without needing a tiny tab button.
+                        if (verticalDistance <= -56f) onOpenTabs()
+                        verticalDistance = 0f
+                    },
+                    onDragCancel = { verticalDistance = 0f }
                 )
             }
             .animateContentSize(animationSpec = tween(durationMillis = 230))
