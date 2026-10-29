@@ -45,9 +45,11 @@ jobs:
             '- This is an experimental branch; the stable Xeno branches are not changed.' \
             '- Branding/package identity changes should be made only after the upstream baseline builds and is smoke-tested.' \
             > "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md"
+          # Keep this repository's workflow files: the GitHub App token cannot
+          # rewrite workflow definitions without a separate workflows permission.
           rsync -a --delete \
             --exclude='.git/' \
-            --exclude='.github/workflows/import-candy-upstream.yml' \
+            --exclude='.github/workflows/' \
             "$RUNNER_TEMP/candy-browser/" "$GITHUB_WORKSPACE/"
           cp "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md" "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md"
 
