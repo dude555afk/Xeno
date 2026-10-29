@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,14 +40,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.SearchHit
@@ -55,15 +60,6 @@ import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.XenoMotion
 
-/**
- * The command palette — the centre of the whole UI.
- *
- * Dual-purpose by design: hit **Go** and it navigates, hit **Ask Xeno** and the
- * same query routes to the answer engine. One keystroke apart, no mode
- * switching, exactly the way Arc's bar feels.
- *
- * Enters with a spring, never a slide — see docs/DESIGN.md.
- */
 @Composable
 fun CommandPalette(
     visible: Boolean,
@@ -80,6 +76,24 @@ fun CommandPalette(
     onDismiss: () -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            focusRequester.requestFocus()
+            keyboard?.show()
+        } else {
+            keyboard?.hide()
+        }
+    }
+
+    val submitQuery = {
+        val submitted = query.trim()
+        if (submitted.isNotEmpty()) {
+            keyboard?.hide()
+            if (isQuestion) onAsk(submitted) else onNavigate(submitted)
+        }
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -104,13 +118,13 @@ fun CommandPalette(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .imePadding()
                     .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceXl)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
-                    ) { /* swallow so the backdrop isn't dismissed */ }
+                    ) { /* keep the palette open */ }
             ) {
-                // The bar itself — a pill, docked at the bottom.
                 Surface(
                     shape = RoundedCornerShape(percent = 50),
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -133,7 +147,7 @@ fun CommandPalette(
                         BasicTextField(
                             value = query,
                             onValueChange = onQueryChange,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).focusRequester(focusRequester),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurface
@@ -141,13 +155,13 @@ fun CommandPalette(
                             cursorBrush = SolidColor(accent),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
-                                onGo = { keyboard?.hide(); onNavigate(query.trim()) },
-                                onSearch = { keyboard?.hide(); onNavigate(query.trim()) }
+                                onGo = { submitQuery() },
+                                onSearch = { submitQuery() }
                             ),
                             decorationBox = { inner ->
                                 if (query.isEmpty()) {
                                     Text(
-                                        text = "Search or ask anything",
+                                        "Search or ask anything",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -157,10 +171,6 @@ fun CommandPalette(
                         )
 
                         if (query.isNotBlank()) {
-                            // The dual mode — this button is the whole trick.
-                            // The label reflects what the heuristic thinks, so
-                            // the user knows which one the keyboard Go key is
-                            // about to do. Both paths stay reachable regardless.
                             TextButton(
                                 onClick = { keyboard?.hide(); onAsk(query.trim()) },
                                 shape = PillShape,
@@ -170,8 +180,9 @@ fun CommandPalette(
                                 )
                             ) {
                                 Text(
-                                    text = if (isQuestion) "Ask" else "Ask anyway",
-                                    style = MaterialTheme.typography.labelLarge
+                                    if (isQuestion) "Ask" else "Ask anyway",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }
@@ -179,8 +190,6 @@ fun CommandPalette(
                 }
 
                 Spacer(Modifier.height(Dimens.spaceM))
-
-                // Suggestions — tabs and history, fuzzy filtered by the caller.
                 if (query.isNotBlank() && (tabHints.isNotEmpty() || historyHints.isNotEmpty())) {
                     Surface(
                         shape = RoundedCornerShape(Dimens.cardRadius),
@@ -198,7 +207,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.Article,
                                     title = tab.displayTitle,
                                     subtitle = tab.url,
-                                    onClick = { onOpenTab(tab) }
+                                    onClick = { keyboard?.hide(); onOpenTab(tab) }
                                 )
                             }
                             items(historyHints, key = { "hist-${it.url}" }) { hit ->
@@ -206,7 +215,7 @@ fun CommandPalette(
                                     icon = Icons.Rounded.History,
                                     title = hit.title.ifBlank { hit.url },
                                     subtitle = hit.url,
-                                    onClick = { onNavigate(hit.url) }
+                                    onClick = { keyboard?.hide(); onNavigate(hit.url) }
                                 )
                             }
                         }
@@ -248,14 +257,14 @@ private fun SuggestionRow(
         Spacer(Modifier.width(Dimens.spaceM))
         Column(Modifier.weight(1f)) {
             Text(
-                text = title,
+                title,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
             if (subtitle.isNotBlank()) {
                 Text(
-                    text = subtitle,
+                    subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
