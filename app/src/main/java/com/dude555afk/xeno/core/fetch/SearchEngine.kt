@@ -167,11 +167,11 @@ class SearchEngine(private val context: Context) {
         private const val SEARCH_TOTAL_TIMEOUT_MS = 24_000L
 
         /** DDG's result containers. `data-testid` is the stable one. */
-        private val SCRAPE_DDG = """
+        internal val SCRAPE_DDG = """
             (function(){
               var out = [];
               var seen = {};
-              function clean(s) { return (s || '').replace(/\\s+/g, ' ').trim(); }
+              function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
               function destination(href) {
                 try {
                   var u = new URL(href, location.href);
@@ -189,7 +189,7 @@ class SearchEngine(private val context: Context) {
                 var a = n.querySelector('a[data-testid="result-title-a"], a.result__a, h2 a[href], a[href]');
                 if (!a) continue;
                 var href = destination(a.href || '');
-                if (!/^https?:\\/\\//i.test(href)) continue;
+                if (!/^https?:\/\//i.test(href)) continue;
                 try { if (new URL(href).hostname.toLowerCase() === 'duckduckgo.com') continue; } catch(e) { continue; }
                 if (seen[href]) continue;
                 var title = clean(a.innerText || a.textContent).slice(0, 160);
@@ -208,14 +208,14 @@ class SearchEngine(private val context: Context) {
             })()
         """.trimIndent()
 
-        private val SCRAPE_DDG_LITE = """
+        internal val SCRAPE_DDG_LITE = """
             (function(){
               var out = [];
               var links = document.querySelectorAll('a.result-link, a.result__a, h2 a[href]');
-              function clean(s) { return (s || '').replace(/\\s+/g, ' ').trim(); }
+              function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
               for (var i = 0; i < links.length && out.length < 12; i++) {
                 var a = links[i];
-                if (!a.href || !/^https?:\\/\\//i.test(a.href)) continue;
+                if (!a.href || !/^https?:\/\//i.test(a.href)) continue;
                 var host = '';
                 try { host = new URL(a.href).hostname.toLowerCase(); } catch(e) { continue; }
                 if (host === 'duckduckgo.com' || host.endsWith('.duckduckgo.com')) continue;
