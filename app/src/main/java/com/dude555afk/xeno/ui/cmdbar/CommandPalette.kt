@@ -129,10 +129,10 @@ fun CommandPalette(
                     Brush.linearGradient(
                         colorStops = arrayOf(
                             0.0f to Color(0xFFD4D0F7),
-                            0.078f to Color(0xFF1C192E),
+                            0.078f to Color(0xFFD4D0F7),
                             0.287f to Color(0xFFC4BDF1),
                             0.751f to Color(0xFFE9E4FA),
-                            1.0f to Color(0xFF2D2E32)
+                            1.0f to Color(0xFFE9E4FA)
                         )
                     )
                 )
@@ -228,7 +228,7 @@ fun CommandPalette(
                                 Icon(
                                     imageVector = Icons.Rounded.VisibilityOff,
                                     contentDescription = if (isPrivateMode) "Exit incognito" else "Open incognito",
-                                    tint = if (isPrivateMode) Color(0xFFF7F4FC) else Color(0xFFB9B3C5),
+                                    tint = if (isPrivateMode) Color(0xFF302D43) else Color(0xFF716B83),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -248,7 +248,7 @@ fun CommandPalette(
                                 Icon(
                                     Icons.Rounded.Search,
                                     contentDescription = null,
-                                    tint = Color(0xFFB9B3C5),
+                                    tint = Color(0xFF716B83),
                                     modifier = Modifier.size(19.dp)
                                 )
                                 Text(
@@ -347,7 +347,7 @@ fun CommandPalette(
                         if (loading) {
                             LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth(),
-                                color = Color(0xFF8A79FF),
+                                color = Color(0xFF6556BD),
                                 trackColor = Color.Transparent
                             )
                         }
@@ -400,7 +400,7 @@ private fun PaletteSuggestionRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFF7F4FC),
+                color = Color(0xFF302D43),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -408,7 +408,7 @@ private fun PaletteSuggestionRow(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFA7A0B4),
+                    color = Color(0xFF77718A),
                     fontSize = 10.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
