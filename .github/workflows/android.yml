@@ -9,7 +9,7 @@ on:
     branches: [main, feature/xeno-arc-search-authentic, feature/xeno-arc-search-e2e-rebuild, feature/xeno-gecko-arc-rebuild, feature/xeno-candy-ui]
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, feature/xeno-gecko-arc-rebuild]
   workflow_dispatch:
 
 permissions:
