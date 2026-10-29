@@ -1,88 +1,37 @@
-# Xeno
+# Xeno Browser
 
-**A lightweight, AI-powered browser for Android.**
+**Xeno is rebuilding its browser core on an existing GeckoView browser implementation.**
 
-Arc-grade feel — spaces, peek bubbles, a command palette that doubles as an answer engine — at a fraction of the footprint. No Gecko, no Electron. Just the system WebView and a lot of taste.
+This experimental branch pins [Omni Browser by RebelRoot](https://github.com/REBEL-ROOT/omni-browser) as the browser core and applies Xeno's package name, launcher mark, and branding in CI. This avoids pretending a small homegrown shell is a complete browser. The core includes GeckoView, real tab/session handling, download management, bookmarks/history, WebExtensions, content blocking, site permissions, and browser utilities.
 
----
+The core is licensed under **GNU GPL v3.0**. Original copyright headers are retained, and the app's About screen shows attribution to the upstream project. Xeno is an independent fork, not endorsed by RebelRoot.
 
-## What it is
+## How this branch works
 
-Xeno is a browser built around one idea: **the address bar should answer, not just navigate.**
+- `browser-core` is a pinned Git submodule, so the underlying browser code remains traceable to the exact upstream commit.
+- `scripts/rebrand_xeno.py` applies Xeno's package ID, app name, launcher icon, and in-app attribution to the checked-out source before the build.
+- The Android CI builds and tests the GeckoView core and uploads an ARM64 debug APK.
 
-Type a question, get a cited, synthesized answer sourced from the live web. Type a URL, get a page. One bar, two modes, one keystroke apart.
+This is a **baseline for experiments**, not a claim that every feature has been independently tested on Xeno. Successful CI confirms the source compiles and its unit tests run; it does not replace real-device website, download, login, and crash testing.
 
-```
-you:   "what's quantum entanglement?"
-xeno:  ┌─────────────────────────────┐
-       │ Entanglement is a quantum   │
-       │ correlation where measuring │
-       │ one particle fixes the      │
-       │ state of its partner        │
-       │ instantly, at any distance  │
-       │ [1][3]                      │
-       └─────────────────────────────┘
-         [1] Nature   [3] Physics.SE
-```
+## Build locally
 
-## Feature set
+Clone with submodules, then:
 
-| Feature | Status |
-|---|---|
-| WebView engine + multi-session pool | 🚧 planned |
-| Readability.js page extraction | 🚧 planned |
-| Filter-list ad blocking (uBO lists, native) | 🚧 planned |
-| Spaces (accent-tinted workspaces) | 🚧 planned |
-| Peek bubble (Little Arc equivalent) | 🚧 planned |
-| Command palette + fuzzy search | 🚧 planned |
-| **AI answer engine (search → fetch → cite)** | 🎯 flagship |
-| Streaming page summarizer | 🚧 planned |
-| Semantic tab/history search (MiniLM) | 🚧 planned |
-| TextRank offline summarizer (fallback) | 🚧 planned |
-
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│                    UI                        │
-│   Spaces · Tab stack · Command bar · AI sheet │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               AI LAYER                        │
-│   summarizer · answer engine · embeddings     │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               CORE                            │
-│   reader (Readability.js) · fetch/rank        │
-│   blocking (adblock-rust + uBO lists)         │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│            ENGINE                             │
-│      Android System WebView                   │
-└──────────────────────────────────────────────┘
+```bash
+git clone --recurse-submodules https://github.com/dude555afk/Xeno.git
+cd Xeno
+python3 scripts/rebrand_xeno.py browser-core
+cd browser-core
+./gradlew compileAarch64DebugKotlin testUniversalDebugUnitTest assembleAarch64Debug
 ```
 
-**See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the pipeline specs and
-[`docs/DESIGN.md`](docs/DESIGN.md) for the design tokens.**
+Requires JDK 17 and Android SDK 36.
 
-## Stack
+## Attribution and license
 
-- Kotlin + Jetpack Compose (Material 3), `minSdk 26`, `targetSdk 35`
-- Android System WebView (zero extra engine bytes)
-- `adblock-rust` for native filter-list blocking — uBlock Origin's lists and syntax, without the 190 MB Gecko engine
-- Readability.js injected in-page for clean text extraction
-- Kilo Gateway (OpenAI-compatible) as the default AI backend, BYOK for anything OpenAI-compatible
-- MiniLM ONNX via sherpa-onnx for on-device semantic search
+- Upstream project: [Omni Browser by RebelRoot](https://github.com/REBEL-ROOT/omni-browser)
+- License: [GPL-3.0](https://github.com/REBEL-ROOT/omni-browser/blob/main/LICENSE)
+- Upstream branding/trademark requirements: [TRADEMARK.md](https://github.com/REBEL-ROOT/omni-browser/blob/main/TRADEMARK.md)
 
-## Design language
-
-AMOLED black, frosted glass, everything is a pill, spring physics on every overlay. Design tokens live in [`docs/DESIGN.md`](docs/DESIGN.md).
-
-## Status
-
-Early scaffolding. First module going in: reader + summarizer pipeline.
+The app must be distributed with corresponding source and the GPL notices. No association or endorsement by RebelRoot is implied.

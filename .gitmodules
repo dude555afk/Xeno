@@ -1,0 +1,3 @@
+[submodule "browser-core"]
+	path = browser-core
+	url = https://github.com/REBEL-ROOT/omni-browser.git
