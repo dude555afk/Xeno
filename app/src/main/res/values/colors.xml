@@ -1,24 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="xeno_black">#FF000000</color>
-
-    <!--
-      Brand colours from the launcher-arch mark.
-
-      The icon background is #121C38-to-#070A18 and the mark runs
-      #A855F7 / #6366F1 / #22D3EE left to right. These are kept in sync with
-      drawable/ic_launcher_background.xml by hand — there is no single source of
-      truth shared between a vector drawable and a colour resource.
-    -->
-
-    <!-- Icon / splash ground, matches the top of the background gradient. -->
-    <color name="xeno_navy">#FF121C38</color>
-    <color name="xeno_navy_deep">#FF070A18</color>
-
-    <!-- The arch endpoints, for anything that needs one solid brand colour. -->
-    <color name="xeno_violet">#FFA855F7</color>
-    <color name="xeno_indigo">#FF6366F1</color>
-    <color name="xeno_cyan">#FF22D3EE</color>
-
-    <color name="xeno_accent">#FF6366F1</color>
+    <color name="candy_notification_accent">#FF6750A4</color>
+    <color name="candy_widget_surface">#FFF8FC</color>
+    <color name="candy_widget_divider">#FFD9E0</color>
+    <color name="candy_widget_on_surface">#FF24212A</color>
+    <color name="candy_widget_on_surface_variant">#FF5F5A66</color>
+    <color name="candy_widget_accent">#FF50618F</color>
+    <color name="candy_widget_accent_container">#FFE7E9F3</color>
 </resources>

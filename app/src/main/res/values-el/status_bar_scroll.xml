@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_bar_scroll_accessibility_service_label">Κύλιση από τη γραμμή κατάστασης του Candy</string>
+    <string name="status_bar_scroll_accessibility_service_description">Ένα πάτημα στο κέντρο της γραμμής κατάστασης μεταφέρει την τρέχουσα σελίδα του Candy στην κορυφή. Το Candy δεν διαβάζει το περιεχόμενο των παραθύρων.</string>
+    <string name="status_bar_scroll_target_description">Κύλιση της τρέχουσας σελίδας στην κορυφή</string>
+    <string name="settings_status_bar_scroll_title">Πατήστε τη γραμμή κατάστασης για κύλιση στην κορυφή</string>
+    <string name="settings_status_bar_scroll_summary">Προσθέτει μια αόρατη περιοχή αφής στο κέντρο της γραμμής κατάστασης του Android. Απαιτείται πρόσβαση προσβασιμότητας για το Candy.</string>
+    <string name="settings_status_bar_scroll_width_title">Πλάτος περιοχής αφής</string>
+    <string name="settings_status_bar_scroll_width_summary">%1$d%% του πλάτους της οθόνης</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_title">Να επιτραπεί η πρόσβαση προσβασιμότητας στο Candy;</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_message">Το Candy χρησιμοποιεί μια υπηρεσία προσβασιμότητας Android που ελέγχει τα ονόματα πακέτων από συμβάντα παραθύρων, για να διαπιστώσει αν το Candy βρίσκεται στο προσκήνιο. Ένα πάτημα στη γραμμή κατάστασης μεταφέρει τη σελίδα στην αρχή και ένα σύρσιμο ανοίγει τις ειδοποιήσεις ή τις γρήγορες ρυθμίσεις. Η υπηρεσία δεν διαβάζει περιεχόμενο παραθύρων ούτε κοινοποιεί αυτά τα δεδομένα. Συνεχίστε για να την ενεργοποιήσετε στις ρυθμίσεις Android.</string>
+    <string name="settings_status_bar_scroll_accessibility_open">Συμφωνώ και ανοίγω τις ρυθμίσεις</string>
+    <string name="settings_status_bar_scroll_enable_for_domain">Ενεργοποίηση κύλισης από τη γραμμή κατάστασης για αυτόν τον ιστότοπο</string>
+    <string name="settings_status_bar_scroll_disable_for_domain">Απενεργοποίηση κύλισης από τη γραμμή κατάστασης για αυτόν τον ιστότοπο</string>
+</resources>

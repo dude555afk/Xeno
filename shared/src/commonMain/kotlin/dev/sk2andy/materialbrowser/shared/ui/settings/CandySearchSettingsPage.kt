@@ -1,0 +1,127 @@
+package dev.sk2andy.materialbrowser.shared.ui.settings
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import dev.sk2andy.materialbrowser.browser.SearchEngine
+import dev.sk2andy.materialbrowser.browser.SearchSettingsRules
+
+internal object CandySearchSettingsTestTags {
+    const val SEARCH_ENGINE = "search_settings_search_engine"
+    const val SEARXNG_INSTANCE_URL = "search_settings_searxng_instance_url"
+}
+
+@Composable
+internal fun CandySearchSettingsPage(
+    searchEngine: SearchEngine,
+    searxngInstanceUrl: String,
+    onSearchEngineChanged: (SearchEngine) -> Unit,
+    onSearxngInstanceUrlChanged: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    var instanceUrlDraft by remember(searxngInstanceUrl) {
+        mutableStateOf(searxngInstanceUrl)
+    }
+    SettingsPage(
+        title = "Suche",
+        backContentDescription = "Zurück",
+        onBack = onBack,
+    ) {
+        SettingsHeaderIllustration(SettingsHeaderArtwork.SearchEngines)
+        SettingsPageSpacer()
+        SettingsPreferenceGroup(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            SearchEngineRadioOptions(
+                title = "Suchmaschine",
+                searchEngine = searchEngine,
+                onSearchEngineChanged = onSearchEngineChanged,
+                modifier = Modifier.testTag(CandySearchSettingsTestTags.SEARCH_ENGINE),
+            )
+
+            if (searchEngine == SearchEngine.SearXNG) {
+                SettingsPageSpacer()
+                val normalizedInstanceUrl = SearchSettingsRules.normalizedSearxngInstanceUrl(
+                    instanceUrlDraft,
+                )
+                OutlinedTextField(
+                    value = instanceUrlDraft,
+                    onValueChange = { value ->
+                        val boundedValue = value.take(
+                            SearchSettingsRules.MAX_SEARXNG_INSTANCE_URL_LENGTH,
+                        )
+                        val normalizedValue = SearchSettingsRules.normalizedSearxngInstanceUrl(
+                            boundedValue,
+                        )
+                        instanceUrlDraft = boundedValue
+                        when {
+                            boundedValue.isBlank() -> onSearxngInstanceUrlChanged("")
+                            normalizedValue != null -> onSearxngInstanceUrlChanged(normalizedValue)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 8.dp)
+                        .testTag(CandySearchSettingsTestTags.SEARXNG_INSTANCE_URL),
+                    label = { Text("SearXNG-Instanz-URL") },
+                    supportingText = {
+                        Text(
+                            if (instanceUrlDraft.isNotBlank() && normalizedInstanceUrl == null) {
+                                "Gib eine gültige HTTP- oder HTTPS-URL ohne Zugangsdaten, Abfrage oder Fragment ein."
+                            } else {
+                                "Basis-URL, optional mit Pfad. HTTPS wird empfohlen."
+                            },
+                        )
+                    },
+                    isError = instanceUrlDraft.isNotBlank() && normalizedInstanceUrl == null,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done,
+                    ),
+                    singleLine = true,
+                )
+                Text(
+                    "Suchanfragen werden direkt in der ausgewählten Instanz geöffnet.",
+                    modifier = Modifier.padding(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 14.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Shared built-in engine choices for the Android and Core settings surfaces. */
+@Composable
+fun SearchEngineRadioOptions(
+    title: String,
+    searchEngine: SearchEngine,
+    onSearchEngineChanged: (SearchEngine) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.settingsSearchTarget(title).selectableGroup()) {
+        SettingsSectionTitle(title)
+        SearchEngine.entries.forEachIndexed { index, engine ->
+            if (index > 0) SettingsPreferenceDivider()
+            SettingsRadioOption(
+                label = engine.displayName,
+                selected = engine == searchEngine,
+                onClick = { onSearchEngineChanged(engine) },
+                modifier = Modifier.testTag("search_settings_engine_${engine.stableId}"),
+            )
+        }
+    }
+}

@@ -1,12 +1,6 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -17,8 +11,19 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        exclusiveContent {
+            forRepository { maven("https://jitpack.io") }
+            filter { includeGroup("com.github.Dimezis") }
+        }
+        exclusiveContent {
+            forRepository { maven("https://maven.mozilla.org/maven2/") }
+            filter { includeGroup("org.mozilla.geckoview") }
+        }
     }
 }
 
-rootProject.name = "Xeno"
+rootProject.name = "MaterialBrowser"
 include(":app")
+include(":shared")
+
+include(":pocket-runtime")

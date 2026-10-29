@@ -1,0 +1,585 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A20000000000000000000001 /* CandyIosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* CandyIosApp.swift */; };
+		A20000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* ContentView.swift */; };
+		A20000000000000000000003 /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000003 /* BrowserViewModel.swift */; };
+		A20000000000000000000004 /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000004 /* BrowserWebView.swift */; };
+		A20000000000000000000005 /* ToppingInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000005 /* ToppingInstaller.swift */; };
+		A20000000000000000000006 /* CandyShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A30000000000000000000008 /* CandyShared.framework */; };
+		A20000000000000000000007 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A30000000000000000000009 /* WebKit.framework */; };
+		A20000000000000000000008 /* WKWebViewBrowserSessionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000010 /* WKWebViewBrowserSessionAdapter.swift */; };
+		A20000000000000000000009 /* BrowserTabSnapshotRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000011 /* BrowserTabSnapshotRules.swift */; };
+		A2000000000000000000000A /* BrowserTabSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000012 /* BrowserTabSnapshotStore.swift */; };
+		A2000000000000000000000B /* BrowserTabOverviewMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000013 /* BrowserTabOverviewMode.swift */; };
+		A2000000000000000000000C /* BrowserFeatureSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000014 /* BrowserFeatureSurfaces.swift */; };
+		A2000000000000000000000D /* BrowserPageExtractionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000015 /* BrowserPageExtractionRules.swift */; };
+		A2000000000000000000000E /* ToppingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000016 /* ToppingStore.swift */; };
+		A2000000000000000000000F /* WebKitBlocking.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000017 /* WebKitBlocking.swift */; };
+		A2000000000000000000001C /* CandyComposeHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000024 /* CandyComposeHost.swift */; };
+		A2000000000000000000001D /* ToppingRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000025 /* ToppingRuntime.swift */; };
+		A2000000000000000000001E /* ToppingDependencyResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000026 /* ToppingDependencyResolver.swift */; };
+		A2000000000000000000001F /* ToppingValueRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000027 /* ToppingValueRules.swift */; };
+		A20000000000000000000020 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000028 /* Assets.xcassets */; };
+		A20000000000000000000021 /* BrowserTranslationProviderPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000029 /* BrowserTranslationProviderPreference.swift */; };
+		A20000000000000000000022 /* CandyNativeBrowserChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002A /* CandyNativeBrowserChrome.swift */; };
+		A20000000000000000000023 /* LiquidGlassPresentationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002B /* LiquidGlassPresentationRules.swift */; };
+		A20000000000000000000024 /* device-icons-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002C /* device-icons-v1.json */; };
+		A20000000000000000000025 /* SwiftArgon2 in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* SwiftArgon2 */; };
+		A20000000000000000000026 /* IosSyncRecoveryKeyDeriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002D /* IosSyncRecoveryKeyDeriver.swift */; };
+		A20000000000000000000027 /* IosSyncTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002E /* IosSyncTransport.swift */; };
+		A20000000000000000000028 /* IosSyncPlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002F /* IosSyncPlatform.swift */; };
+		B50000000000000000000001 /* BrowserMenuLayoutPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* BrowserMenuLayoutPreference.swift */; };
+		C10000000000000000000001 /* ToppingFrameRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000002 /* ToppingFrameRules.swift */; };
+		A20000000000000000000010 /* blocked_hosts.txt in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000018 /* blocked_hosts.txt */; };
+		A20000000000000000000011 /* easylist_blocked_hosts.txt in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000019 /* easylist_blocked_hosts.txt */; };
+		A20000000000000000000012 /* hagezi_blocked_hosts.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001A /* hagezi_blocked_hosts.txt */; };
+		A20000000000000000000013 /* uassets_blocked_hosts.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001B /* uassets_blocked_hosts.txt */; };
+		A20000000000000000000014 /* easylist_allowed_host_pairs.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001C /* easylist_allowed_host_pairs.txt */; };
+		A20000000000000000000015 /* uassets_allowed_host_pairs.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001D /* uassets_allowed_host_pairs.txt */; };
+		A20000000000000000000016 /* uassets_blocked_host_pairs.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001E /* uassets_blocked_host_pairs.txt */; };
+		A20000000000000000000017 /* easylist_cosmetic_rules.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001F /* easylist_cosmetic_rules.txt */; };
+		A20000000000000000000018 /* uassets_cosmetic_rules.txt in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000020 /* uassets_cosmetic_rules.txt */; };
+		A20000000000000000000019 /* candy_default_rules.txt in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000021 /* candy_default_rules.txt */; };
+		A2000000000000000000001A /* easylist_cookie_banner.css in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000022 /* easylist_cookie_banner.css */; };
+		A2000000000000000000001B /* cookie_banner_overrides.css in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000023 /* cookie_banner_overrides.css */; };
+		7A1C25D5DD7CDEE8EE64F34D /* BrowserLocalStateBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48ED00FC172529BBCDBF60D0 /* BrowserLocalStateBridge.swift */; };
+		A58EC63B5F755D8BBF1BB80A /* BrowserLocalStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1A0271A9F2F1F1E177CC99 /* BrowserLocalStateStore.swift */; };
+		9EA7033A0456FA6310167ED4 /* BrowserReaderSpeechAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEBBAFA87E4FB1B01AAD5D5 /* BrowserReaderSpeechAdapter.swift */; };
+		4AEA5FA985D2B5ECC7786C4B /* BrowserWebPromptPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE6439F26A778AD868ABD1 /* BrowserWebPromptPresenter.swift */; };
+		B2EBA49DCF6B1B5A12FE3C21 /* BrowserReaderLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73079CBF26BBAAE000A015D0 /* BrowserReaderLibraryStore.swift */; };
+		DB7BA4BDA3E6AB7552C4EDF9 /* BrowserReaderLibraryAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80F125BCAB368E6A59B37A3 /* BrowserReaderLibraryAdapter.swift */; };
+		705D1FA0F385CE858E162CED /* BrowserDownloadRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66D4D51A7E025A6B9D78E28 /* BrowserDownloadRuntime.swift */; };
+		EC2B610481F478DAD025F5EE /* BrowserDownloadFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BBBEE011D5F240F11DCE0EC /* BrowserDownloadFileStore.swift */; };
+		D0A30C0A181E45A783D77302 /* BrowserSnoozeNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A30C0A181E45A783D77301 /* BrowserSnoozeNotifications.swift */; };
+		10F0443F794AA8FCFFE31A1B /* BrowserAppearancePreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B33A382A762CFEBF89CC00A /* BrowserAppearancePreference.swift */; };
+		A71017000000000000000001 /* BrowserAddressBarPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71017000000000000000002 /* BrowserAddressBarPreference.swift */; };
+		134265B8B05F4AC6AB7ADEA5 /* BrowserViewportInsetsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD72169B32CD4E0C9AB1517D /* BrowserViewportInsetsRules.swift */; };
+		8B60D013EA394E3B8814A9F1 /* BrowserLocalProfileRestore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B0285640F24A638C22DD0D /* BrowserLocalProfileRestore.swift */; };
+		B72017000000000000000001 /* CandyBrowserChromeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B72017000000000000000002 /* CandyBrowserChromeUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B7201700000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A70000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000001;
+			remoteInfo = CandyIos;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A30000000000000000000001 /* CandyIosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandyIosApp.swift; sourceTree = "<group>"; };
+		A30000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A30000000000000000000003 /* BrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
+		A30000000000000000000004 /* BrowserWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserWebView.swift; sourceTree = "<group>"; };
+		A30000000000000000000005 /* ToppingInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingInstaller.swift; sourceTree = "<group>"; };
+		A30000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A30000000000000000000007 /* CandyIos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CandyIos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000000000000000000008 /* CandyShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CandyShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000000000000000000009 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		A30000000000000000000010 /* WKWebViewBrowserSessionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WKWebViewBrowserSessionAdapter.swift; sourceTree = "<group>"; };
+		A30000000000000000000011 /* BrowserTabSnapshotRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabSnapshotRules.swift; sourceTree = "<group>"; };
+		A30000000000000000000012 /* BrowserTabSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabSnapshotStore.swift; sourceTree = "<group>"; };
+		A30000000000000000000013 /* BrowserTabOverviewMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabOverviewMode.swift; sourceTree = "<group>"; };
+		A30000000000000000000014 /* BrowserFeatureSurfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserFeatureSurfaces.swift; sourceTree = "<group>"; };
+		A30000000000000000000015 /* BrowserPageExtractionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPageExtractionRules.swift; sourceTree = "<group>"; };
+		A30000000000000000000016 /* ToppingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingStore.swift; sourceTree = "<group>"; };
+		A30000000000000000000017 /* WebKitBlocking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebKitBlocking.swift; sourceTree = "<group>"; };
+		A30000000000000000000024 /* CandyComposeHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandyComposeHost.swift; sourceTree = "<group>"; };
+		A30000000000000000000025 /* ToppingRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingRuntime.swift; sourceTree = "<group>"; };
+		A30000000000000000000026 /* ToppingDependencyResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingDependencyResolver.swift; sourceTree = "<group>"; };
+		A30000000000000000000027 /* ToppingValueRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingValueRules.swift; sourceTree = "<group>"; };
+		A30000000000000000000028 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A30000000000000000000029 /* BrowserTranslationProviderPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTranslationProviderPreference.swift; sourceTree = "<group>"; };
+		A3000000000000000000002A /* CandyNativeBrowserChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandyNativeBrowserChrome.swift; sourceTree = "<group>"; };
+		A3000000000000000000002B /* LiquidGlassPresentationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassPresentationRules.swift; sourceTree = "<group>"; };
+		A3000000000000000000002C /* device-icons-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "device-icons-v1.json"; path = "../../sync/protocol/device-icons-v1.json"; sourceTree = "<group>"; };
+		A3000000000000000000002D /* IosSyncRecoveryKeyDeriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSyncRecoveryKeyDeriver.swift; sourceTree = "<group>"; };
+		A3000000000000000000002E /* IosSyncTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSyncTransport.swift; sourceTree = "<group>"; };
+		A3000000000000000000002F /* IosSyncPlatform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSyncPlatform.swift; sourceTree = "<group>"; };
+		B50000000000000000000002 /* BrowserMenuLayoutPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserMenuLayoutPreference.swift; sourceTree = "<group>"; };
+		C10000000000000000000002 /* ToppingFrameRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToppingFrameRules.swift; sourceTree = "<group>"; };
+		A30000000000000000000018 /* blocked_hosts.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = blocked_hosts.txt; sourceTree = "<group>"; };
+		A30000000000000000000019 /* easylist_blocked_hosts.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = easylist_blocked_hosts.txt; sourceTree = "<group>"; };
+		A3000000000000000000001A /* hagezi_blocked_hosts.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = hagezi_blocked_hosts.txt; sourceTree = "<group>"; };
+		A3000000000000000000001B /* uassets_blocked_hosts.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = uassets_blocked_hosts.txt; sourceTree = "<group>"; };
+		A3000000000000000000001C /* easylist_allowed_host_pairs.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = easylist_allowed_host_pairs.txt; sourceTree = "<group>"; };
+		A3000000000000000000001D /* uassets_allowed_host_pairs.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = uassets_allowed_host_pairs.txt; sourceTree = "<group>"; };
+		A3000000000000000000001E /* uassets_blocked_host_pairs.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = uassets_blocked_host_pairs.txt; sourceTree = "<group>"; };
+		A3000000000000000000001F /* easylist_cosmetic_rules.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = easylist_cosmetic_rules.txt; sourceTree = "<group>"; };
+		A30000000000000000000020 /* uassets_cosmetic_rules.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = uassets_cosmetic_rules.txt; sourceTree = "<group>"; };
+		A30000000000000000000021 /* candy_default_rules.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = candy_default_rules.txt; sourceTree = "<group>"; };
+		A30000000000000000000022 /* easylist_cookie_banner.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = easylist_cookie_banner.css; sourceTree = "<group>"; };
+		A30000000000000000000023 /* cookie_banner_overrides.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = cookie_banner_overrides.css; sourceTree = "<group>"; };
+		48ED00FC172529BBCDBF60D0 /* BrowserLocalStateBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLocalStateBridge.swift; sourceTree = "<group>"; };
+		EC1A0271A9F2F1F1E177CC99 /* BrowserLocalStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLocalStateStore.swift; sourceTree = "<group>"; };
+		FFEBBAFA87E4FB1B01AAD5D5 /* BrowserReaderSpeechAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserReaderSpeechAdapter.swift; sourceTree = "<group>"; };
+		D4FE6439F26A778AD868ABD1 /* BrowserWebPromptPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserWebPromptPresenter.swift; sourceTree = "<group>"; };
+		73079CBF26BBAAE000A015D0 /* BrowserReaderLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserReaderLibraryStore.swift; sourceTree = "<group>"; };
+		B80F125BCAB368E6A59B37A3 /* BrowserReaderLibraryAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserReaderLibraryAdapter.swift; sourceTree = "<group>"; };
+		B66D4D51A7E025A6B9D78E28 /* BrowserDownloadRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserDownloadRuntime.swift; sourceTree = "<group>"; };
+		1BBBEE011D5F240F11DCE0EC /* BrowserDownloadFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserDownloadFileStore.swift; sourceTree = "<group>"; };
+		D0A30C0A181E45A783D77301 /* BrowserSnoozeNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSnoozeNotifications.swift; sourceTree = "<group>"; };
+		9B33A382A762CFEBF89CC00A /* BrowserAppearancePreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAppearancePreference.swift; sourceTree = "<group>"; };
+		A71017000000000000000002 /* BrowserAddressBarPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAddressBarPreference.swift; sourceTree = "<group>"; };
+		FD72169B32CD4E0C9AB1517D /* BrowserViewportInsetsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewportInsetsRules.swift; sourceTree = "<group>"; };
+		A8B0285640F24A638C22DD0D /* BrowserLocalProfileRestore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLocalProfileRestore.swift; sourceTree = "<group>"; };
+		B72017000000000000000002 /* CandyBrowserChromeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandyBrowserChromeUITests.swift; sourceTree = "<group>"; };
+		B72017000000000000000003 /* CandyIosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CandyIosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A40000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000006 /* CandyShared.framework in Frameworks */,
+				A20000000000000000000007 /* WebKit.framework in Frameworks */,
+				A20000000000000000000025 /* SwiftArgon2 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B72017000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A50000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A50000000000000000000002 /* CandyIos */,
+				B72017000000000000000004 /* UITests */,
+				A50000000000000000000005 /* BlockingResources */,
+				A50000000000000000000003 /* Frameworks */,
+				A50000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A50000000000000000000002 /* CandyIos */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000001 /* CandyIosApp.swift */,
+				FD72169B32CD4E0C9AB1517D /* BrowserViewportInsetsRules.swift */,
+				A8B0285640F24A638C22DD0D /* BrowserLocalProfileRestore.swift */,
+				D0A30C0A181E45A783D77301 /* BrowserSnoozeNotifications.swift */,
+				B66D4D51A7E025A6B9D78E28 /* BrowserDownloadRuntime.swift */,
+				1BBBEE011D5F240F11DCE0EC /* BrowserDownloadFileStore.swift */,
+				9B33A382A762CFEBF89CC00A /* BrowserAppearancePreference.swift */,
+				A71017000000000000000002 /* BrowserAddressBarPreference.swift */,
+				B80F125BCAB368E6A59B37A3 /* BrowserReaderLibraryAdapter.swift */,
+				73079CBF26BBAAE000A015D0 /* BrowserReaderLibraryStore.swift */,
+				D4FE6439F26A778AD868ABD1 /* BrowserWebPromptPresenter.swift */,
+				FFEBBAFA87E4FB1B01AAD5D5 /* BrowserReaderSpeechAdapter.swift */,
+				EC1A0271A9F2F1F1E177CC99 /* BrowserLocalStateStore.swift */,
+				48ED00FC172529BBCDBF60D0 /* BrowserLocalStateBridge.swift */,
+				A30000000000000000000002 /* ContentView.swift */,
+				A30000000000000000000003 /* BrowserViewModel.swift */,
+				A30000000000000000000004 /* BrowserWebView.swift */,
+				A30000000000000000000005 /* ToppingInstaller.swift */,
+				A30000000000000000000010 /* WKWebViewBrowserSessionAdapter.swift */,
+				A30000000000000000000011 /* BrowserTabSnapshotRules.swift */,
+				A30000000000000000000012 /* BrowserTabSnapshotStore.swift */,
+				A30000000000000000000013 /* BrowserTabOverviewMode.swift */,
+				A30000000000000000000014 /* BrowserFeatureSurfaces.swift */,
+				A30000000000000000000015 /* BrowserPageExtractionRules.swift */,
+				A30000000000000000000016 /* ToppingStore.swift */,
+				A30000000000000000000017 /* WebKitBlocking.swift */,
+				A30000000000000000000024 /* CandyComposeHost.swift */,
+				A30000000000000000000025 /* ToppingRuntime.swift */,
+				A30000000000000000000026 /* ToppingDependencyResolver.swift */,
+				A30000000000000000000027 /* ToppingValueRules.swift */,
+				A30000000000000000000028 /* Assets.xcassets */,
+				A30000000000000000000029 /* BrowserTranslationProviderPreference.swift */,
+				A3000000000000000000002A /* CandyNativeBrowserChrome.swift */,
+				A3000000000000000000002B /* LiquidGlassPresentationRules.swift */,
+				A3000000000000000000002C /* device-icons-v1.json */,
+				A3000000000000000000002D /* IosSyncRecoveryKeyDeriver.swift */,
+				A3000000000000000000002E /* IosSyncTransport.swift */,
+				A3000000000000000000002F /* IosSyncPlatform.swift */,
+				B50000000000000000000002 /* BrowserMenuLayoutPreference.swift */,
+				C10000000000000000000002 /* ToppingFrameRules.swift */,
+				A30000000000000000000006 /* Info.plist */,
+			);
+			path = CandyIos;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000003 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000008 /* CandyShared.framework */,
+				A30000000000000000000009 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000007 /* CandyIos.app */,
+				B72017000000000000000003 /* CandyIosUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000005 /* BlockingResources */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000018 /* blocked_hosts.txt */,
+				A30000000000000000000019 /* easylist_blocked_hosts.txt */,
+				A3000000000000000000001A /* hagezi_blocked_hosts.txt */,
+				A3000000000000000000001B /* uassets_blocked_hosts.txt */,
+				A3000000000000000000001C /* easylist_allowed_host_pairs.txt */,
+				A3000000000000000000001D /* uassets_allowed_host_pairs.txt */,
+				A3000000000000000000001E /* uassets_blocked_host_pairs.txt */,
+				A3000000000000000000001F /* easylist_cosmetic_rules.txt */,
+				A30000000000000000000020 /* uassets_cosmetic_rules.txt */,
+				A30000000000000000000021 /* candy_default_rules.txt */,
+				A30000000000000000000022 /* easylist_cookie_banner.css */,
+				A30000000000000000000023 /* cookie_banner_overrides.css */,
+			);
+			path = ../app/src/main/assets;
+			sourceTree = "<group>";
+		};
+		B72017000000000000000004 /* UITests */ = {
+			isa = PBXGroup;
+			children = (B72017000000000000000002 /* CandyBrowserChromeUITests.swift */);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000001 /* CandyIos */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A60000000000000000000002 /* Build configuration list for PBXNativeTarget "CandyIos" */;
+			buildPhases = (
+				A40000000000000000000001 /* Build CandyShared */,
+				A40000000000000000000002 /* Sources */,
+				A40000000000000000000003 /* Frameworks */,
+				A40000000000000000000004 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = CandyIos;
+			packageProductDependencies = (
+				A90000000000000000000002 /* SwiftArgon2 */,
+			);
+			productName = CandyIos;
+			productReference = A30000000000000000000007 /* CandyIos.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B72017000000000000000008 /* CandyIosUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7201700000000000000000B /* Build configuration list for CandyIosUITests */;
+			buildPhases = (
+				B72017000000000000000005 /* Sources */,
+				B72017000000000000000006 /* Frameworks */,
+				B72017000000000000000007 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (B72017000000000000000009 /* PBXTargetDependency */);
+			name = CandyIosUITests;
+			productName = CandyIosUITests;
+			productReference = B72017000000000000000003 /* CandyIosUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A40000000000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000020 /* Assets.xcassets in Resources */,
+				A20000000000000000000024 /* device-icons-v1.json in Resources */,
+				A20000000000000000000010 /* blocked_hosts.txt in Resources */,
+				A20000000000000000000011 /* easylist_blocked_hosts.txt in Resources */,
+				A20000000000000000000012 /* hagezi_blocked_hosts.txt in Resources */,
+				A20000000000000000000013 /* uassets_blocked_hosts.txt in Resources */,
+				A20000000000000000000014 /* easylist_allowed_host_pairs.txt in Resources */,
+				A20000000000000000000015 /* uassets_allowed_host_pairs.txt in Resources */,
+				A20000000000000000000016 /* uassets_blocked_host_pairs.txt in Resources */,
+				A20000000000000000000017 /* easylist_cosmetic_rules.txt in Resources */,
+				A20000000000000000000018 /* uassets_cosmetic_rules.txt in Resources */,
+				A20000000000000000000019 /* candy_default_rules.txt in Resources */,
+				A2000000000000000000001A /* easylist_cookie_banner.css in Resources */,
+				A2000000000000000000001B /* cookie_banner_overrides.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B72017000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXProject section */
+		A70000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					A10000000000000000000001 = { CreatedOnToolsVersion = 26.3; };
+					B72017000000000000000008 = { CreatedOnToolsVersion = 26.3; TestTargetID = A10000000000000000000001; };
+				};
+			};
+			buildConfigurationList = A60000000000000000000001 /* Build configuration list for PBXProject "CandyIos" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A50000000000000000000001;
+			productRefGroup = A50000000000000000000004 /* Products */;
+			projectDirPath = "";
+			packageReferences = (
+				A90000000000000000000001 /* XCRemoteSwiftPackageReference "argon2-swift" */,
+			);
+			projectRoot = "";
+			targets = (A10000000000000000000001 /* CandyIos */, B72017000000000000000008 /* CandyIosUITests */);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A40000000000000000000001 /* Build CandyShared */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			name = "Build CandyShared";
+			outputPaths = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nexport ANDROID_HOME=\"${ANDROID_HOME:-$HOME/Library/Android/sdk}\"\n\"${SRCROOT}/../gradlew\" -p \"${SRCROOT}/..\" :shared:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A40000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000001 /* CandyIosApp.swift in Sources */,
+				134265B8B05F4AC6AB7ADEA5 /* BrowserViewportInsetsRules.swift in Sources */,
+				8B60D013EA394E3B8814A9F1 /* BrowserLocalProfileRestore.swift in Sources */,
+				D0A30C0A181E45A783D77302 /* BrowserSnoozeNotifications.swift in Sources */,
+				705D1FA0F385CE858E162CED /* BrowserDownloadRuntime.swift in Sources */,
+				EC2B610481F478DAD025F5EE /* BrowserDownloadFileStore.swift in Sources */,
+				10F0443F794AA8FCFFE31A1B /* BrowserAppearancePreference.swift in Sources */,
+				A71017000000000000000001 /* BrowserAddressBarPreference.swift in Sources */,
+				DB7BA4BDA3E6AB7552C4EDF9 /* BrowserReaderLibraryAdapter.swift in Sources */,
+				B2EBA49DCF6B1B5A12FE3C21 /* BrowserReaderLibraryStore.swift in Sources */,
+				4AEA5FA985D2B5ECC7786C4B /* BrowserWebPromptPresenter.swift in Sources */,
+				9EA7033A0456FA6310167ED4 /* BrowserReaderSpeechAdapter.swift in Sources */,
+				A58EC63B5F755D8BBF1BB80A /* BrowserLocalStateStore.swift in Sources */,
+				7A1C25D5DD7CDEE8EE64F34D /* BrowserLocalStateBridge.swift in Sources */,
+				A20000000000000000000002 /* ContentView.swift in Sources */,
+				A20000000000000000000003 /* BrowserViewModel.swift in Sources */,
+				A20000000000000000000004 /* BrowserWebView.swift in Sources */,
+				A20000000000000000000005 /* ToppingInstaller.swift in Sources */,
+				A20000000000000000000008 /* WKWebViewBrowserSessionAdapter.swift in Sources */,
+				A20000000000000000000009 /* BrowserTabSnapshotRules.swift in Sources */,
+				A2000000000000000000000A /* BrowserTabSnapshotStore.swift in Sources */,
+				A2000000000000000000000B /* BrowserTabOverviewMode.swift in Sources */,
+				A2000000000000000000000C /* BrowserFeatureSurfaces.swift in Sources */,
+				A20000000000000000000022 /* CandyNativeBrowserChrome.swift in Sources */,
+				A20000000000000000000023 /* LiquidGlassPresentationRules.swift in Sources */,
+				A2000000000000000000000D /* BrowserPageExtractionRules.swift in Sources */,
+				A2000000000000000000000E /* ToppingStore.swift in Sources */,
+				A2000000000000000000000F /* WebKitBlocking.swift in Sources */,
+				A2000000000000000000001C /* CandyComposeHost.swift in Sources */,
+				A2000000000000000000001D /* ToppingRuntime.swift in Sources */,
+				A2000000000000000000001E /* ToppingDependencyResolver.swift in Sources */,
+				A2000000000000000000001F /* ToppingValueRules.swift in Sources */,
+				A20000000000000000000021 /* BrowserTranslationProviderPreference.swift in Sources */,
+				A20000000000000000000026 /* IosSyncRecoveryKeyDeriver.swift in Sources */,
+				A20000000000000000000027 /* IosSyncTransport.swift in Sources */,
+				A20000000000000000000028 /* IosSyncPlatform.swift in Sources */,
+				B50000000000000000000001 /* BrowserMenuLayoutPreference.swift in Sources */,
+				C10000000000000000000001 /* ToppingFrameRules.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B72017000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (B72017000000000000000001 /* CandyBrowserChromeUITests.swift in Sources */);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B72017000000000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000001 /* CandyIos */;
+			targetProxy = B7201700000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A80000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(TARGET_BUILD_DIR)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CandyIos/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sk2andy.candy.ios.scaffold;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A80000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(TARGET_BUILD_DIR)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CandyIos/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sk2andy.candy.ios.scaffold;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B7201700000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sk2andy.candy.ios.scaffold.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CandyIos;
+			};
+			name = Debug;
+		};
+		B7201700000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sk2andy.candy.ios.scaffold.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CandyIos;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A60000000000000000000001 /* Build configuration list for PBXProject "CandyIos" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (A80000000000000000000001 /* Debug */, A80000000000000000000002 /* Release */);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A60000000000000000000002 /* Build configuration list for PBXNativeTarget "CandyIos" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (A80000000000000000000003 /* Debug */, A80000000000000000000004 /* Release */);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B7201700000000000000000B /* Build configuration list for CandyIosUITests */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (B7201700000000000000000C /* Debug */, B7201700000000000000000D /* Release */);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A90000000000000000000001 /* XCRemoteSwiftPackageReference "argon2-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mimiclone/argon2-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A90000000000000000000002 /* SwiftArgon2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A90000000000000000000001 /* XCRemoteSwiftPackageReference "argon2-swift" */;
+			productName = SwiftArgon2;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A70000000000000000000001 /* Project object */;
+}

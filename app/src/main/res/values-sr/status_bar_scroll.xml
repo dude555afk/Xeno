@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_bar_scroll_accessibility_service_label">Померање преко статусне траке у Candy-ју</string>
+    <string name="status_bar_scroll_accessibility_service_description">Додир средине статусне траке помера тренутну страницу у Candy-ју на врх. Candy не чита садржај прозора.</string>
+    <string name="status_bar_scroll_target_description">Помери тренутну страницу на врх</string>
+    <string name="settings_status_bar_scroll_title">Додирни статусну траку за померање на врх</string>
+    <string name="settings_status_bar_scroll_summary">Додаје невидљиву област додира у средину Android статусне траке. Потребан је приступ приступачности за Candy.</string>
+    <string name="settings_status_bar_scroll_width_title">Ширина области додира</string>
+    <string name="settings_status_bar_scroll_width_summary">%1$d%% ширине екрана</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_title">Дозволити Candy-ју приступ приступачности?</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_message">Candy користи Android услугу приступачности која проверава називе пакета из догађаја прозора да би утврдила да ли је Candy у првом плану. Додир статусне траке помера страницу на врх, а превлачење отвара обавештења или брза подешавања. Услуга не чита садржај прозора нити дели ове податке. Наставите да бисте је укључили у Android подешавањима.</string>
+    <string name="settings_status_bar_scroll_accessibility_open">Прихвати и отвори подешавања</string>
+    <string name="settings_status_bar_scroll_enable_for_domain">Укључи померање преко статусне траке за овај сајт</string>
+    <string name="settings_status_bar_scroll_disable_for_domain">Искључи померање преко статусне траке за овај сајт</string>
+</resources>
