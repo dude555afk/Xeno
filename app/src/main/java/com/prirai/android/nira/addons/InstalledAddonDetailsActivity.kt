@@ -1,0 +1,295 @@
+package com.prirai.android.nira.addons
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.prirai.android.nira.BrowserActivity
+import com.prirai.android.nira.R
+import com.prirai.android.nira.browser.profile.ProfileAddonPolicy
+import com.prirai.android.nira.browser.profile.ProfileManager
+import com.prirai.android.nira.ext.components
+import com.prirai.android.nira.ext.getParcelableExtraCompat
+import com.prirai.android.nira.theme.applyCompleteTheme
+import com.prirai.android.nira.ext.enableEdgeToEdgeMode
+import com.prirai.android.nira.ext.applyPersistentInsets
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import mozilla.components.feature.addons.Addon
+import mozilla.components.feature.addons.AddonManagerException
+import mozilla.components.feature.addons.ui.translateName
+
+/**
+ * An activity to show the details of a installed add-on.
+ */
+class InstalledAddonDetailsActivity : AppCompatActivity() {
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        setContentView(R.layout.activity_installed_add_on_details)
+        
+        applyCompleteTheme(this)
+        
+        // Enable edge-to-edge with standardized approach
+        enableEdgeToEdgeMode()
+        
+        val addon = requireNotNull(intent.getParcelableExtraCompat<Addon>("add_on"))
+
+        // Apply insets to root view
+        findViewById<View>(R.id.addon_details)?.applyPersistentInsets()
+
+        supportActionBar?.elevation = 0f
+
+        bindAddon(addon)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        com.prirai.android.nira.theme.ThemeManager.applySystemBarsTheme(this, false)
+    }
+
+    private fun bindAddon(addon: Addon) {
+        scope.launch {
+            try {
+                val context = baseContext
+                val addons = context.components.addonManager.getAddons()
+                scope.launch(Dispatchers.Main) {
+                    addons.find { addon.id == it.id }.let {
+                        if (it == null) {
+                            throw AddonManagerException(Exception("Addon ${addon.id} not found"))
+                        } else {
+                            bindUI(it)
+                        }
+                    }
+                }
+            } catch (e: AddonManagerException) {
+                scope.launch(Dispatchers.Main) {
+                    Toast.makeText(
+                            baseContext,
+                            R.string.mozac_feature_addons_failed_to_query_extensions,
+                            Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun bindUI(addon: Addon) {
+        title = addon.translateName(this)
+
+        // Hide irrelevant items when add-on has been sideloaded
+        if(!addon.isSupported()){
+            findViewById<SwitchCompat>(R.id.enable_switch).visibility = View.GONE
+            findViewById<SwitchCompat>(R.id.allow_in_private_browsing_switch).visibility = View.GONE
+            findViewById<View>(R.id.profile_allowlist).visibility = View.GONE
+            findViewById<View>(R.id.details).visibility = View.GONE
+            findViewById<View>(R.id.permissions).visibility = View.GONE
+        }
+
+        bindEnableSwitch(addon)
+
+        bindProfileAllowlist(addon)
+
+        bindSettings(addon)
+
+        bindDetails(addon)
+
+        bindPermissions(addon)
+
+        bindAllowInPrivateBrowsingSwitch(addon)
+
+        bindRemoveButton(addon)
+    }
+
+    private fun bindEnableSwitch(addon: Addon) {
+        val switch = findViewById<SwitchCompat>(R.id.enable_switch)
+        switch.isChecked = addon.isEnabled()
+        switch.setOnCheckedChangeListener { _, isChecked ->
+            val profileId = com.prirai.android.nira.browser.profile.ProfileManager
+                .getInstance(this).getActiveProfile().id
+            if (isChecked) {
+                this.components.addonManager.enableAddon(
+                        addon,
+                        onSuccess = {
+                            com.prirai.android.nira.browser.profile.ProfileAddonPolicy
+                                .setEnabledForProfile(this, profileId, addon.id, true)
+                            switch.isChecked = true
+                            Toast.makeText(
+                                    this,
+                                    getString(R.string.mozac_feature_addons_successfully_enabled, addon.translateName(this)),
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onError = {
+                            Toast.makeText(
+                                    this,
+                                    getString(R.string.mozac_feature_addons_failed_to_enable, addon.translateName(this)),
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                )
+            } else {
+                this.components.addonManager.disableAddon(
+                        addon,
+                        onSuccess = {
+                            com.prirai.android.nira.browser.profile.ProfileAddonPolicy
+                                .setEnabledForProfile(this, profileId, addon.id, false)
+                            switch.isChecked = false
+                            Toast.makeText(
+                                    this,
+                                    getString(R.string.mozac_feature_addons_successfully_disabled, addon.translateName(this)),
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onError = {
+                            Toast.makeText(
+                                    this,
+                                    getString(R.string.mozac_feature_addons_failed_to_disable, addon.translateName(this)),
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                )
+            }
+        }
+    }
+
+    private fun bindProfileAllowlist(addon: Addon) {
+        val row = findViewById<View>(R.id.profile_allowlist)
+        val summary = findViewById<TextView>(R.id.profile_allowlist_summary)
+        updateProfileAllowlistSummary(addon.id, summary)
+        row.setOnClickListener {
+            showProfileAllowlistDialog(addon) {
+                updateProfileAllowlistSummary(addon.id, summary)
+            }
+        }
+    }
+
+    private fun updateProfileAllowlistSummary(addonId: String, summary: TextView) {
+        val profiles = ProfileManager.getInstance(this).getAllProfiles()
+        val enabledNames = profiles
+            .filter { ProfileAddonPolicy.isEnabledForProfile(this, it.id, addonId) }
+            .map { it.name }
+        summary.text = if (enabledNames.size == profiles.size) {
+            getString(R.string.addon_enabled_for_all_profiles)
+        } else {
+            enabledNames.joinToString().ifEmpty { getString(R.string.addon_enabled_for_profiles) }
+        }
+    }
+
+    private fun showProfileAllowlistDialog(addon: Addon, onChanged: () -> Unit) {
+        val profiles = ProfileManager.getInstance(this).getAllProfiles()
+        val names = profiles.map { it.name }.toTypedArray()
+        val checked = profiles.map {
+            ProfileAddonPolicy.isEnabledForProfile(this, it.id, addon.id)
+        }.toBooleanArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.addon_enabled_for_profiles)
+            .setMultiChoiceItems(names, checked) { _, which, isChecked ->
+                checked[which] = isChecked
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.mozac_feature_prompts_ok) { _, _ ->
+                val activeId = ProfileManager.getInstance(this).getActiveProfile().id
+                profiles.forEachIndexed { index, profile ->
+                    val enabled = checked[index]
+                    ProfileAddonPolicy.setEnabledForProfile(this, profile.id, addon.id, enabled)
+                    if (profile.id == activeId) {
+                        if (enabled) {
+                            components.addonManager.enableAddon(addon)
+                        } else {
+                            components.addonManager.disableAddon(addon)
+                        }
+                        val enableSwitch = findViewById<SwitchCompat>(R.id.enable_switch)
+                        enableSwitch.setOnCheckedChangeListener(null)
+                        enableSwitch.isChecked = enabled
+                        bindEnableSwitch(addon)
+                    }
+                }
+                onChanged()
+            }
+            .show()
+    }
+
+    private fun bindSettings(addon: Addon) {
+        val view = findViewById<View>(R.id.settings)
+        val optionsPageUrl = addon.installedState?.optionsPageUrl
+        view.isEnabled = optionsPageUrl != null
+        view.setOnClickListener {
+            if (addon.installedState?.openOptionsPageInTab == true) {
+                components.tabsUseCases.addTab(optionsPageUrl as String)
+                val intent = Intent(this, BrowserActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                this.startActivity(intent)
+            } else {
+                val intent = Intent(this, AddonSettingsActivity::class.java)
+                intent.putExtra("add_on", addon)
+                this.startActivity(intent)
+            }
+        }
+    }
+
+    private fun bindDetails(addon: Addon) {
+        findViewById<View>(R.id.details).setOnClickListener {
+            val intent = Intent(this, AddonDetailsActivity::class.java)
+            intent.putExtra("add_on", addon)
+            this.startActivity(intent)
+        }
+    }
+
+    private fun bindPermissions(addon: Addon) {
+        findViewById<View>(R.id.permissions).setOnClickListener {
+            val intent = Intent(this, PermissionsDetailsActivity::class.java)
+            intent.putExtra("add_on", addon)
+            this.startActivity(intent)
+        }
+    }
+
+    private fun bindAllowInPrivateBrowsingSwitch(addon: Addon) {
+        val switch = findViewById<SwitchCompat>(R.id.allow_in_private_browsing_switch)
+        switch.isChecked = addon.isAllowedInPrivateBrowsing()
+        switch.setOnCheckedChangeListener { _, isChecked ->
+            this.components.addonManager.setAddonAllowedInPrivateBrowsing(
+                    addon,
+                    isChecked,
+                    onSuccess = {
+                        switch.isChecked = isChecked
+                    }
+            )
+        }
+    }
+
+    private fun bindRemoveButton(addon: Addon) {
+        findViewById<View>(R.id.remove_add_on).setOnClickListener {
+            this.components.addonManager.uninstallAddon(
+                    addon,
+                    onSuccess = {
+                        // Clear the cache so the bottom sheet shows updated data
+                        ExtensionsBottomSheetFragment.clearCache()
+                        Toast.makeText(
+                                this,
+                                getString(R.string.mozac_feature_addons_successfully_uninstalled, addon.translateName(this)),
+                                Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    },
+                    onError = { _, _ ->
+                        Toast.makeText(
+                                this,
+                                getString(R.string.mozac_feature_addons_failed_to_uninstall, addon.translateName(this)),
+                                Toast.LENGTH_SHORT
+                        ).show()
+                    }
+            )
+        }
+    }
+
+    
+}

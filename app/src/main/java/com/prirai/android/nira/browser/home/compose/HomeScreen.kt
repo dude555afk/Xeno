@@ -1,0 +1,866 @@
+package com.prirai.android.nira.browser.home.compose
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.prirai.android.nira.R
+import com.prirai.android.nira.browser.tabs.compose.FaviconImageFromUrl
+import com.prirai.android.nira.settings.HomepageChoice
+import mozilla.components.browser.state.state.BrowserState
+
+data class ProfileInfo(
+    val id: String,
+    val name: String,
+    val emoji: String,
+    val isPrivate: Boolean = false,
+    val color: Int = 0
+)
+
+data class JumpBackInItem(
+    val id: String,
+    val url: String,
+    val title: String,
+    val tabId: String? = null,
+)
+
+data class RecentlyClosedItem(
+    val id: String,
+    val url: String,
+    val title: String
+)
+
+private fun String.isHomepageCardUrl(): Boolean {
+    return isNotBlank() && !startsWith("about:") && !startsWith("chrome:")
+}
+
+fun BrowserState.jumpBackInItems(
+    historyItems: List<JumpBackInItem> = emptyList(),
+    limit: Int = 4,
+): List<JumpBackInItem> {
+    val openTabs = tabs
+        .filter { tab ->
+            !tab.content.private &&
+                tab.id != selectedTabId &&
+                tab.content.url.isHomepageCardUrl()
+        }
+        .sortedByDescending { it.lastAccess }
+        .map { tab ->
+            JumpBackInItem(
+                id = tab.id,
+                url = tab.content.url,
+                title = tab.content.title.ifBlank { tab.content.url },
+                tabId = tab.id,
+            )
+        }
+
+    val usedUrls = openTabs.map { it.url }.toMutableSet()
+    closedTabs.forEach { usedUrls.add(it.url) }
+
+    val fromHistory = historyItems.filter { item ->
+        item.url.isHomepageCardUrl() && usedUrls.add(item.url)
+    }
+
+    return (openTabs + fromHistory).take(limit)
+}
+
+fun BrowserState.recentlyClosedItems(limit: Int = 4): List<RecentlyClosedItem> {
+    return closedTabs
+        .filter { tab -> !tab.private && tab.url.isHomepageCardUrl() }
+        .take(limit)
+        .map { tab ->
+            RecentlyClosedItem(
+                id = tab.id,
+                url = tab.url,
+                title = tab.title.ifBlank { tab.url }
+            )
+        }
+}
+
+@Composable
+fun HomeScreen(
+    isPrivateMode: Boolean,
+    shortcuts: List<ShortcutItem>,
+    currentProfile: ProfileInfo,
+    onProfileClick: () -> Unit,
+    onShortcutClick: (ShortcutItem) -> Unit,
+    onShortcutDelete: (ShortcutItem) -> Unit,
+    onShortcutAdd: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onBookmarksClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    jumpBackInItems: List<JumpBackInItem> = emptyList(),
+    recentlyClosedItems: List<RecentlyClosedItem> = emptyList(),
+    onJumpBackInClick: (JumpBackInItem) -> Unit = {},
+    onRecentlyClosedClick: (RecentlyClosedItem) -> Unit = {},
+    backgroundImageUrl: String? = null,
+    isToolbarAtTop: Boolean = false,
+    homepageType: Int = 0,
+    wallpaperDimmed: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    isSystemInDarkTheme()
+    val backgroundColor = MaterialTheme.colorScheme.background
+
+    // Get window insets for edge-to-edge support
+    val windowInsets = WindowInsets.systemBars
+    val topPadding = with(LocalDensity.current) { windowInsets.getTop(this).toDp() }
+    val bottomPadding = with(LocalDensity.current) { windowInsets.getBottom(this).toDp() }
+
+    // Add toolbar height when toolbar is at top (approximately 56dp for toolbar)
+    val toolbarHeight = if (isToolbarAtTop) 56.dp else 0.dp
+
+    Box(modifier = modifier.fillMaxSize()) {
+        // Background image layer
+        if (backgroundImageUrl != null && backgroundImageUrl.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(backgroundImageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Homepage background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Add semi-transparent overlay for better content readability (controlled by preference)
+            if (wallpaperDimmed) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backgroundColor.copy(alpha = 0.85f))
+                )
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (backgroundImageUrl == null || backgroundImageUrl.isEmpty()) {
+                        Modifier.background(backgroundColor)
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = topPadding + toolbarHeight + 16.dp,  // Add system bar + toolbar padding
+                end = 16.dp,
+                bottom = bottomPadding + 100.dp  // Add navigation bar padding + toolbar space
+            ),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Logo section with profile switcher (hide for BLANK_PAGE)
+            if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
+                item {
+                    LogoSection(
+                        isPrivateMode = isPrivateMode,
+                        currentProfile = currentProfile,
+                        onProfileClick = onProfileClick
+                    )
+                }
+            }
+
+            // Centered search bar (hide for BLANK_PAGE)
+            if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
+                item {
+                    SearchBar(onSearchClick = onSearchClick)
+                }
+            }
+
+            // Show shortcuts, bookmarks, and recents only for default VIEW mode and in normal mode
+            if (!isPrivateMode && homepageType == HomepageChoice.VIEW.ordinal) {
+                // Jump Back In section
+                if (jumpBackInItems.isNotEmpty()) {
+                    item {
+                        JumpBackInSection(
+                            items = jumpBackInItems,
+                            onClick = onJumpBackInClick
+                        )
+                    }
+                }
+
+                // Recently Closed section
+                if (recentlyClosedItems.isNotEmpty()) {
+                    item {
+                        RecentlyClosedSection(
+                            items = recentlyClosedItems,
+                            onClick = onRecentlyClosedClick
+                        )
+                    }
+                }
+
+                // Shortcuts section
+                item {
+                    ShortcutsSection(
+                        shortcuts = shortcuts,
+                        onShortcutClick = onShortcutClick,
+                        onShortcutDelete = onShortcutDelete,
+                        onAddClick = onShortcutAdd
+                    )
+                }
+
+                item {
+                    LibraryLinksRow(
+                        onHistoryClick = onHistoryClick,
+                        onBookmarksClick = onBookmarksClick,
+                    )
+                }
+            } else if (isPrivateMode && homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
+                // Private browsing info (only if not blank page)
+                item {
+                    PrivateBrowsingInfo()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LogoSection(
+    isPrivateMode: Boolean,
+    currentProfile: ProfileInfo,
+    onProfileClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // App icon
+            Icon(
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                contentDescription = "App Icon",
+                modifier = Modifier.size(80.dp),
+                tint = Color.Unspecified
+            )
+
+            // App name
+            Text(
+                text = "Nira",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            // Profile emoji selector (clickable)
+            Surface(
+                shape = CircleShape,
+                color = if (currentProfile.color != 0) {
+                    Color(currentProfile.color)
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable(onClick = onProfileClick)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = currentProfile.emoji,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 24.sp
+                    )
+                }
+            }
+        }
+
+        // Private badge
+        if (isPrivateMode) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Private Browsing",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchBar(
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSearchClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = "Search or enter address",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun ShortcutsSection(
+    shortcuts: List<ShortcutItem>,
+    onShortcutClick: (ShortcutItem) -> Unit,
+    onShortcutDelete: (ShortcutItem) -> Unit,
+    onAddClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Section header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Favorites",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            IconButton(onClick = onAddClick) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Shortcut",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Grid
+        if (shortcuts.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Add your go-to sites here",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 80.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.heightIn(max = 400.dp),
+                userScrollEnabled = false
+            ) {
+                items(shortcuts) { shortcut ->
+                    ShortcutItem(
+                        shortcut = shortcut,
+                        onClick = { onShortcutClick(shortcut) },
+                        onLongClick = { onShortcutDelete(shortcut) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ShortcutItem(
+    shortcut: ShortcutItem,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Favicon or letter
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(56.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (shortcut.icon != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(shortcut.icon)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Use FaviconImageFromUrl for loading favicons
+                    FaviconImageFromUrl(
+                        url = shortcut.url,
+                        title = shortcut.title,
+                        size = 32.dp,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = shortcut.title,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
+}
+
+@Composable
+fun LibraryLinksRow(
+    onHistoryClick: () -> Unit,
+    onBookmarksClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        LibraryLinkButton(
+            label = "History",
+            icon = mozilla.components.ui.icons.R.drawable.mozac_ic_history_24,
+            onClick = onHistoryClick,
+            modifier = Modifier.weight(1f)
+        )
+        LibraryLinkButton(
+            label = "Bookmarks",
+            icon = mozilla.components.ui.icons.R.drawable.mozac_ic_bookmark_24,
+            onClick = onBookmarksClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun LibraryLinkButton(
+    label: String,
+    icon: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+fun JumpBackInSection(
+    items: List<JumpBackInItem>,
+    onClick: (JumpBackInItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Jump Back In",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        items.take(4).forEach { item ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(item) },
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FaviconImageFromUrl(
+                        url = item.url,
+                        title = item.title,
+                        size = 24.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+fun RecentlyClosedSection(
+    items: List<RecentlyClosedItem>,
+    onClick: (RecentlyClosedItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Recently Closed",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        items.take(4).forEach { item ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(item) },
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FaviconImageFromUrl(
+                        url = item.url,
+                        title = item.title,
+                        size = 24.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+fun PrivateBrowsingInfo(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Private Browsing",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            PrivateInfoSection(
+                title = "What Private Browsing Does",
+                description = "Your browsing history, cookies, and site data won't be saved after you close all private tabs."
+            )
+
+            PrivateInfoSection(
+                title = "Downloads and Bookmarks",
+                description = "Files you download and bookmarks you create will be kept even after closing private tabs."
+            )
+
+            PrivateInfoSection(
+                title = "Your Activity is Still Visible To",
+                description = "Websites you visit, your internet service provider, and your network administrator can still see your browsing activity."
+            )
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                modifier = Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(8.dp)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Note: Private browsing doesn't make you anonymous online. For enhanced privacy, consider using a VPN.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrivateInfoSection(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+        )
+    }
+}
+
+@Composable
+fun AddShortcutDialog(
+    onDismiss: () -> Unit,
+    onSave: (url: String, title: String) -> Unit,
+    initialUrl: String = "",
+    initialTitle: String = ""
+) {
+    var url by remember { mutableStateOf(initialUrl) }
+    var title by remember { mutableStateOf(initialTitle) }
+    var urlError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Add Shortcut")
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = {
+                        url = it
+                        urlError = false
+                    },
+                    label = { Text("URL") },
+                    placeholder = { Text("https://example.com") },
+                    isError = urlError,
+                    supportingText = if (urlError) {
+                        { Text("Please enter a valid URL") }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Next
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    placeholder = { Text("My Website") },
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (url.isBlank()) {
+                        return@TextButton
+                    }
+
+                    // Validate URL
+                    val validUrl = try {
+                        val finalUrl = if (url.startsWith("http")) url else "https://$url"
+                        java.net.URL(finalUrl)
+                        finalUrl
+                    } catch (e: Exception) {
+                        return@TextButton
+                    }
+
+                    val finalTitle = title.ifBlank {
+                        try {
+                            java.net.URL(validUrl).host.replace("www.", "")
+                        } catch (e: Exception) {
+                            "Untitled"
+                        }
+                    }
+
+                    onSave(validUrl, finalTitle)
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}

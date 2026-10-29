@@ -1,90 +1,22 @@
-# Xeno
+# Xeno Browser
 
-**A lightweight, AI-powered browser for Android.**
+Xeno is an Android browser based on the Nira Browser GeckoView implementation.
+This migration replaces the previous prototype browser engine/UI plumbing with an
+established GeckoView browser core before further Xeno-specific UI and AI work.
 
-An Android-first browser with an Arc-inspired interface, an answer-oriented address bar, and a deliberately privacy-restricted embedded engine. This migration branch uses GeckoView for full browser-engine control; it does not ship Firefox's browser UI, account system, Sync, or Mozilla app shell.
+## Current foundation
+- GeckoView rendering engine and Mozilla Android Components
+- Real tab/session/navigation state and browser back/forward handling
+- Firefox WebExtension support
+- Private browsing, tab groups, multiple profiles and PWAs
+- Existing browser settings, downloads, reader and privacy controls from the upstream base
 
----
+## Build
+- JDK 17
+- Android SDK for API 37
+- `./gradlew testDebugUnitTest assembleDebug`
 
-## What it is
-
-Xeno is a browser built around one idea: **the address bar should answer, not just navigate.**
-
-Type a question, get a cited, synthesized answer sourced from the live web. Type a URL, get a page. One bar, two modes, one keystroke apart.
-
-```
-you:   "what's quantum entanglement?"
-xeno:  ┌─────────────────────────────┐
-       │ Entanglement is a quantum   │
-       │ correlation where measuring │
-       │ one particle fixes the      │
-       │ state of its partner        │
-       │ instantly, at any distance  │
-       │ [1][3]                      │
-       └─────────────────────────────┘
-         [1] Nature   [3] Physics.SE
-```
-
-## Feature set
-
-| Feature | Status |
-|---|---|
-| GeckoView engine + bounded session pool | 🚧 migration in progress |
-| Readability.js page extraction | 🚧 planned |
-| Filter-list ad blocking (uBO lists, native) | 🚧 planned |
-| Spaces (accent-tinted workspaces) | 🚧 planned |
-| Peek bubble (Little Arc equivalent) | 🚧 planned |
-| Command palette + fuzzy search | 🚧 planned |
-| **AI answer engine (search → fetch → cite)** | 🎯 flagship |
-| Streaming page summarizer | 🚧 planned |
-| Semantic tab/history search (MiniLM) | 🚧 planned |
-| TextRank offline summarizer (fallback) | 🚧 planned |
-
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│                    UI                        │
-│   Spaces · Tab stack · Command bar · AI sheet │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               AI LAYER                        │
-│   summarizer · answer engine · embeddings     │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               CORE                            │
-│   reader (Readability.js) · fetch/rank        │
-│   blocking (adblock-rust + uBO lists)         │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│            ENGINE                             │
-│      Mozilla GeckoView (embedded engine)      │
-└──────────────────────────────────────────────┘
-```
-
-**See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the pipeline specs and
-[`docs/DESIGN.md`](docs/DESIGN.md) for the design tokens.**
-
-## Stack
-
-- Kotlin + Jetpack Compose (Material 3), `minSdk 26`, `targetSdk 35`
-- Mozilla GeckoView's standard `geckoview` artifact (not `geckoview-omni`, which includes the extra Glean telemetry library)
-- Gecko telemetry, telemetry uploads, crash-report uploads, experiment enrollment, and telemetry archives are disabled via an app-private runtime configuration
-- Remote debugging and debug logging are off in the runtime; App Zygote preloading is disabled to avoid unnecessary preloading on low-memory devices
-- GeckoView's core rendering engine is still a substantial bundled dependency; it cannot be reduced to WebView size without switching engines or maintaining a custom Gecko build
-- Readability.js injected in-page for clean text extraction
-- Kilo Gateway (OpenAI-compatible) as the default AI backend, BYOK for anything OpenAI-compatible
-- MiniLM ONNX via sherpa-onnx for on-device semantic search
-
-## Design language
-
-AMOLED black, frosted glass, everything is a pill, spring physics on every overlay. Design tokens live in [`docs/DESIGN.md`](docs/DESIGN.md).
-
-## Status
-
-Early scaffolding. First module going in: reader + summarizer pipeline.
+## Upstream and license
+This project is derived from Nira Browser, licensed under the Mozilla Public License 2.0.
+See [UPSTREAM.md](UPSTREAM.md) and [LICENSE](LICENSE) for attribution and license terms.
+Xeno-specific branding and changes are maintained in this repository.
