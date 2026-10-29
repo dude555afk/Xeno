@@ -57,16 +57,20 @@ jobs:
         run: |
           set -euo pipefail
           upstream_commit="ef717b65071557e707ffea299aa9a6367f9730ac"
-          mkdir -p /tmp/xeno-brand
+          mkdir -p /tmp/xeno-brand /tmp/xeno-workflows
           cp app/src/main/res/drawable/ic_launcher_foreground.xml /tmp/xeno-brand/
           cp app/src/main/res/drawable/ic_launcher_background.xml /tmp/xeno-brand/
           cp app/src/main/res/drawable/ic_launcher_monochrome.xml /tmp/xeno-brand/
+          cp -a .github/workflows /tmp/xeno-workflows/
 
           git clone --filter=blob:none https://github.com/prirai/nira-browser.git /tmp/nira
           git -C /tmp/nira checkout "$upstream_commit"
 
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          rsync -a --exclude='.git' /tmp/nira/ ./
+          rsync -a --exclude='.git' --exclude='.github' /tmp/nira/ ./
+          rm -rf .github/workflows
+          mkdir -p .github
+          cp -a /tmp/xeno-workflows/workflows .github/
           mkdir -p app/src/main/res/drawable
           cp /tmp/xeno-brand/ic_launcher_foreground.xml app/src/main/res/drawable/
           cp /tmp/xeno-brand/ic_launcher_background.xml app/src/main/res/drawable/
@@ -133,41 +137,6 @@ jobs:
           This migration intentionally prioritizes a proven browser core. Candy Browser's gesture-first
           UI is a visual/interaction reference; its source is not copied because its repository uses
           a noncommercial license.
-          EOF
-
-          mkdir -p .github/workflows
-          cat > .github/workflows/xeno-ci.yml <<'EOF'
-          name: Xeno Android CI
-          on:
-            push:
-              branches:
-                - main
-                - feature/xeno-nira-core-migration
-            pull_request:
-              branches:
-                - main
-          permissions:
-            contents: read
-          jobs:
-            build:
-              runs-on: ubuntu-latest
-              timeout-minutes: 60
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-java@v4
-                  with:
-                    distribution: zulu
-                    java-version: "17"
-                - uses: gradle/actions/setup-gradle@v5
-                - name: Run unit tests and build debug APKs
-                  run: ./gradlew testDebugUnitTest assembleDebug
-                - uses: actions/upload-artifact@v4
-                  if: success()
-                  with:
-                    name: xeno-geckoview-debug-apks
-                    path: app/build/outputs/apk/debug/**/*.apk
-                    if-no-files-found: error
-                    retention-days: 14
           EOF
 
           git add -A
