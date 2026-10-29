@@ -141,6 +141,12 @@ android {
     }
 
     packaging {
+        // Compress GeckoView's native libraries inside the APK to reduce download size.
+        // Android extracts them on install, so this does not eliminate GeckoView's
+        // installed storage footprint; it trades some install I/O for a smaller APK.
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
