@@ -48,14 +48,23 @@ drawable_replacements = [
     ("R.drawable.ic_omni_ring_light", "R.drawable.xeno_mark"),
     ("R.drawable.ic_omni_logo", "R.drawable.xeno_mark"),
     ("R.drawable.ic_launcher_fg_ring", "R.drawable.xeno_mark"),
-    ("@drawable.omni_home_logo_light", "@drawable/xeno_mark"),
-    ("@drawable.omni_home_logo", "@drawable/xeno_mark"),
+    # XML drawable references use a slash, not a dot; handle both forms.
+    ("@drawable/omni_home_logo_light", "@drawable/xeno_mark"),
+    ("@drawable/omni_home_logo", "@drawable/xeno_mark"),
     ("@drawable/ic_omni_logo_dark", "@drawable/xeno_mark"),
     ("@drawable/ic_omni_logo_white", "@drawable/xeno_mark"),
     ("@drawable/ic_omni_ring_dark", "@drawable/xeno_mark"),
     ("@drawable/ic_omni_ring_light", "@drawable/xeno_mark"),
     ("@drawable/ic_omni_logo", "@drawable/xeno_mark"),
     ("@drawable/ic_launcher_fg_ring", "@drawable/xeno_mark"),
+    ("@drawable.omni_home_logo_light", "@drawable/xeno_mark"),
+    ("@drawable.omni_home_logo", "@drawable/xeno_mark"),
+    ("@drawable.ic_omni_logo_dark", "@drawable/xeno_mark"),
+    ("@drawable.ic_omni_logo_white", "@drawable/xeno_mark"),
+    ("@drawable.ic_omni_ring_dark", "@drawable/xeno_mark"),
+    ("@drawable.ic_omni_ring_light", "@drawable/xeno_mark"),
+    ("@drawable.ic_omni_logo", "@drawable/xeno_mark"),
+    ("@drawable.ic_launcher_fg_ring", "@drawable/xeno_mark"),
 ]
 for path in core.rglob("*"):
     if not path.is_file() or ".git" in path.parts or path.name in skip_names:
