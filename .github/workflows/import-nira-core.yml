@@ -7,7 +7,7 @@ on:
     paths:
       - .github/workflows/import-nira-core.yml
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     branches:
       - feature/xeno-gecko-arc-rebuild
 
@@ -29,16 +29,30 @@ jobs:
           ref: feature/xeno-nira-core-migration
           fetch-depth: 0
 
+      - name: Check migration marker
+        id: guard
+        shell: bash
+        run: |
+          if [[ -f MIGRATION_REQUEST.md ]]; then
+            echo "run_migration=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_migration=false" >> "$GITHUB_OUTPUT"
+            echo "Migration marker is absent; this branch has already been imported. Skipping."
+          fi
+
       - name: Set up Java 17
+        if: steps.guard.outputs.run_migration == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: "17"
 
       - name: Set up Gradle
+        if: steps.guard.outputs.run_migration == 'true'
         uses: gradle/actions/setup-gradle@v5
 
       - name: Import pinned Nira browser source and apply Xeno identity
+        if: steps.guard.outputs.run_migration == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -52,7 +66,7 @@ jobs:
           git -C /tmp/nira checkout "$upstream_commit"
 
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a /tmp/nira/. .
+          rsync -a --exclude='.git' /tmp/nira/ ./
           mkdir -p app/src/main/res/drawable
           cp /tmp/xeno-brand/ic_launcher_foreground.xml app/src/main/res/drawable/
           cp /tmp/xeno-brand/ic_launcher_background.xml app/src/main/res/drawable/
@@ -161,11 +175,12 @@ jobs:
           git push origin HEAD:feature/xeno-nira-core-migration
 
       - name: Verify imported browser builds and unit tests pass
+        if: steps.guard.outputs.run_migration == 'true'
         run: ./gradlew testDebugUnitTest assembleDebug
 
       - name: Upload Xeno debug APKs
         uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && steps.guard.outputs.run_migration == 'true'
         with:
           name: xeno-geckoview-debug-apks
           path: app/build/outputs/apk/debug/**/*.apk
