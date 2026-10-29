@@ -6,6 +6,10 @@ on:
       - feature/xeno-nira-core-migration
     paths:
       - .github/workflows/import-nira-core.yml
+  pull_request:
+    types: [opened]
+    branches:
+      - feature/xeno-gecko-arc-rebuild
 
 permissions:
   contents: write
