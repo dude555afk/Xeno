@@ -1,0 +1,102 @@
+name: Import and verify Candy Browser base
+
+on:
+  push:
+    branches:
+      - feature/xeno-candy-upstream-base
+    paths:
+      - .github/workflows/import-candy-upstream.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xeno-candy-upstream-import
+  cancel-in-progress: false
+
+jobs:
+  import-and-build:
+    name: Replace experimental branch with upstream Candy and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Check out experimental Xeno branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/xeno-candy-upstream-base
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream Candy Browser source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/sk2andy/candy-browser.git "$RUNNER_TEMP/candy-browser"
+          CANDY_SHA="$(git -C "$RUNNER_TEMP/candy-browser" rev-parse HEAD)"
+          printf 'CANDY_SHA=%s\n' "$CANDY_SHA" >> "$GITHUB_ENV"
+          printf '%s\n' \
+            '# Xeno experimental base: upstream Candy Browser' \
+            '' \
+            'This branch intentionally replaces the previous experimental browser implementation with the upstream Candy Browser source as a working baseline.' \
+            '' \
+            '- Upstream: https://github.com/sk2andy/candy-browser' \
+            '- License: Mozilla Public License 2.0 (see upstream LICENSE and third-party notices)' \
+            "- Imported commit: $CANDY_SHA" \
+            '- This is an experimental branch; the stable Xeno branches are not changed.' \
+            '- Branding/package identity changes should be made only after the upstream baseline builds and is smoke-tested.' \
+            > "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md"
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/import-candy-upstream.yml' \
+            "$RUNNER_TEMP/candy-browser/" "$GITHUB_WORKSPACE/"
+          cp "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md" "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md"
+
+      - name: Commit imported upstream source to the experimental branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Candy Browser upstream baseline $CANDY_SHA [skip ci]"
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic $AUTH" push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK platform 37.1
+        run: sdkmanager "platforms;android-37.1"
+
+      - name: Run tests, lint, and build upstream debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_compile_easylist_hosts.py
+          python3 scripts/test_compile_easylist_cosmetic.py
+          python3 scripts/test_compile_hagezi_hosts.py
+          python3 scripts/test_compile_uassets_cosmetic.py
+          python3 scripts/test_compile_advanced_filters.py
+          python3 scripts/test_compile_procedural_cosmetic.py
+          python3 scripts/test_generate_gecko_default_extensions.py
+          python3 scripts/generate_gecko_default_extensions.py verify
+          ./gradlew --no-daemon --max-workers=1 testFullDebugUnitTest lintFullDebug assembleFullDebug
+
+      - name: Upload verified build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeno-candy-upstream-debug-arm64
+          path: app/build/outputs/apk/full/debug/app-full-debug.apk
+          if-no-files-found: error
+          retention-days: 14
