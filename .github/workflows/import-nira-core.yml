@@ -1,0 +1,169 @@
+name: Import Nira GeckoView core into Xeno
+
+on:
+  push:
+    branches:
+      - feature/xeno-nira-core-migration
+    paths:
+      - .github/workflows/import-nira-core.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xeno-nira-core-migration
+  cancel-in-progress: false
+
+jobs:
+  import-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Xeno migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/xeno-nira-core-migration
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Import pinned Nira browser source and apply Xeno identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          upstream_commit="ef717b65071557e707ffea299aa9a6367f9730ac"
+          mkdir -p /tmp/xeno-brand
+          cp app/src/main/res/drawable/ic_launcher_foreground.xml /tmp/xeno-brand/
+          cp app/src/main/res/drawable/ic_launcher_background.xml /tmp/xeno-brand/
+          cp app/src/main/res/drawable/ic_launcher_monochrome.xml /tmp/xeno-brand/
+
+          git clone --filter=blob:none https://github.com/prirai/nira-browser.git /tmp/nira
+          git -C /tmp/nira checkout "$upstream_commit"
+
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/nira/. .
+          mkdir -p app/src/main/res/drawable
+          cp /tmp/xeno-brand/ic_launcher_foreground.xml app/src/main/res/drawable/
+          cp /tmp/xeno-brand/ic_launcher_background.xml app/src/main/res/drawable/
+          cp /tmp/xeno-brand/ic_launcher_monochrome.xml app/src/main/res/drawable/
+
+          cat > app/src/main/res/mipmap-anydpi/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground" />
+              <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+          </adaptive-icon>
+          EOF
+          cp app/src/main/res/mipmap-anydpi/ic_launcher.xml app/src/main/res/mipmap-anydpi/ic_launcher_round.xml
+
+          sed -i 's/applicationId = "com.prirai.android.nira"/applicationId = "com.dude555afk.xeno"/' app/build.gradle
+          sed -i 's/Nira (Debug)/Xeno (Debug)/g' app/build.gradle
+          sed -i 's/rootProject.name = "nira-browser"/rootProject.name = "XenoBrowser"/' settings.gradle
+
+          find app/src/main/res -type f -name 'strings.xml' -print0 | xargs -0 sed -i \
+            -e 's/Nira Browser/Xeno Browser/g' \
+            -e 's/Open in Nira/Open in Xeno/g' \
+            -e 's/new Nira release/new Xeno release/g' \
+            -e 's/A new Nira release/A new Xeno release/g'
+
+          grep -rl 'https://github.com/prirai/nira-browser' app/src 2>/dev/null | xargs -r sed -i \
+            's|https://github.com/prirai/nira-browser|https://github.com/dude555afk/Xeno|g'
+
+          cat > README.md <<'EOF'
+          # Xeno Browser
+
+          Xeno is an Android browser based on the Nira Browser GeckoView implementation.
+          This migration replaces the previous prototype browser engine/UI plumbing with an
+          established GeckoView browser core before further Xeno-specific UI and AI work.
+
+          ## Current foundation
+          - GeckoView rendering engine and Mozilla Android Components
+          - Real tab/session/navigation state and browser back/forward handling
+          - Firefox WebExtension support
+          - Private browsing, tab groups, multiple profiles and PWAs
+          - Existing browser settings, downloads, reader and privacy controls from the upstream base
+
+          ## Build
+          - JDK 17
+          - Android SDK for API 37
+          - `./gradlew testDebugUnitTest assembleDebug`
+
+          ## Upstream and license
+          This project is derived from Nira Browser, licensed under the Mozilla Public License 2.0.
+          See [UPSTREAM.md](UPSTREAM.md) and [LICENSE](LICENSE) for attribution and license terms.
+          Xeno-specific branding and changes are maintained in this repository.
+          EOF
+
+          cat > UPSTREAM.md <<'EOF'
+          # Upstream provenance
+
+          Xeno's browser foundation is derived from [Nira Browser](https://github.com/prirai/nira-browser),
+          upstream commit `ef717b65071557e707ffea299aa9a6367f9730ac`.
+
+          Nira Browser is licensed under the Mozilla Public License 2.0. Its original license and
+          notices are retained in this repository. The application ID, visible product branding,
+          launcher artwork, project metadata and selected source URLs have been adapted for Xeno.
+
+          This migration intentionally prioritizes a proven browser core. Candy Browser's gesture-first
+          UI is a visual/interaction reference; its source is not copied because its repository uses
+          a noncommercial license.
+          EOF
+
+          mkdir -p .github/workflows
+          cat > .github/workflows/xeno-ci.yml <<'EOF'
+          name: Xeno Android CI
+          on:
+            push:
+              branches:
+                - main
+                - feature/xeno-nira-core-migration
+            pull_request:
+              branches:
+                - main
+          permissions:
+            contents: read
+          jobs:
+            build:
+              runs-on: ubuntu-latest
+              timeout-minutes: 60
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-java@v4
+                  with:
+                    distribution: zulu
+                    java-version: "17"
+                - uses: gradle/actions/setup-gradle@v5
+                - name: Run unit tests and build debug APKs
+                  run: ./gradlew testDebugUnitTest assembleDebug
+                - uses: actions/upload-artifact@v4
+                  if: success()
+                  with:
+                    name: xeno-geckoview-debug-apks
+                    path: app/build/outputs/apk/debug/**/*.apk
+                    if-no-files-found: error
+                    retention-days: 14
+          EOF
+
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Replace Xeno prototype with Nira GeckoView browser core"
+          git push origin HEAD:feature/xeno-nira-core-migration
+
+      - name: Verify imported browser builds and unit tests pass
+        run: ./gradlew testDebugUnitTest assembleDebug
+
+      - name: Upload Xeno debug APKs
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: xeno-geckoview-debug-apks
+          path: app/build/outputs/apk/debug/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
