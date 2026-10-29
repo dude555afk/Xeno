@@ -66,8 +66,8 @@ import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.theme.XenoMotion
 
 /**
- * Full-screen Arc Search-style query surface. Ordinary search is the default
- * action; Browse for Me is an explicit action attached to a query suggestion.
+ * Candy-inspired floating search surface. Ordinary navigation remains the default;
+ * Xeno's AI answer flow is an explicit action attached to a query suggestion.
  */
 @Composable
 fun CommandPalette(
@@ -123,16 +123,15 @@ fun CommandPalette(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Pixel probes from the dark Arc Android search screen:
-                // upper-left #1C192E, upper-right #3D242A, lower edge #2D2E32.
-                // This is a restrained dark ambient wash, not the home-screen gradient.
+                // A soft Candy-style lavender canvas keeps the search overlay visually continuous
+                // with Xeno's home surface and light tab coverflow.
                 .background(
                     Brush.linearGradient(
                         colorStops = arrayOf(
-                            0.0f to Color(0xFF1C192E),
+                            0.0f to Color(0xFFD4D0F7),
                             0.078f to Color(0xFF1C192E),
-                            0.287f to Color(0xFF3D242A),
-                            0.751f to Color(0xFF2D2E32),
+                            0.287f to Color(0xFFC4BDF1),
+                            0.751f to Color(0xFFE9E4FA),
                             1.0f to Color(0xFF2D2E32)
                         )
                     )
@@ -151,8 +150,8 @@ fun CommandPalette(
 
                 Surface(
                     shape = RoundedCornerShape(27.dp),
-                    color = Color(0xFF4F5052),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+                    color = Color(0xFFF9F8FF),
+                    border = BorderStroke(1.dp, Color(0xFFD9D3EF)),
                     shadowElevation = 8.dp,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -173,10 +172,10 @@ fun CommandPalette(
                                     .focusRequester(focusRequester),
                                 singleLine = true,
                                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    color = Color(0xFFF7F4FC),
+                                    color = Color(0xFF302D43),
                                     fontSize = 16.sp
                                 ),
-                                cursorBrush = SolidColor(Color(0xFF8A79FF)),
+                                cursorBrush = SolidColor(Color(0xFF6556BD)),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(
                                     onSearch = {
@@ -193,7 +192,7 @@ fun CommandPalette(
                                         Text(
                                             text = "Search or enter a URL",
                                             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                                            color = Color(0xFFB2ACBF)
+                                            color = Color(0xFF79738B)
                                         )
                                     }
                                     inner()
@@ -207,7 +206,7 @@ fun CommandPalette(
                                     Icon(
                                         imageVector = Icons.Rounded.Mic,
                                         contentDescription = "Voice search",
-                                        tint = Color(0xFFB9B3C5),
+                                        tint = Color(0xFF716B83),
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -216,7 +215,7 @@ fun CommandPalette(
                                 Text(
                                     text = "Incognito",
                                     modifier = Modifier.padding(start = 2.dp, end = 1.dp),
-                                    color = Color(0xFFE6E1EE),
+                                    color = Color(0xFF6F6A82),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontSize = 11.sp,
                                     maxLines = 1
@@ -257,7 +256,7 @@ fun CommandPalette(
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(start = 11.dp, end = 5.dp),
-                                    color = Color(0xFFF4F0FA),
+                                    color = Color(0xFF302D43),
                                     style = MaterialTheme.typography.bodyMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -365,7 +364,7 @@ private fun PaletteSectionLabel(text: String) {
     Text(
         text = text,
         modifier = Modifier.padding(start = 17.dp, top = 9.dp, bottom = 4.dp),
-        color = Color(0xFFA7A0B4),
+        color = Color(0xFF77718A),
         style = MaterialTheme.typography.labelSmall,
         fontSize = 10.sp,
         fontWeight = FontWeight.SemiBold,
@@ -394,7 +393,7 @@ private fun PaletteSuggestionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFFAAA3B8),
+            tint = Color(0xFF77718A),
             modifier = Modifier.size(18.dp)
         )
         Column(Modifier.weight(1f)) {
@@ -431,15 +430,15 @@ private fun BrowseForMeButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(18.dp),
-        // Median of blue BFM-pill probes is approximately #445BC5.
-        color = Color(0xFF445BC5),
-        contentColor = Color.White
+        // Use Xeno's lime accent for the primary AI action.
+        color = Color(0xFFC9F63E),
+        contentColor = Color(0xFF302D43)
     ) {
         Text(
             text = "Browse for me",
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
+            color = Color(0xFF302D43),
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold
         )
