@@ -555,8 +555,8 @@ fun BrowserScreen(
 }
 
 /**
- * Arc Search-style bottom controls. The persistent row stays deliberately tiny;
- * address/navigation controls are revealed only when the chevron is opened.
+ * Candy-inspired floating browser chrome. The compact pill stays out of the page;
+ * navigation and page tools expand on demand, and horizontal swipes switch tabs.
  */
 @Composable
 private fun FloatingBar(
@@ -615,8 +615,8 @@ private fun FloatingBar(
         if (expanded) {
             Surface(
                 shape = PillShape,
-                color = Color(0xF7FCFAFE),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
+                color = Color(0xF7FFFFFF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD8D3EE)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(vertical = 4.dp)) {
@@ -635,7 +635,7 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color(0xFF302D39).copy(alpha = if (canGoBack) 0.9f else 0.28f),
+                                tint = Color(0xFF302D43).copy(alpha = if (canGoBack) 0.9f else 0.28f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -647,7 +647,7 @@ private fun FloatingBar(
                             Icon(
                                 Icons.Rounded.ArrowForward,
                                 contentDescription = "Forward",
-                                tint = Color(0xFF302D39).copy(alpha = if (canGoForward) 0.9f else 0.28f),
+                                tint = Color(0xFF302D43).copy(alpha = if (canGoForward) 0.9f else 0.28f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -679,7 +679,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = if (loading) Icons.Rounded.Close else Icons.Rounded.Refresh,
                                 contentDescription = if (loading) "Stop loading" else "Reload page",
-                                tint = Color(0xFF302D39),
+                                tint = Color(0xFF302D43),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -687,7 +687,7 @@ private fun FloatingBar(
                             Icon(
                                 imageVector = Icons.Rounded.MoreHoriz,
                                 contentDescription = "Browser menu",
-                                tint = Color(0xFF302D39),
+                                tint = Color(0xFF302D43),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -727,8 +727,8 @@ private fun FloatingBar(
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color(0xE52C2935),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
+                color = Color(0xE6F8F7FF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD8D3EE)),
                 onClick = onOpenTabs,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -736,18 +736,18 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Layers,
                         contentDescription = "Open tabs",
-                        tint = Color(0xFFF7F4FC),
+                        tint = Color(0xFF302D43),
                         modifier = Modifier.size(23.dp)
                     )
                 }
             }
 
-            // Arc's persistent middle action is the plus. Search opens from
-            // the new tab it creates; using a magnifying glass here was the wrong affordance.
+            // Keep the new-tab action distinct and thumb-friendly; horizontal
+            // gestures across the dock change the active tab without opening the overview.
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = Color(0xFF302D39),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                color = Color(0xFFC9F63E),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA8C838)),
                 onClick = onNewTab,
                 modifier = Modifier.size(width = 58.dp, height = 42.dp)
             ) {
@@ -755,7 +755,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "New search",
-                        tint = Color(0xFFEEE9FC),
+                        tint = Color(0xFF302D43),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -763,8 +763,8 @@ private fun FloatingBar(
 
             Surface(
                 shape = CircleShape,
-                color = Color(0xE52C2935),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3D3948)),
+                color = Color(0xE6F8F7FF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD8D3EE)),
                 onClick = { expanded = !expanded },
                 modifier = Modifier.size(48.dp)
             ) {
@@ -772,7 +772,7 @@ private fun FloatingBar(
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
                         contentDescription = if (expanded) "Collapse browser controls" else "Show browser controls",
-                        tint = Color(0xFFF7F4FC),
+                        tint = Color(0xFF302D43),
                         modifier = Modifier.size(23.dp)
                     )
                 }
