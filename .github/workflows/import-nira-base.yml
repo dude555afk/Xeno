@@ -44,19 +44,19 @@ jobs:
             --exclude='.github/workflows/' \
             "$RUNNER_TEMP/nira-browser/" "$GITHUB_WORKSPACE/"
 
-          cat > "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md" <<EOF
-# Xeno experimental browser base: Nira Browser
-
-This branch imports Nira Browser as an isolated GeckoView-based starting point for Xeno.
-
-- Upstream: https://github.com/prirai/nira-browser
-- Imported commit: $NIRA_SHA
-- License: Mozilla Public License 2.0 (MPL-2.0); retain notices and publish modifications to MPL-covered files as required.
-- Engine/UI: Mozilla GeckoView + Android Components + Kotlin/Jetpack Compose.
-- Upstream status: alpha; CI success is not a substitute for device/runtime testing.
-- Original application ID: `com.prirai.android.nira`; Xeno branding/package changes are intentionally deferred.
-- The stable Xeno branches are not changed by this import.
-EOF
+          printf '%s\\n' \
+            '# Xeno experimental browser base: Nira Browser' \
+            '' \
+            'This branch imports Nira Browser as an isolated GeckoView-based starting point for Xeno.' \
+            '' \
+            '- Upstream: https://github.com/prirai/nira-browser' \
+            "- Imported commit: $NIRA_SHA" \
+            '- License: Mozilla Public License 2.0 (MPL-2.0); retain notices and publish modifications to MPL-covered files as required.' \
+            '- Engine/UI: Mozilla GeckoView + Android Components + Kotlin/Jetpack Compose.' \
+            '- Upstream status: alpha; CI success is not a substitute for device/runtime testing.' \
+            '- Original application ID: `com.prirai.android.nira`; Xeno branding/package changes are intentionally deferred.' \
+            '- The stable Xeno branches are not changed by this import.' \
+            > "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md"
 
       - name: Commit upstream source on experimental branch
         shell: bash
