@@ -1,6 +1,7 @@
 package com.dude555afk.xeno.core.reader
 
 import android.content.Context
+import android.os.SystemClock
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -108,78 +109,89 @@ class ReadabilityInjector(
         webView.settings.blockNetworkImage = true
 
         val previousClient = webView.webViewClient
+        val totalTimeoutMs = timeoutMs.coerceAtLeast(1L)
 
         try {
-            val loaded = withTimeoutOrNull(timeoutMs) {
-                suspendCancellableCoroutine<Unit> { cont ->
-                    var resumed = false
-                    fun once(block: () -> Unit) { if (!resumed) { resumed = true; block() } }
+            // One deadline covers navigation, DOM settling, and both extraction
+            // attempts. The load phase is capped so a slow host cannot consume
+            // the entire budget before Readability gets a chance to run.
+            val extracted = withTimeoutOrNull(totalTimeoutMs) {
+                val loadTimeoutMs = ExtractionTimeoutBudget.pageLoadTimeoutMs(totalTimeoutMs)
+                val loaded = withTimeoutOrNull(loadTimeoutMs) {
+                    suspendCancellableCoroutine<Unit> { cont ->
+                        var resumed = false
+                        fun once(block: () -> Unit) { if (!resumed) { resumed = true; block() } }
 
-                    webView.webViewClient = object : WebViewClient() {
-                        override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: android.graphics.Bitmap?) {
-                            runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
-                        }
+                        webView.webViewClient = object : WebViewClient() {
+                            override fun onPageStarted(view: WebView?, startedUrl: String?, favicon: android.graphics.Bitmap?) {
+                                runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
+                            }
 
-                        override fun onPageFinished(view: WebView?, finishedUrl: String?) {
-                            runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
-                            once { if (cont.isActive) cont.resume(Unit) }
-                        }
-
-                        override fun onReceivedError(
-                            view: WebView?, request: WebResourceRequest?,
-                            error: android.webkit.WebResourceError?
-                        ) {
-                            if (request?.isForMainFrame == true) {
+                            override fun onPageFinished(view: WebView?, finishedUrl: String?) {
+                                runCatching { view?.evaluateJavascript(BOOTSTRAP, null) }
                                 once { if (cont.isActive) cont.resume(Unit) }
                             }
+
+                            override fun onReceivedError(
+                                view: WebView?, request: WebResourceRequest?,
+                                error: android.webkit.WebResourceError?
+                            ) {
+                                if (request?.isForMainFrame == true) {
+                                    once { if (cont.isActive) cont.resume(Unit) }
+                                }
+                            }
+
+                            override fun shouldInterceptRequest(
+                                view: WebView?,
+                                request: WebResourceRequest
+                            ): android.webkit.WebResourceResponse? =
+                                assetLoader.shouldInterceptRequest(request.url)
                         }
-
-                        override fun shouldInterceptRequest(
-                            view: WebView?,
-                            request: WebResourceRequest
-                        ): android.webkit.WebResourceResponse? =
-                            assetLoader.shouldInterceptRequest(request.url)
+                        webView.loadUrl(url)
                     }
-                    webView.loadUrl(url)
                 }
-            }
 
-            if (loaded == null) return@withContext ExtractedContent.junk(url)
-
-            // Wait for the DOM to go quiet, then extract.
-            var last = ""
-            var quietSince = 0L
-            val start = System.currentTimeMillis()
-
-            while (System.currentTimeMillis() - start < timeoutMs) {
-                val snapshot = evalToString(webView, PROBE_CALL) ?: ""
-                val now = System.currentTimeMillis()
-
-                val readerReady = snapshot.contains(":ready")
-                if (snapshot == last && snapshot.isNotBlank() && readerReady) {
-                    if (quietSince == 0L) quietSince = now
-                    if (now - quietSince >= quietForMs) break
+                if (loaded == null) {
+                    ExtractedContent.junk(url)
                 } else {
-                    last = snapshot
-                    quietSince = 0L
-                    // The script asset can load later than the document on a
-                    // slow phone. Wait briefly for it, then use DOM-text fallback
-                    // instead of burning the entire page timeout.
-                    if (!readerReady && now - start >= minOf(timeoutMs, READER_BOOTSTRAP_WAIT_MS)) break
-                }
-                delay(220)
-            }
+                    // Wait for the DOM to go quiet, then extract.
+                    var last = ""
+                    var quietSince = 0L
+                    val start = SystemClock.elapsedRealtime()
 
-            val primary = parse(evalToString(webView, EXTRACT_CALL), url)
-            if (!primary.isJunk) primary else {
-                // The fallback reads only text currently exposed by the page.
-                // It does not unlock subscriber-only content or bypass access controls.
-                val fallback = parse(evalToString(webView, FALLBACK_CALL), url)
-                if (!fallback.isJunk) fallback else primary
+                    while (SystemClock.elapsedRealtime() - start < totalTimeoutMs) {
+                        val snapshot = evalToString(webView, PROBE_CALL) ?: ""
+                        val now = SystemClock.elapsedRealtime()
+
+                        val readerReady = snapshot.contains(":ready")
+                        if (snapshot == last && snapshot.isNotBlank() && readerReady) {
+                            if (quietSince == 0L) quietSince = now
+                            if (now - quietSince >= quietForMs) break
+                        } else {
+                            last = snapshot
+                            quietSince = 0L
+                            // The script asset can load later than the document on a
+                            // slow phone. Wait briefly for it, then use DOM-text fallback
+                            // instead of burning the entire page timeout.
+                            if (!readerReady && now - start >= minOf(totalTimeoutMs, READER_BOOTSTRAP_WAIT_MS)) break
+                        }
+                        delay(220)
+                    }
+
+                    val primary = parse(evalToString(webView, EXTRACT_CALL), url)
+                    if (!primary.isJunk) primary else {
+                        // The fallback reads only text currently exposed by the page.
+                        // It does not unlock subscriber-only content or bypass access controls.
+                        val fallback = parse(evalToString(webView, FALLBACK_CALL), url)
+                        if (!fallback.isJunk) fallback else primary
+                    }
+                }
             }
+            extracted ?: ExtractedContent.junk(url)
         } finally {
-            // Restore even on cancellation/JS bridge failure: this class may be
-            // used with a retained WebView, so leaking the temporary client breaks navigation.
+            // Stop any navigation left running after a timeout/cancellation and
+            // restore the caller's client even if a JS callback never arrives.
+            runCatching { webView.stopLoading() }
             webView.webViewClient = previousClient
         }
     }
@@ -222,6 +234,20 @@ class ReadabilityInjector(
     private fun parse(raw: String?, fallbackUrl: String): ExtractedContent =
         ExtractionJsonParser.parse(raw, fallbackUrl, json)
 }
+/**
+ * Keeps a slow page load from consuming the whole end-to-end extraction budget.
+ * The remaining time is reserved for DOM settling and Readability/fallback JS.
+ */
+internal object ExtractionTimeoutBudget {
+    private const val MAX_PAGE_LOAD_WAIT_MS = 15_000L
+
+    fun pageLoadTimeoutMs(totalTimeoutMs: Long): Long {
+        val total = totalTimeoutMs.coerceAtLeast(1L)
+        val twoThirds = (total - total / 3).coerceAtLeast(1L)
+        return minOf(MAX_PAGE_LOAD_WAIT_MS, twoThirds)
+    }
+}
+
 /**
  * Pure parser separated from the WebView lifecycle so the tricky Android
  * evaluateJavascript JSON shapes can be regression-tested on the JVM.
