@@ -1,0 +1,110 @@
+name: Import and verify Midori GeckoView base
+
+on:
+  push:
+    branches:
+      - feature/xeno-midori-base
+    paths:
+      - .github/workflows/import-midori-upstream.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xeno-midori-upstream-import
+  cancel-in-progress: false
+
+jobs:
+  import-and-build:
+    name: Import Midori, run tests, lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out experimental Xeno branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/xeno-midori-base
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream Midori source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/goastian/midori-android.git "$RUNNER_TEMP/midori"
+          MIDORI_SHA="$(git -C "$RUNNER_TEMP/midori" rev-parse HEAD)"
+          printf 'MIDORI_SHA=%s\n' "$MIDORI_SHA" >> "$GITHUB_ENV"
+          cat > "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md" <<EOF
+          # Xeno experimental browser base: Midori Android
+
+          This branch contains an imported snapshot of Midori Android for isolated evaluation as a GeckoView browser foundation.
+
+          - Upstream: https://github.com/goastian/midori-android
+          - Imported upstream commit: $MIDORI_SHA
+          - License: Mozilla Public License 2.0. Review the upstream LICENSE and all bundled third-party notices before distribution.
+          - Engine: GeckoView through Mozilla Android Components.
+          - The source still has Midori package identity and branding. No Xeno rebranding has been applied.
+          - The upstream Gradle build includes a task that strips Mozilla Glean telemetry and verifies its absence.
+          - The stable Xeno branches are unchanged.
+          - This branch is a build-tested candidate, not yet adopted as the final Xeno product.
+          EOF
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            "$RUNNER_TEMP/midori/" "$GITHUB_WORKSPACE/"
+          cp "$RUNNER_TEMP/XENO_UPSTREAM_BASE.md" "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md"
+
+      - name: Commit imported upstream source to the experimental branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Midori Android upstream baseline $MIDORI_SHA [skip ci]"
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic $AUTH" push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK platform and NDK
+        shell: bash
+        run: sdkmanager "platforms;android-37" "ndk;29.0.14206865"
+
+      - name: Set up Rust for native browser components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.98.0
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Run tests, lint, telemetry audit and build GeckoView debug APK
+        shell: bash
+        env:
+          CARGO_TERM_COLOR: always
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --max-workers=1 \
+            :app:testOriginalPlaystoreDebugUnitTest \
+            :app:lintOriginalPlaystoreDebug \
+            :app:verifyNoGlean \
+            :app:assembleOriginalPlaystoreDebug
+
+      - name: Upload ARM64 debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeno-midori-geckoview-debug-arm64
+          path: app/build/outputs/apk/original/playstore/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
