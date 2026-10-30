@@ -1,0 +1,34 @@
+<resources>
+    <string name="home_wallpaper_title">Wallpapers</string>
+    <string name="home_wallpaper_description">Choose a background for your start page.</string>
+    <string name="home_wallpaper_choose">Choose wallpaper</string>
+    <string name="home_wallpaper_collection">Midori collection</string>
+    <string name="home_wallpaper_preview">Preview</string>
+    <string name="home_wallpaper_apply">Set wallpaper</string>
+    <string name="home_wallpaper_selected">Selected</string>
+    <string name="home_wallpaper_none">Follow theme</string>
+    <string name="home_wallpaper_save_error">Unable to save the wallpaper. Try again.</string>
+    <string name="home_wallpaper_back">All wallpapers</string>
+    <string name="home_wallpaper_load_error">Unable to open this wallpaper. Choose another one.</string>
+    <string name="home_wallpaper_all">All</string>
+    <string name="home_wallpaper_nature">Nature</string>
+    <string name="home_wallpaper_space">Space</string>
+    <string name="home_wallpaper_travel">Travel</string>
+    <string name="home_wallpaper_colors">Solid colors</string>
+    <string name="home_wallpaper_black">Black</string>
+    <string name="home_wallpaper_white">White</string>
+    <string name="home_wallpaper_gray">Gray</string>
+    <string name="home_wallpaper_blue">Blue</string>
+    <string name="home_wallpaper_green">Green</string>
+    <string name="home_wallpaper_purple">Purple</string>
+    <string name="home_wallpaper_red">Red</string>
+    <string name="home_wallpaper_coral">Coral</string>
+    <string name="home_wallpaper_orange">Orange</string>
+    <string name="home_wallpaper_yellow">Yellow</string>
+    <string name="home_wallpaper_mint">Mint</string>
+    <string name="home_wallpaper_teal">Teal</string>
+    <string name="home_wallpaper_sky">Sky blue</string>
+    <string name="home_wallpaper_pink">Pink</string>
+    <string name="home_wallpaper_sand">Sand</string>
+    <string name="home_wallpaper_brown">Brown</string>
+</resources>

@@ -1,0 +1,1065 @@
+package org.midorinext.android.ui.preferences
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+import android.content.Intent
+import android.provider.DocumentsContract
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import org.midorinext.android.BuildConfig
+import org.midorinext.android.R
+import org.midorinext.android.ext.openAppStorePage
+import org.midorinext.android.mozac.downloads.hasPersistedWritableTreePermission
+import org.midorinext.android.newtab.HomeWallpaper
+import org.midorinext.android.ui.browser.home.HomeWallpaperImage
+import org.midorinext.android.ui.browser.home.HomeWallpaperPicker
+import org.midorinext.android.ui.browser.home.homeShortcutIconShape
+import org.midorinext.android.preferences.app.*
+import org.midorinext.android.ui.MidoriApplicationViewModel
+import org.midorinext.android.ui.nav.NavDestination
+import org.midorinext.android.ui.preferences.permissions.PermissionsPreference
+import org.midorinext.android.ui.preferences.widgets.*
+import org.midorinext.android.ui.widgets.HtmlText
+import org.midorinext.android.ui.widgets.ScreenHeader
+import mozilla.components.concept.engine.translate.Language
+import mozilla.components.concept.engine.translate.LanguageModel
+import mozilla.components.concept.engine.translate.LanguageSetting
+import mozilla.components.concept.engine.translate.ModelState
+
+@Composable
+fun PreferencesScreen(
+    onClose: () -> Unit,
+    navigateTo: (NavDestination) -> Unit = {},
+    onNavigateToPrivacy: () -> Unit = {},
+    viewModel: PreferencesViewModel = hiltViewModel(),
+    applicationViewModel: MidoriApplicationViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        ScreenHeader(title = stringResource(id = R.string.settings), scrollableState = scrollState)
+
+        Column(modifier = Modifier.verticalScroll(scrollState)) {
+            // Make default browser
+            DefaultBrowserPreference()
+
+            SettingsNavRow(
+                label = R.string.sync_title,
+                description = stringResource(R.string.sync_summary),
+                onClicked = { context.startActivity(Intent(context, org.midorinext.android.sync.SyncActivity::class.java)) }
+            )
+
+            PreferenceGroupLabel(label = R.string.settings_group_general)
+
+            SettingsNavRow(
+                label = R.string.search_engine_label,
+                description = selectedEngineName(appPrefs),
+                onClicked = { navigateTo(NavDestination.SearchSettings) }
+            )
+            PreferenceToggle(
+                label = R.string.settings_bookmarks_current_tab,
+                description = R.string.settings_bookmarks_current_tab_summary,
+                value = appPrefs.openBookmarksInCurrentTab,
+                onValueChange = viewModel::updateOpenBookmarksInCurrentTab
+            )
+
+            SettingsNavRow(
+                label = R.string.settings_homepage_title,
+                description = stringResource(R.string.settings_homepage_summary),
+                onClicked = { navigateTo(NavDestination.HomepageSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_customize_title,
+                description = stringResource(R.string.settings_customize_summary),
+                onClicked = { navigateTo(NavDestination.CustomizeSettings) }
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                SettingsNavRow(
+                    label = R.string.settings_app_language,
+                    description = stringResource(R.string.settings_app_language_summary),
+                    onClicked = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
+                        )
+                    }
+                )
+            }
+            SettingsNavRow(
+                label = R.string.settings_translations_title,
+                description = stringResource(R.string.settings_translations_summary),
+                onClicked = { navigateTo(NavDestination.TranslationSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_passwords_title,
+                description = passwordSummary(appPrefs),
+                onClicked = { navigateTo(NavDestination.PasswordSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_autofill_title,
+                description = autofillSummary(appPrefs),
+                onClicked = { navigateTo(NavDestination.AutofillSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_accessibility_title,
+                description = accessibilitySummary(appPrefs),
+                onClicked = { navigateTo(NavDestination.AccessibilitySettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_notifications_title,
+                description = stringResource(R.string.settings_notifications_summary),
+                onClicked = { navigateTo(NavDestination.NotificationSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.settings_downloads_title,
+                description = stringResource(R.string.settings_downloads_summary),
+                onClicked = { navigateTo(NavDestination.DownloadSettings) }
+            )
+            SettingsNavRow(
+                label = R.string.pwa_manage_title,
+                description = stringResource(R.string.pwa_manage_summary),
+                onClicked = { navigateTo(NavDestination.WebApps) }
+            )
+
+            PreferenceGroupLabel(label = R.string.settings_group_privacy)
+
+            // Privacy and Security - Main Entry Point
+            PreferenceRow(
+                label = R.string.settings_group_privacy,
+                trailing = { Icon(
+                    painter = painterResource(id = R.drawable.icons_arrow_forward),
+                    contentDescription = "Open"
+                )},
+                onClicked = { onNavigateToPrivacy() }
+            )
+            SettingsNavRow(
+                label = R.string.adblock_settings_title,
+                description = stringResource(R.string.adblock_settings_summary),
+                onClicked = { navigateTo(NavDestination.AdBlockSettings) },
+            )
+
+            // Permissions granted to websites editor
+            PermissionsPreference(viewModel)
+            // Paramètres de suppression de navigation
+            ClearDataPreference(viewModel, applicationViewModel)
+            // Supprimer les données à la fermeture
+            PreferenceToggle(
+                label = R.string.clear_data_on_quit_label,
+                description = if (appPrefs.clearDataOnQuit) R.string.clear_data_on_quit_description else null,
+                value = appPrefs.clearDataOnQuit,
+                onValueChange = { viewModel.updateClearDataOnQuit(it) }
+            )
+
+
+            PreferenceGroupLabel(label = R.string.settings_group_about)
+
+            // App details
+            AppDetailsPreference()
+            // Politique de confidentialité
+            val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
+            PreferenceRow(
+                label = R.string.privacy_policy_label,
+                trailing = { Icon(
+                    painter = painterResource(id = R.drawable.icons_open),
+                    contentDescription = "Open"
+                )},
+                onClicked = {
+                    viewModel.addTabsUseCase(privacyPolicyUrl)
+                    onClose()
+                }
+            )
+            // Licence MPL 2.0
+            PreferenceSelectionPopup(
+                label = R.string.licence_label,
+                popupContent = { HtmlText(
+                    html = stringResource(id = R.string.settings_licence_content),
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) },
+                fullscreenPopup = true
+            )
+            // Rate us
+            PreferenceRow(
+                label = R.string.rate_us_label,
+                trailing = { Icon(
+                    painter = painterResource(id = R.drawable.icons_open),
+                    contentDescription = "Open"
+                )},
+                onClicked = { context.openAppStorePage() }
+            )
+
+            // TODO adjust test files by buildtype
+            //   using dedicated src path etc ...
+            if (BuildConfig.DEBUG) {
+                PreferenceGroupLabel(label = R.string.settings_tests_label)
+
+                // Tests prompts feature
+                PreferenceRow(
+                    label = R.string.settings_tests_prompts_label,
+                    trailing = { Icon(
+                        painter = painterResource(id = R.drawable.icons_open),
+                        contentDescription = "Open"
+                    )},
+                    onClicked = {
+                        viewModel.openTestTabUseCase("prompts")
+                        onClose()
+                    }
+                )
+            }
+        }
+    }
+}
+
+internal fun searchEngineNameResource(engine: SearchEnginePreference): Int = when (engine) {
+    SearchEnginePreference.ECOSIA -> R.string.search_engine_ecosia
+    SearchEnginePreference.QWANT -> R.string.search_engine_qwant
+    SearchEnginePreference.STARTPAGE -> R.string.search_engine_startpage
+    SearchEnginePreference.BING -> R.string.search_engine_bing
+    SearchEnginePreference.GOOGLE -> R.string.search_engine_google
+    SearchEnginePreference.DUCKDUCKGO -> R.string.search_engine_duckduckgo
+    SearchEnginePreference.ASTIANGO, SearchEnginePreference.UNRECOGNIZED -> R.string.search_engine_current_midori
+}
+
+@Composable
+internal fun searchEngineName(engine: SearchEnginePreference): String =
+    stringResource(searchEngineNameResource(engine))
+
+@Composable
+fun HomepageSettingsScreen(viewModel: PreferencesViewModel = hiltViewModel()) {
+    val preferences by viewModel.appPreferences.collectAsStateWithLifecycle()
+    var showWallpapers by rememberSaveable { mutableStateOf(false) }
+    val wallpaper = HomeWallpaper.fromId(preferences.homeWallpaperId)
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_homepage_title)) {
+        PreferenceRow(
+            label = R.string.home_wallpaper_title,
+            description = stringResource(wallpaper.title),
+            modifier = Modifier.testTag("home_wallpaper_settings"),
+            trailing = {
+                HomeWallpaperImage(wallpaper, Modifier.size(width = 84.dp, height = 60.dp).clip(RoundedCornerShape(12.dp)),
+                    thumbnail = true)
+            },
+            onClicked = { showWallpapers = true },
+        )
+        PreferenceGroupLabel(label = R.string.home_icon_shape)
+        HomeShortcutShapeSelector(
+            value = preferences.homeShortcutShape,
+            onValueChange = viewModel::updateHomeShortcutShape,
+        )
+        HomeAppearanceToggle(
+            label = R.string.home_large_icons,
+            value = preferences.homeLargeShortcuts,
+            testTag = "home_large_icons",
+            onValueChange = viewModel::updateHomeLargeShortcuts,
+        )
+        HomeAppearanceToggle(
+            label = R.string.home_show_add_shortcut,
+            value = !preferences.hideHomeAddShortcut,
+            testTag = "home_show_add_shortcut",
+            onValueChange = viewModel::updateHomeAddShortcut,
+        )
+        HomeAppearanceToggle(
+            label = R.string.home_show_logo,
+            value = !preferences.hideHomeLogo,
+            testTag = "home_show_logo",
+            onValueChange = viewModel::updateHomeLogo,
+        )
+        HomeAppearanceToggle(
+            label = R.string.home_show_customize_shortcut,
+            value = !preferences.hideHomeCustomizeShortcut,
+            testTag = "home_show_customize_shortcut",
+            onValueChange = viewModel::updateHomeCustomizeShortcut,
+        )
+        PreferenceGroupLabel(label = R.string.settings_homepage_sections)
+        PreferenceToggle(
+            label = R.string.home_shortcuts, value = !preferences.hideHomeShortcuts,
+            onValueChange = { viewModel.updateHomeSection(org.midorinext.android.newtab.HomeSection.SHORTCUTS, it) },
+        )
+        PreferenceToggle(
+            label = R.string.home_continue, value = !preferences.hideHomeContinue,
+            onValueChange = { viewModel.updateHomeSection(org.midorinext.android.newtab.HomeSection.CONTINUE, it) },
+        )
+        PreferenceToggle(
+            label = R.string.home_recent_visits, value = !preferences.hideHomeRecentVisits,
+            onValueChange = { viewModel.updateHomeSection(org.midorinext.android.newtab.HomeSection.RECENT_VISITS, it) },
+        )
+        PreferenceToggle(
+            label = R.string.native_blocker_title, value = !preferences.hideHomePrivacy,
+            onValueChange = { viewModel.updateHomeSection(org.midorinext.android.newtab.HomeSection.PRIVACY, it) },
+        )
+        PreferenceToggle(
+            label = R.string.home_stories, value = !preferences.hideHomeStories,
+            description = R.string.home_stories_source,
+            onValueChange = { viewModel.updateHomeSection(org.midorinext.android.newtab.HomeSection.STORIES, it) },
+        )
+        PreferenceToggle(
+            label = R.string.home_blank_tab, value = preferences.openBlankNewTab,
+            onValueChange = viewModel::updateOpenBlankNewTab,
+        )
+    }
+    if (showWallpapers) {
+        HomeWallpaperPicker(current = wallpaper, onDismiss = { showWallpapers = false }, onApply = viewModel::updateHomeWallpaper)
+    }
+}
+
+@Composable
+private fun HomeShortcutShapeSelector(
+    value: HomeShortcutShape,
+    onValueChange: (HomeShortcutShape) -> Unit,
+) {
+    val options = listOf(
+        Triple(HomeShortcutShape.HOME_SHORTCUT_CIRCLE, R.string.home_shape_circle, "home_shape_circle"),
+        Triple(HomeShortcutShape.HOME_SHORTCUT_ROUNDED, R.string.home_shape_rounded, "home_shape_rounded"),
+        Triple(HomeShortcutShape.HOME_SHORTCUT_SQUARE, R.string.home_shape_square, "home_shape_square"),
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth().selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        options.forEach { (shape, label, testTag) ->
+            val selected = value == shape ||
+                (value == HomeShortcutShape.UNRECOGNIZED && shape == HomeShortcutShape.HOME_SHORTCUT_ROUNDED)
+            Column(
+                modifier = Modifier.weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(
+                        width = 2.dp,
+                        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    .selectable(selected = selected, role = Role.RadioButton, onClick = { onValueChange(shape) })
+                    .testTag(testTag)
+                    .padding(horizontal = 4.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = homeShortcutIconShape(shape),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                ) {
+                    Icon(painterResource(R.drawable.icons_home), contentDescription = null, modifier = Modifier.padding(12.dp))
+                }
+                Text(stringResource(label), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+                RadioButton(selected = selected, onClick = null)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeAppearanceToggle(
+    @StringRes label: Int,
+    value: Boolean,
+    testTag: String,
+    onValueChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .toggleable(value = value, role = Role.Switch, onValueChange = onValueChange)
+            .testTag(testTag)
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(label), modifier = Modifier.weight(1f), fontSize = 16.sp, lineHeight = 20.sp)
+        Switch(checked = value, onCheckedChange = null)
+    }
+}
+
+@Composable
+fun CustomizeSettingsScreen(viewModel: PreferencesViewModel = hiltViewModel()) {
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_customize_title)) {
+        PreferenceGroupLabel(label = R.string.appearance_label)
+        PreferenceRadioSelectionPopup(
+            label = R.string.appearance_label,
+            options = remember {
+                listOf(
+                    RadioButtonOption(Appearance.LIGHT, R.string.available_appearance_light),
+                    RadioButtonOption(Appearance.DARK, R.string.available_appearance_dark),
+                    RadioButtonOption(Appearance.SYSTEM_SETTINGS, R.string.available_appearance_system)
+                )
+            },
+            value = appPrefs.appearance,
+            onValueChange = viewModel::updateAppearance
+        )
+
+        PreferenceGroupLabel(label = R.string.toolbar_position_label)
+        PreferenceRadioSelectionPopup(
+            label = R.string.toolbar_position_label,
+            options = remember {
+                listOf(
+                    RadioButtonOption(ToolbarPosition.TOP, R.string.available_toolbar_position_top),
+                    RadioButtonOption(ToolbarPosition.BOTTOM, R.string.available_toolbar_position_bottom)
+                )
+            },
+            value = appPrefs.toolbarPosition,
+            onValueChange = viewModel::updateToolbarPosition
+        )
+        TabsViewPreference(
+            value = appPrefs.tabsView,
+            onValueChange = viewModel::updateTabsView
+        )
+        PreferenceToggle(
+            label = R.string.tab_strip_label,
+            description = R.string.tab_strip_description,
+            value = appPrefs.showTabStrip,
+            onValueChange = viewModel::updateShowTabStrip
+        )
+        PreferenceToggle(
+            label = R.string.close_tabs_on_exit_label,
+            description = R.string.close_tabs_on_exit_description,
+            value = appPrefs.closeTabsOnExit,
+            onValueChange = viewModel::updateCloseTabsOnExit
+        )
+
+        PreferenceGroupLabel(label = R.string.settings_customize_shortcut)
+        PreferenceRadioSelectionPopup(
+            label = R.string.settings_toolbar_shortcut,
+            options = remember {
+                listOf(
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_NEW_TAB, R.string.shortcut_new_tab),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_SHARE, R.string.shortcut_share),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_BOOKMARK, R.string.shortcut_bookmark),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_HOMEPAGE, R.string.shortcut_homepage),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_BACK, R.string.shortcut_back),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_SUMMARIZE, R.string.shortcut_summarize),
+                    RadioButtonOption(ToolbarShortcut.TOOLBAR_SHORTCUT_NONE, R.string.shortcut_none)
+                )
+            },
+            value = appPrefs.toolbarShortcut,
+            onValueChange = viewModel::updateToolbarShortcut
+        )
+
+        PreferenceGroupLabel(label = R.string.settings_customize_gestures)
+        PreferenceToggle(
+            label = R.string.settings_pull_to_refresh,
+            value = appPrefs.pullToRefreshEnabled,
+            onValueChange = viewModel::updatePullToRefreshEnabled
+        )
+        PreferenceToggle(
+            label = R.string.hide_toolbar_on_scroll_label,
+            value = appPrefs.hideToolbarOnScroll,
+            onValueChange = viewModel::updateHideToolbarOnScroll
+        )
+        PreferenceToggle(
+            label = R.string.settings_swipe_address_bar_to_switch_tabs,
+            value = appPrefs.swipeAddressBarToSwitchTabsEnabled,
+            onValueChange = viewModel::updateSwipeAddressBarToSwitchTabsEnabled
+        )
+        PreferenceToggle(
+            label = R.string.settings_swipe_toolbar_to_show_tabs,
+            value = appPrefs.swipeToolbarToShowTabsEnabled,
+            onValueChange = viewModel::updateSwipeToolbarToShowTabsEnabled
+        )
+        PreferenceToggle(
+            label = R.string.settings_shake_to_summarize,
+            description = R.string.settings_shake_to_summarize_summary,
+            value = appPrefs.shakeToSummarizeEnabled,
+            onValueChange = viewModel::updateShakeToSummarizeEnabled
+        )
+    }
+}
+
+@Composable
+fun NotificationSettingsScreen() {
+    val context = LocalContext.current
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_notifications_title)) {
+        PreferenceGroupLabel(label = R.string.settings_notifications_title)
+        PreferenceRow(
+            label = R.string.settings_notifications_open_system,
+            description = stringResource(R.string.settings_notifications_open_system_summary),
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.icons_open),
+                    contentDescription = null
+                )
+            },
+            onClicked = {
+                val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                } else {
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = android.net.Uri.parse("package:${context.packageName}")
+                    }
+                }
+                context.startActivity(intent)
+            }
+        )
+    }
+}
+
+@Composable
+fun DownloadSettingsScreen(viewModel: PreferencesViewModel = hiltViewModel()) {
+    val context = LocalContext.current
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    val downloadDirectoryPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val permissions = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        try {
+            context.contentResolver.takePersistableUriPermission(uri, permissions)
+            viewModel.updateDownloadDirectoryUri(uri.toString())
+        } catch (_: SecurityException) {
+            // The picker only returns a URI with a persistable grant. Keep the existing location
+            // if a document provider unexpectedly does not grant it.
+        }
+    }
+    val selectedDirectoryUri = appPrefs.downloadDirectoryUri
+        .takeIf(context::hasPersistedWritableTreePermission)
+    val selectedDirectory = selectedDirectoryUri
+        ?.let(::downloadDirectoryName)
+
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_downloads_title)) {
+        PreferenceGroupLabel(label = R.string.download_settings_file_storage)
+        PreferenceRow(
+            label = R.string.download_settings_default_location,
+            description = selectedDirectory ?: stringResource(R.string.download_settings_default_location_summary),
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.icons_arrow_forward),
+                    contentDescription = null
+                )
+            },
+            onClicked = { downloadDirectoryPicker.launch(selectedDirectoryUri?.let(android.net.Uri::parse)) }
+        )
+        if (selectedDirectory != null) {
+            PreferenceRow(
+                label = R.string.download_settings_use_android_downloads,
+                description = stringResource(R.string.download_settings_default_location_summary),
+                onClicked = { viewModel.updateDownloadDirectoryUri("") }
+            )
+        }
+        PreferenceToggle(
+            label = R.string.download_wifi_only,
+            description = R.string.download_wifi_only_summary,
+            value = appPrefs.downloadWifiOnly,
+            onValueChange = viewModel::updateDownloadWifiOnly
+        )
+
+        PreferenceGroupLabel(label = R.string.download_settings_delete_or_remove)
+        PreferenceRadioSelectionPopup(
+            label = R.string.download_settings_delete_or_remove,
+            options = remember {
+                listOf(
+                    RadioButtonOption(
+                        DownloadRemovalBehavior.DOWNLOAD_REMOVAL_DELETE_FROM_DEVICE,
+                        R.string.download_removal_delete_from_device
+                    ),
+                    RadioButtonOption(
+                        DownloadRemovalBehavior.DOWNLOAD_REMOVAL_REMOVE_FROM_HISTORY,
+                        R.string.download_removal_remove_from_history
+                    ),
+                    RadioButtonOption(
+                        DownloadRemovalBehavior.DOWNLOAD_REMOVAL_ASK,
+                        R.string.download_removal_ask
+                    )
+                )
+            },
+            value = appPrefs.downloadRemovalBehavior,
+            onValueChange = viewModel::updateDownloadRemovalBehavior
+        )
+        PreferenceToggle(
+            label = R.string.download_manage_with_other_app,
+            description = R.string.download_manage_with_other_app_summary,
+            value = appPrefs.manageDownloadsWithOtherApp,
+            onValueChange = viewModel::updateManageDownloadsWithOtherApp
+        )
+    }
+}
+
+private fun downloadDirectoryName(uriString: String): String? = runCatching {
+    DocumentsContract.getTreeDocumentId(android.net.Uri.parse(uriString))
+        .substringAfter(':')
+        .trim('/')
+        .substringAfterLast('/')
+        .takeIf { it.isNotBlank() }
+}.getOrNull()
+
+@Composable
+fun PasswordSettingsScreen(
+    navigateTo: (NavDestination) -> Unit = {},
+    viewModel: PreferencesViewModel = hiltViewModel(),
+) {
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_passwords_title)) {
+        PreferenceGroupLabel(label = R.string.settings_passwords_title)
+        PreferenceToggle(
+            label = R.string.settings_save_passwords,
+            description = R.string.settings_save_passwords_desc,
+            value = appPrefs.savePasswordsEnabled,
+            onValueChange = viewModel::updateSavePasswordsEnabled
+        )
+        PreferenceToggle(
+            label = R.string.settings_password_autofill,
+            description = R.string.settings_password_autofill_desc,
+            value = appPrefs.passwordAutofillEnabled,
+            onValueChange = viewModel::updatePasswordAutofillEnabled
+        )
+        PreferenceGroupLabel(label = R.string.settings_passwords_manage)
+        SettingsNavRow(
+            label = R.string.settings_saved_passwords,
+            description = stringResource(R.string.settings_saved_passwords_secure_desc),
+            onClicked = { navigateTo(NavDestination.SavedPasswords) },
+        )
+    }
+}
+
+@Composable
+fun AutofillSettingsScreen(
+    navigateTo: (NavDestination) -> Unit = {},
+    viewModel: PreferencesViewModel = hiltViewModel(),
+) {
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_autofill_title)) {
+        PreferenceGroupLabel(label = R.string.settings_autofill_addresses)
+        PreferenceToggle(
+            label = R.string.settings_autofill_save_addresses,
+            description = R.string.settings_autofill_save_addresses_desc,
+            value = appPrefs.autofillAddressesEnabled,
+            onValueChange = viewModel::updateAutofillAddressesEnabled
+        )
+        SettingsNavRow(
+            label = R.string.settings_autofill_add_address,
+            description = stringResource(R.string.settings_autofill_manage_secure_desc),
+            onClicked = { navigateTo(NavDestination.SavedAutofill) },
+        )
+
+        PreferenceGroupLabel(label = R.string.settings_autofill_cards)
+        PreferenceToggle(
+            label = R.string.settings_autofill_save_cards,
+            description = R.string.settings_autofill_save_cards_desc,
+            value = appPrefs.autofillCardsEnabled,
+            onValueChange = viewModel::updateAutofillCardsEnabled
+        )
+        SettingsNavRow(
+            label = R.string.settings_autofill_add_card,
+            description = stringResource(R.string.settings_autofill_manage_secure_desc),
+            onClicked = { navigateTo(NavDestination.SavedAutofill) },
+        )
+    }
+}
+
+@Composable
+fun AccessibilitySettingsScreen(viewModel: PreferencesViewModel = hiltViewModel()) {
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_accessibility_title)) {
+        PreferenceToggle(
+            label = R.string.settings_accessibility_auto_font,
+            description = R.string.settings_accessibility_auto_font_desc,
+            value = appPrefs.accessibilityAutomaticFontSizing,
+            onValueChange = viewModel::updateAccessibilityAutomaticFontSizing
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(text = stringResource(R.string.settings_accessibility_font_size))
+            Slider(
+                value = appPrefs.accessibilityFontScale.coerceIn(80, 150).toFloat(),
+                onValueChange = { viewModel.updateAccessibilityFontScale(it.toInt()) },
+                valueRange = 80f..150f,
+                steps = 6,
+                enabled = !appPrefs.accessibilityAutomaticFontSizing
+            )
+            Text(
+                text = stringResource(R.string.settings_accessibility_font_percent, appPrefs.accessibilityFontScale),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
+            Text(
+                text = stringResource(
+                    if (appPrefs.accessibilityAutomaticFontSizing) {
+                        R.string.settings_accessibility_font_disabled_hint
+                    } else {
+                        R.string.settings_accessibility_font_reload_hint
+                    }
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!appPrefs.accessibilityAutomaticFontSizing && appPrefs.accessibilityFontScale != 100) {
+                androidx.compose.material3.TextButton(
+                    onClick = { viewModel.updateAccessibilityFontScale(100) }
+                ) {
+                    Text(stringResource(R.string.settings_accessibility_font_reset))
+                }
+            }
+        }
+        PreferenceToggle(
+            label = R.string.settings_accessibility_force_zoom,
+            description = R.string.settings_accessibility_force_zoom_desc,
+            value = appPrefs.accessibilityForceZoomEnabled,
+            onValueChange = viewModel::updateAccessibilityForceZoomEnabled
+        )
+    }
+}
+
+@Composable
+fun TranslationSettingsScreen(viewModel: PreferencesViewModel = hiltViewModel()) {
+    val appPrefs by viewModel.appPreferences.collectAsStateWithLifecycle()
+    val translationState by viewModel.translationState.collectAsStateWithLifecycle()
+    var showAutomaticLanguages by remember { mutableStateOf(false) }
+    var showNeverTranslateSites by remember { mutableStateOf(false) }
+    var showDownloads by remember { mutableStateOf(false) }
+
+    val supportedLanguages = translationState.supportedLanguages?.fromLanguages.orEmpty()
+        .distinctBy { it.code }
+        .sortedBy { it.localizedDisplayName ?: it.code }
+    val automaticLanguages = translationState.languageSettings.orEmpty()
+        .filterValues { it == LanguageSetting.ALWAYS }
+        .keys
+    val automaticSummary = supportedLanguages
+        .filter { it.code in automaticLanguages }
+        .joinToString { it.localizedDisplayName ?: it.code }
+        .ifBlank { stringResource(R.string.settings_translations_automatic_none) }
+    val neverTranslateSites = translationState.neverTranslateSites.orEmpty()
+    val downloadedLanguages = translationState.languageModels.orEmpty()
+        .count { it.status == ModelState.DOWNLOADED }
+
+    PreferenceScreenScaffold(title = stringResource(R.string.settings_translations_title)) {
+        PreferenceToggle(
+            label = R.string.settings_translations_enabled,
+            description = R.string.settings_translations_enabled_summary,
+            value = !appPrefs.translationsDisabled,
+            onValueChange = viewModel::updateTranslationsEnabled
+        )
+
+        if (!appPrefs.translationsDisabled) {
+            PreferenceToggle(
+                label = R.string.settings_translations_offer,
+                value = translationState.offerTranslation ?: true,
+                onValueChange = viewModel::updateTranslationOffer
+            )
+            PreferenceToggle(
+                label = R.string.settings_translations_data_saver,
+                value = appPrefs.translationsDownloadInDataSaver,
+                onValueChange = viewModel::updateTranslationsDownloadInDataSaver
+            )
+
+            PreferenceGroupLabel(label = R.string.settings_translations_preferences)
+            SettingsNavRow(
+                label = R.string.settings_translations_automatic,
+                description = automaticSummary,
+                onClicked = { showAutomaticLanguages = true }
+            )
+            SettingsNavRow(
+                label = R.string.settings_translations_never_sites,
+                description = if (neverTranslateSites.isEmpty()) {
+                    stringResource(R.string.settings_translations_never_sites_none)
+                } else {
+                    stringResource(
+                        R.string.settings_translations_never_sites_count,
+                        neverTranslateSites.size
+                    )
+                },
+                onClicked = { showNeverTranslateSites = true }
+            )
+            SettingsNavRow(
+                label = R.string.settings_translations_download_languages,
+                description = stringResource(
+                    R.string.settings_translations_downloaded_count,
+                    downloadedLanguages
+                ),
+                onClicked = { showDownloads = true }
+            )
+        }
+    }
+
+    if (showAutomaticLanguages) {
+        AutomaticTranslationDialog(
+            languages = supportedLanguages,
+            automaticLanguages = automaticLanguages,
+            onLanguageChecked = viewModel::updateAutomaticTranslation,
+            onDismiss = { showAutomaticLanguages = false }
+        )
+    }
+    if (showNeverTranslateSites) {
+        NeverTranslateSitesDialog(
+            sites = neverTranslateSites,
+            onRemove = viewModel::removeNeverTranslateSite,
+            onDismiss = { showNeverTranslateSites = false }
+        )
+    }
+    if (showDownloads) {
+        TranslationDownloadsDialog(
+            models = translationState.languageModels.orEmpty(),
+            onModelChecked = viewModel::manageLanguageModel,
+            onDismiss = { showDownloads = false }
+        )
+    }
+}
+
+@Composable
+private fun AutomaticTranslationDialog(
+    languages: List<Language>,
+    automaticLanguages: Set<String>,
+    onLanguageChecked: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_translations_manage_automatic)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.settings_translations_manage_automatic_summary))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    languages.forEach { language ->
+                        val checked = language.code in automaticLanguages
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = { onLanguageChecked(language.code, it) }
+                            )
+                            Text(language.localizedDisplayName ?: language.code)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.settings_translations_done))
+            }
+        }
+    )
+}
+
+@Composable
+private fun NeverTranslateSitesDialog(
+    sites: List<String>,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_translations_manage_sites)) },
+        text = {
+            if (sites.isEmpty()) {
+                Text(stringResource(R.string.settings_translations_manage_sites_empty))
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    sites.forEach { site ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = site, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { onRemove(site) }) {
+                                Text(stringResource(R.string.settings_translations_remove))
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.settings_translations_done))
+            }
+        }
+    )
+}
+
+@Composable
+private fun TranslationDownloadsDialog(
+    models: List<LanguageModel>,
+    onModelChecked: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_translations_manage_downloads)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.settings_translations_manage_downloads_summary))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    models.filter { it.language != null }
+                        .sortedBy { it.language?.localizedDisplayName ?: it.language?.code }
+                        .forEach { model ->
+                            val language = requireNotNull(model.language)
+                            val downloading = model.status == ModelState.DOWNLOAD_IN_PROGRESS
+                            val downloaded = model.status == ModelState.DOWNLOADED
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = downloaded || downloading,
+                                    enabled = !downloading,
+                                    onCheckedChange = { onModelChecked(language.code, it) }
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(language.localizedDisplayName ?: language.code)
+                                    if (downloading || downloaded) {
+                                        Text(
+                                            text = stringResource(
+                                                if (downloading) {
+                                                    R.string.settings_translations_model_downloading
+                                                } else {
+                                                    R.string.settings_translations_model_downloaded
+                                                }
+                                            ),
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.settings_translations_done))
+            }
+        }
+    )
+}
+
+@Composable
+internal fun PreferenceScreenScaffold(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        ScreenHeader(title = title, scrollableState = scrollState)
+        Column(
+            modifier = Modifier
+                .verticalScroll(scrollState)
+                .padding(bottom = 16.dp)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+internal fun SettingsNavRow(
+    label: Int,
+    description: String,
+    onClicked: () -> Unit
+) {
+    PreferenceRow(
+        label = label,
+        description = description,
+        trailing = {
+            Icon(
+                painter = painterResource(id = R.drawable.icons_arrow_forward),
+                contentDescription = "Open"
+            )
+        },
+        onClicked = onClicked
+    )
+}
+
+
+@Composable
+private fun passwordSummary(appPrefs: AppPreferences): String {
+    return stringResource(
+        if (appPrefs.passwordAutofillEnabled || appPrefs.savePasswordsEnabled) {
+            R.string.settings_on
+        } else {
+            R.string.settings_off
+        }
+    )
+}
+
+@Composable
+private fun autofillSummary(appPrefs: AppPreferences): String {
+    return stringResource(
+        if (appPrefs.autofillAddressesEnabled || appPrefs.autofillCardsEnabled) {
+            R.string.settings_on
+        } else {
+            R.string.settings_off
+        }
+    )
+}
+
+@Composable
+private fun accessibilitySummary(appPrefs: AppPreferences): String {
+    return if (appPrefs.accessibilityAutomaticFontSizing) {
+        stringResource(R.string.settings_accessibility_auto_font)
+    } else {
+        stringResource(R.string.settings_accessibility_font_percent, appPrefs.accessibilityFontScale)
+    }
+}

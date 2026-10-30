@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adblock_cookie_banners">Rifiuta i cookie facoltativi</string>
+    <string name="adblock_cookie_banners_description">Rifiuta automaticamente i cookie negli avvisi compatibili. I siti con il blocco disattivato sono esclusi.</string>
+    <string name="adblock_settings_title">Blocco tracker e annunci</string>
+    <string name="adblock_settings_summary">Scegli cosa blocca Midori</string>
+    <string name="adblock_default_level">Livello di blocco predefinito</string>
+    <string name="adblock_level_off">Nessun blocco</string>
+    <string name="adblock_level_trackers">Blocca tracker</string>
+    <string name="adblock_level_trackers_ads">Blocca tracker e annunci</string>
+    <string name="adblock_exceptions">Eccezioni</string>
+    <string name="adblock_manage_sites">Gestisci il blocco per sito</string>
+    <string name="adblock_sources">Fonti</string>
+    <string name="adblock_tracker_sources">Gestisci le fonti dei tracker</string>
+    <string name="adblock_ad_sources">Gestisci le fonti degli annunci</string>
+    <string name="adblock_strict">Blocco rigoroso</string>
+    <string name="adblock_strict_description">Usa una protezione più forte. Alcuni siti potrebbero non funzionare correttamente.</string>
+    <string name="adblock_scope_note">Blocca le richieste corrispondenti della pagina e gli spazi pubblicitari comuni. Rispetta le eccezioni per sito.</string>
+    <string name="adblock_add_site">Aggiungi sito</string>
+    <string name="adblock_no_sites">Nessuna eccezione</string>
+    <string name="adblock_remove">Rimuovi</string>
+    <string name="adblock_site_domain">Dominio del sito</string>
+    <string name="adblock_invalid_site">Inserisci un dominio valido</string>
+    <string name="adblock_add">Aggiungi</string>
+    <string name="adblock_cancel">Annulla</string>
+    <string name="adblock_add_source">Aggiungi fonte</string>
+    <string name="adblock_gecko_source">GeckoView</string>
+    <string name="adblock_gecko_source_description">Protezione tracker integrata</string>
+    <string name="adblock_midori_source">Midori Desktop EasyList</string>
+    <string name="adblock_midori_source_description">Regole host incluse in Midori</string>
+    <string name="adblock_source_updated">Aggiornato: %1$s</string>
+    <string name="adblock_source_pending">Aggiornamento in attesa</string>
+    <string name="adblock_refresh">Aggiorna</string>
+    <string name="adblock_source_url">URL HTTPS della fonte</string>
+    <string name="adblock_invalid_source">Inserisci un URL HTTPS univoco</string>
+    <string name="adblock_source_format">Supporta regole per dominio, percorso, sito e tipo di risorsa. Le regole cosmetiche personalizzate e gli scriptlet vengono ignorati.</string>
+    <string name="onboarding_adblock_title">Scegli la protezione</string>
+    <string name="onboarding_adblock_description">Vuoi che Midori blocchi tracker e annunci?</string>
+    <string name="onboarding_adblock_hint">Puoi cambiarlo in seguito nelle impostazioni.</string>
+    <string name="adblock_source_disabled">Disattivata</string>
+    <string name="adblock_source_failed">Aggiornamento non riuscito. Tocca Aggiorna per riprovare.</string>
+    <string name="adblock_core_sources">Liste principali</string>
+    <string name="adblock_regional_sources">Liste regionali</string>
+    <string name="adblock_custom_sources">Liste personalizzate</string>
+    <string name="adblock_update_all_sources">Aggiorna tutte le fonti</string>
+    <string name="adblock_source_rules">Regole compatibili: %1$d</string>
+</resources>

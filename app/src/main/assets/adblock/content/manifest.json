@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "Midori Native Content Blocking",
+  "version": "2.5",
+  "description": "Internal page bridge for Midori's native blocker",
+  "browser_specific_settings": {
+    "gecko": { "id": "midori-native-adblock@astian.org" }
+  },
+  "permissions": ["nativeMessaging", "nativeMessagingFromContent", "geckoViewAddons", "webRequest", "webRequestBlocking", "tabs", "http://*/*", "https://*/*", "ws://*/*", "wss://*/*"],
+  "background": { "scripts": ["scriptlet-runtime.js", "scriptlet-background.js", "network-blocking.js"] },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["cosmetic-procedural.js", "ad-placements.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["cookie-banners.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

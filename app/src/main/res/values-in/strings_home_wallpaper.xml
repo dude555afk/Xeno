@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_wallpaper_title">Wallpaper</string>
+    <string name="home_wallpaper_description">Pilih latar belakang untuk halaman awal Anda.</string>
+    <string name="home_wallpaper_choose">Pilih wallpaper</string>
+    <string name="home_wallpaper_collection">Koleksi Midori</string>
+    <string name="home_wallpaper_preview">Pratinjau</string>
+    <string name="home_wallpaper_apply">Atur wallpaper</string>
+    <string name="home_wallpaper_selected">Dipilih</string>
+    <string name="home_wallpaper_none">Ikuti tema</string>
+    <string name="home_wallpaper_save_error">Tidak dapat menyimpan wallpaper. Coba lagi.</string>
+    <string name="home_wallpaper_back">Semua wallpaper</string>
+    <string name="home_wallpaper_load_error">Tidak dapat membuka wallpaper ini. Pilih yang lain.</string>
+    <string name="home_wallpaper_all">Semua</string>
+    <string name="home_wallpaper_nature">Alam</string>
+    <string name="home_wallpaper_space">Antariksa</string>
+    <string name="home_wallpaper_travel">Perjalanan</string>
+    <string name="home_wallpaper_colors">Warna polos</string>
+    <string name="home_wallpaper_black">Hitam</string>
+    <string name="home_wallpaper_white">Putih</string>
+    <string name="home_wallpaper_gray">Abu-abu</string>
+    <string name="home_wallpaper_blue">Biru</string>
+    <string name="home_wallpaper_green">Hijau</string>
+    <string name="home_wallpaper_purple">Ungu</string>
+    <string name="home_wallpaper_red">Merah</string>
+    <string name="home_wallpaper_coral">Koral</string>
+    <string name="home_wallpaper_orange">Oranye</string>
+    <string name="home_wallpaper_yellow">Kuning</string>
+    <string name="home_wallpaper_mint">Hijau mint</string>
+    <string name="home_wallpaper_teal">Hijau kebiruan</string>
+    <string name="home_wallpaper_sky">Biru langit</string>
+    <string name="home_wallpaper_pink">Merah muda</string>
+    <string name="home_wallpaper_sand">Pasir</string>
+    <string name="home_wallpaper_brown">Cokelat</string>
+</resources>

@@ -1,0 +1,199 @@
+package org.midorinext.android.mozac
+
+import android.util.Log
+import org.mozilla.geckoview.ContentBlocking
+import org.mozilla.geckoview.GeckoPreferenceController
+import org.mozilla.geckoview.GeckoRuntime
+import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.gecko.util.ThreadUtils.runOnUiThread
+import org.midorinext.android.preferences.app.TrackingProtectionLevel
+import org.midorinext.android.adblock.BlockingLevel
+import org.midorinext.android.preferences.app.HttpsOnlyLevel
+import org.midorinext.android.preferences.app.DoHProvider
+import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * Firefox 146-151 Security & Privacy Preferences
+ *
+ * Uses the public GeckoView typed API to enable tracking protection,
+ * fingerprinting protection, and cookie controls.
+ */
+object GeckoPreferences {
+
+    private const val LOG_TAG = "MIDORI_GECKO_MEDIA"
+    private const val JPEG_XL_ENABLED_PREF = "image.jxl.enabled"
+    private const val BACKGROUND_VIDEO_SUSPEND_PREF = "media.suspend-background-video.enabled"
+    private val jpegXlConfigured = AtomicBoolean(false)
+    private val backgroundVideoSuspensionConfigured = AtomicBoolean(false)
+
+    data class UserSettings(
+        val globalPrivacyControl: Boolean,
+        val fingerprintingProtection: Boolean,
+        val cookiePartitioning: Boolean,
+        val strictTrackingProtection: Boolean,
+        val trackingProtectionLevel: TrackingProtectionLevel,
+        val adBlockLevel: BlockingLevel = BlockingLevel.TRACKERS_AND_ADS,
+        val trackerSourceEnabled: Boolean = true,
+        val httpsOnlyLevel: HttpsOnlyLevel = HttpsOnlyLevel.ALL_TABS,
+        val dohProvider: DoHProvider = DoHProvider.DOH_DEFAULT,
+    )
+
+    fun initialize(runtime: GeckoRuntime, settings: UserSettings) {
+        applyRuntimeSettings(runtime, settings)
+        applyContentBlockingSettings(runtime, settings)
+        applyHttpsSettings(runtime, settings)
+        applyDnsSettings(runtime, settings.dohProvider)
+        enableJpegXl()
+        disableBackgroundVideoSuspension()
+    }
+
+    private fun enableJpegXl() {
+        if (!jpegXlConfigured.compareAndSet(false, true)) return
+
+        runOnUiThread {
+            GeckoPreferenceController.setGeckoPref(
+                JPEG_XL_ENABLED_PREF,
+                true,
+                GeckoPreferenceController.PREF_BRANCH_USER,
+            ).accept(
+                { Log.d(LOG_TAG, "Enabled native JPEG XL decoding") },
+                { error ->
+                    jpegXlConfigured.set(false)
+                    Log.e(LOG_TAG, "Could not enable native JPEG XL decoding", error)
+                },
+            )
+        }
+    }
+
+    /**
+     * Keep the decoder alive when Android hides the browser window.
+     *
+     * GeckoView's typed runtime settings do not currently expose this media preference. The
+     * public preference controller is used after the runtime has started so it is persisted in
+     * the browser profile and applies consistently to the tab tray, another app, and screen lock.
+     */
+    private fun disableBackgroundVideoSuspension() {
+        if (!backgroundVideoSuspensionConfigured.compareAndSet(false, true)) return
+
+        // The application preference flow is collected on Dispatchers.IO. GeckoResult requires
+        // a Handler, so this bridge must be created on GeckoView's UI thread.
+        runOnUiThread {
+            GeckoPreferenceController.setGeckoPref(
+                BACKGROUND_VIDEO_SUSPEND_PREF,
+                false,
+                GeckoPreferenceController.PREF_BRANCH_USER,
+            ).accept(
+                { Log.d(LOG_TAG, "Disabled Gecko background video suspension") },
+                { error ->
+                    backgroundVideoSuspensionConfigured.set(false)
+                    Log.e(LOG_TAG, "Could not disable Gecko background video suspension", error)
+                },
+            )
+        }
+    }
+
+    private fun applyRuntimeSettings(runtime: GeckoRuntime, settings: UserSettings) {
+        runtime.settings
+            // Global Privacy Control (GPC) header — Firefox 86+
+            .setGlobalPrivacyControl(settings.globalPrivacyControl)
+            // Fingerprinting protection — Firefox 119+
+            .setFingerprintingProtection(settings.fingerprintingProtection)
+            .setFingerprintingProtectionPrivateBrowsing(settings.fingerprintingProtection)
+            // Cookie partitioning opt-in (prevents cross-site tracking)
+            .setCookieBehaviorOptInPartitioning(settings.cookiePartitioning)
+            .setCookieBehaviorOptInPartitioningPBM(settings.cookiePartitioning)
+    }
+
+    private fun applyContentBlockingSettings(runtime: GeckoRuntime, settings: UserSettings) {
+        val trackersEnabled = settings.adBlockLevel != BlockingLevel.OFF && settings.trackerSourceEnabled
+        val strictTrackingProtectionEnabled =
+            settings.strictTrackingProtection || settings.trackingProtectionLevel == TrackingProtectionLevel.STRICT
+        val effectiveTrackingProtectionLevel = if (strictTrackingProtectionEnabled) {
+            TrackingProtectionLevel.STRICT
+        } else {
+            settings.trackingProtectionLevel
+        }
+
+        runtime.settings.getContentBlocking()
+            // Anti-tracking profile changes with user setting.
+            .setAntiTracking(when {
+                !trackersEnabled -> ContentBlocking.AntiTracking.NONE
+                else -> when (effectiveTrackingProtectionLevel) {
+                TrackingProtectionLevel.STRICT -> ContentBlocking.AntiTracking.STRICT
+                TrackingProtectionLevel.STANDARD, TrackingProtectionLevel.CUSTOM -> ContentBlocking.AntiTracking.DEFAULT
+                else -> ContentBlocking.AntiTracking.DEFAULT
+                }
+            })
+            // Block third-party tracker cookies in normal mode
+            .setCookieBehavior(
+                if (trackersEnabled) ContentBlocking.CookieBehavior.ACCEPT_NON_TRACKERS
+                else ContentBlocking.CookieBehavior.ACCEPT_ALL
+            )
+            // Keep first-party consent and login cookies for the lifetime of the private session.
+            .setCookieBehaviorPrivateMode(privateCookieBehavior(trackersEnabled))
+            // ETP level follows the tracking protection level.
+            .setEnhancedTrackingProtectionLevel(
+                when {
+                    !trackersEnabled -> ContentBlocking.EtpLevel.NONE
+                    else -> when (effectiveTrackingProtectionLevel) {
+                    TrackingProtectionLevel.STANDARD -> ContentBlocking.EtpLevel.DEFAULT
+                    TrackingProtectionLevel.STRICT -> ContentBlocking.EtpLevel.STRICT
+                    TrackingProtectionLevel.CUSTOM -> ContentBlocking.EtpLevel.DEFAULT
+                    else -> ContentBlocking.EtpLevel.DEFAULT
+                    }
+                }
+            )
+            // Block cross-site tracking via social media
+            .setStrictSocialTrackingProtection(
+                trackersEnabled && strictTrackingProtectionEnabled
+            )
+    }
+
+    internal fun privateCookieBehavior(trackersEnabled: Boolean): Int =
+        if (trackersEnabled) ContentBlocking.CookieBehavior.ACCEPT_FIRST_PARTY
+        else ContentBlocking.CookieBehavior.ACCEPT_ALL
+
+    private fun applyHttpsSettings(runtime: GeckoRuntime, settings: UserSettings) {
+        val allowInsecureConnections = when (settings.httpsOnlyLevel) {
+            HttpsOnlyLevel.ALL_TABS -> GeckoRuntimeSettings.HTTPS_ONLY
+            HttpsOnlyLevel.PRIVATE_TABS -> GeckoRuntimeSettings.HTTPS_ONLY_PRIVATE
+            HttpsOnlyLevel.OFF,
+            HttpsOnlyLevel.UNRECOGNIZED -> GeckoRuntimeSettings.ALLOW_ALL
+        }
+
+        runtime.settings.setAllowInsecureConnections(allowInsecureConnections)
+    }
+
+    private fun applyDnsSettings(runtime: GeckoRuntime, settings: DoHProvider) {
+        val (mode, uri, dohAutoselect) = when (settings) {
+            DoHProvider.DOH_MAX_PROTECTION -> Triple(
+                GeckoRuntimeSettings.TRR_MODE_ONLY,
+                CLOUDFLARE_DOH_URI,
+                false
+            )
+            DoHProvider.DOH_INCREASED_PROTECTION -> Triple(
+                GeckoRuntimeSettings.TRR_MODE_FIRST,
+                CLOUDFLARE_DOH_URI,
+                false
+            )
+            DoHProvider.DOH_DEFAULT -> Triple(
+                GeckoRuntimeSettings.TRR_MODE_FIRST,
+                "",
+                true
+            )
+            DoHProvider.DOH_OFF,
+            DoHProvider.UNRECOGNIZED -> Triple(
+                GeckoRuntimeSettings.TRR_MODE_OFF,
+                "",
+                false
+            )
+        }
+
+        runtime.settings
+            .setTrustedRecursiveResolverMode(mode)
+            .setTrustedRecursiveResolverUri(uri)
+            .setDohAutoselectEnabled(dohAutoselect)
+    }
+
+    private const val CLOUDFLARE_DOH_URI = "https://cloudflare-dns.com/dns-query"
+}

@@ -1,0 +1,253 @@
+package org.midorinext.android.usecases
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
+import org.midorinext.android.BuildConfig
+import org.midorinext.android.newtab.MidoriNewTabFeature
+import org.midorinext.android.newtab.newTabUrl
+import org.midorinext.android.preferences.app.AppPreferencesRepository
+import org.midorinext.android.preferences.app.AppPreferencesSerializer
+import org.midorinext.android.preferences.app.AppPreferences
+import org.midorinext.android.storage.MidoriClientProvider
+import dagger.Lazy
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.browser.state.action.ContentAction
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.feature.session.SessionUseCases
+import mozilla.components.feature.tabs.TabsUseCases
+import java.net.URLEncoder
+import javax.inject.Inject
+import javax.inject.Singleton
+
+// TODO separate MidoriUseCases into multiple use cases ?
+@Singleton
+class MidoriUseCases @Inject constructor(
+    @ApplicationContext val context: Context,
+    private val clientProvider: MidoriClientProvider,
+    private val newTabFeature: MidoriNewTabFeature,
+    private val appPreferencesRepository: AppPreferencesRepository,
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val searchPreferences = appPreferencesRepository.flow
+        .stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            AppPreferencesSerializer.defaultValue,
+        )
+
+    private fun searchUrl(
+        search: String,
+        category: String? = null,
+        widget: Boolean = false,
+        private: Boolean = false,
+        engineOverride: String? = null,
+        preferences: AppPreferences = searchPreferences.value,
+    ): String = SearchEngines.url(
+        preferences,
+        engineOverride ?: SearchEngines.selectedId(preferences, private),
+        search,
+    ) {
+        midoriUrl(search = search, category = category, widget = widget)
+    }
+    // TODO Use constructor injection for those. lazy init the usecase itself if needed
+    @Inject lateinit var sessionUseCases: Lazy<SessionUseCases>
+    @Inject lateinit var tabsUseCases: Lazy<TabsUseCases>
+    @Inject lateinit var store: Lazy<BrowserStore>
+
+    // TODO find a different way of handling fs=1 one time parameter
+    val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val firstRequestKey = "pref_key_first_request"
+    private val clKey = "pref_key_utm_campaign"
+
+    private fun midoriUrl(path: String? = null, search: String? = null, category: String? = null, widget: Boolean = false): String = buildString {
+        append(BuildConfig.QWANT_BASE_URL)
+        path?.let {
+            append(path)
+        }
+        append("?client=").append(encodeQueryValue(clientProvider.clientState.value))
+        append("&omnibar=1")
+        search?.let {
+            append("&q=").append(encodeQueryValue(it))
+        }
+        category?.let {
+            append("&t=").append(encodeQueryValue(it))
+        }
+        // TODO check if fs & cl are still used at Midori. Else remove them
+        if (prefs.getBoolean(firstRequestKey, true)) {
+            append("&fs=1")
+            prefs.edit().putBoolean(firstRequestKey, false).apply()
+        }
+        prefs.getString(clKey, null)?.let {
+            append("&cl=").append(encodeQueryValue(it))
+        }
+        if (widget) {
+            append("&widget=1")
+        }
+        append("&qbc=1")
+    }
+
+    inner class OpenMidoriPageUseCase internal constructor(
+        private val tabsUseCases: TabsUseCases,
+    ) {
+        @SuppressLint("ApplySharedPref")
+        operator fun invoke(
+            search: String? = null,
+            private: Boolean = false,
+            selectIfExists: Boolean = false,
+            onlyIfEmpty: Boolean = false,
+        ) = scope.launch {
+            val preferences = appPreferencesRepository.flow.first()
+            if (onlyIfEmpty && store.get().state.tabs.isNotEmpty()) return@launch
+            val usesLocalNewTab = search == null
+            val url = if (usesLocalNewTab) {
+                newTabUrl(preferences, private)
+            } else {
+                searchUrl(search, private = private, preferences = preferences)
+            }
+            val existing = if (selectIfExists) store.get().state.tabs.asSequence()
+                .filter { it.content.url == url && it.content.private == private }
+                .maxByOrNull { maxOf(it.lastAccess, it.createdAt) }
+            else null
+            if (existing != null) {
+                tabsUseCases.selectTab(existing.id)
+            } else {
+                tabsUseCases.addTab.invoke(
+                    url,
+                    selectTab = true,
+                    startLoading = !usesLocalNewTab,
+                    private = private
+                )
+            }
+        }
+    }
+
+    inner class LoadNewTabPageUseCase internal constructor(
+        private val sessionUseCases: SessionUseCases,
+    ) {
+        operator fun invoke(
+            tabId: String,
+            replaceCurrent: Boolean = false,
+            expectedUrl: String? = null,
+            canReplace: () -> Boolean = { true },
+        ) = scope.launch {
+            val preferences = appPreferencesRepository.flow.first()
+            if (replaceCurrent && !canReplace()) return@launch
+            val tab = store.get().state.tabs.firstOrNull { it.id == tabId } ?: return@launch
+            if (expectedUrl != null && tab.content.url != expectedUrl) return@launch
+            val url = newTabUrl(preferences, tab.content.private)
+            if (tab.content.url == url && !replaceCurrent) return@launch
+            if (replaceCurrent && tab.engineState.engineSession == null && tab.engineState.engineSessionState == null) {
+                store.get().dispatch(ContentAction.UpdateUrlAction(tabId, url))
+                return@launch
+            }
+            sessionUseCases.loadUrl(
+                url = url,
+                flags = loadFlags(replaceCurrent),
+                sessionId = tabId,
+            )
+        }
+    }
+
+    private fun loadFlags(replaceCurrent: Boolean): EngineSession.LoadUrlFlags =
+        if (replaceCurrent) {
+            EngineSession.LoadUrlFlags.select(EngineSession.LoadUrlFlags.LOAD_FLAGS_REPLACE_HISTORY)
+        } else {
+            EngineSession.LoadUrlFlags.none()
+        }
+
+    inner class GetMidoriUrlUseCase internal constructor() {
+        operator fun invoke(path: String? = null, search: String? = null, category: String? = null, widget: Boolean = false) =
+            if (search != null && path == null) searchUrl(search, category, widget)
+            else midoriUrl(path, search, category, widget)
+    }
+
+    inner class LoadSERPPageUseCase internal constructor(
+        private val sessionUseCases: SessionUseCases
+    ) {
+        operator fun invoke(
+            search: String,
+            category: String? = null,
+            private: Boolean = false,
+            engineOverride: String? = null,
+        ) {
+            val tabId = store.get().state.selectedTabId ?: return
+            scope.launch {
+                val preferences = appPreferencesRepository.flow.first()
+                if (store.get().state.tabs.none { it.id == tabId }) return@launch
+                sessionUseCases.loadUrl(
+                    searchUrl(search, category, private = private, engineOverride = engineOverride, preferences = preferences),
+                    sessionId = tabId,
+                )
+            }
+        }
+    }
+
+    inner class OpenPrivatePageUseCase internal constructor() {
+        operator fun invoke() = openMidoriPage(private = true)
+    }
+
+    class OpenTestPageUseCase internal constructor(
+        private val context: Context,
+        private val tabsUseCases: TabsUseCases,
+        private val sessionUseCases: SessionUseCases
+    ) {
+        operator fun invoke(test: String) {
+            val testHtml = context.assets.open("tests/$test.html")
+                .bufferedReader().use {
+                    it.readText()
+                }
+
+            sessionUseCases.loadData(
+                data = testHtml,
+                mimeType = "text/html",
+                tabId = tabsUseCases.addTab(
+                    "about:test:$test",
+                    selectTab = true
+                )
+            )
+        }
+    }
+
+    val openMidoriPage: OpenMidoriPageUseCase by lazy {
+        OpenMidoriPageUseCase(tabsUseCases.get())
+    }
+    val loadNewTabPage: LoadNewTabPageUseCase by lazy {
+        LoadNewTabPageUseCase(sessionUseCases.get())
+    }
+    val getMidoriUrl: GetMidoriUrlUseCase by lazy {
+        GetMidoriUrlUseCase()
+    }
+    val loadSERPPage: LoadSERPPageUseCase by lazy {
+        LoadSERPPageUseCase(sessionUseCases.get())
+    }
+    val openPrivatePage: OpenPrivatePageUseCase by lazy {
+        OpenPrivatePageUseCase()
+    }
+    val openTestPageUseCase: OpenTestPageUseCase by lazy {
+        OpenTestPageUseCase(context, tabsUseCases.get(), sessionUseCases.get())
+    }
+
+    fun isNewTabUrl(url: String?): Boolean = newTabFeature.isNewTabUrl(url)
+
+    fun isNewTabLoadingUrl(url: String?): Boolean = newTabFeature.isLoadingUrl(url)
+
+    fun isLegacyNewTabUrl(url: String?): Boolean = newTabFeature.isLegacyUrl(url)
+
+    val legacyNewTabOrigins: StateFlow<Set<String>> get() = newTabFeature.legacyOrigins
+
+    companion object {
+        internal fun encodeQueryValue(value: String): String =
+            URLEncoder.encode(value, Charsets.UTF_8.name()).replace("+", "%20")
+    }
+}

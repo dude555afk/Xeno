@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="extensions_title">Extensions</string>
+    <string name="extensions_empty_title">Aucune extension installée</string>
+    <string name="extensions_empty_message">Installez des extensions pour ajouter des fonctionnalités à votre navigateur.</string>
+    <string name="extensions_install">Installer une extension</string>
+    <string name="extensions_install_hint">Saisissez l\'URL d\'un fichier d\'extension (.xpi)</string>
+    <string name="extensions_uninstall">Désinstaller</string>
+    <string name="extensions_uninstall_confirm">Désinstaller « %1$s » ?</string>
+    <string name="extensions_enable">Activer</string>
+    <string name="extensions_disable">Désactiver</string>
+    <string name="extensions_install_error">Impossible d\'installer l\'extension</string>
+    <string name="extensions_manage">Gérer les extensions</string>
+    <string name="extensions_more">Plus d\'extensions</string>
+
+    <string name="extensions_recommended">Extensions recommandées</string>
+    <string name="extensions_installed">Extensions installées</string>
+    <string name="extensions_loading">Chargement des extensions…</string>
+    <string name="extensions_detail_title">Détails de l\'extension</string>
+    <string name="extensions_author_by">par %1$s</string>
+    <string name="extensions_ratings">%1$s notes</string>
+    <string name="extensions_users">%1$s utilisateurs</string>
+    <string name="extensions_version">Version %1$s</string>
+    <string name="extensions_permissions">Autorisations</string>
+    <string name="extensions_no_permissions">Cette extension ne nécessite aucune autorisation spéciale.</string>
+    <string name="extensions_installing">Installation…</string>
+    <string name="extensions_installed_label">Installé</string>
+    <string name="extensions_enabled">Activé</string>
+    <string name="extensions_open_popup">Ouvrir la fenêtre contextuelle de l\'extension</string>
+    <string name="extensions_search_hint">Rechercher des extensions</string>
+    <string name="extensions_search_empty">Aucune extension ne correspond à votre recherche.</string>
+    <string name="extensions_retry">Réessayer</string>
+    <string name="extensions_load_error">Impossible de charger les extensions</string>
+    <string name="extensions_error_load_actionable">Nous n\'avons pas pu charger les extensions. Vérifiez votre connexion.</string>
+    <string name="extensions_error_action_actionable">Nous n\'avons pas pu terminer l\'action d\'extension. Essayer à nouveau.</string>
+</resources>
+

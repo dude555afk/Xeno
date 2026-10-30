@@ -1,0 +1,120 @@
+package org.midorinext.android.ui.bookmarks
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.paging.cachedIn
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import org.midorinext.android.storage.bookmarks.BookmarksRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import mozilla.components.browser.icons.BrowserIcons
+import mozilla.components.concept.storage.BookmarkInfo
+import mozilla.components.concept.storage.BookmarkNode
+import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.feature.session.SessionUseCases
+import mozilla.components.browser.state.selector.selectedTab
+import mozilla.components.browser.state.store.BrowserStore
+import org.midorinext.android.preferences.app.AppPreferencesRepository
+import mozilla.components.support.ktx.kotlin.toNormalizedUrl
+import javax.inject.Inject
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class BookmarksScreenViewModel @Inject constructor(
+    private val bookmarksRepository: BookmarksRepository,
+    private val tabsUseCases: TabsUseCases,
+    private val sessionUseCases: SessionUseCases,
+    private val browserStore: BrowserStore,
+    appPreferencesRepository: AppPreferencesRepository,
+    val browserIcons: BrowserIcons
+): ViewModel() {
+    private val openInCurrentTab = appPreferencesRepository.flow
+        .map { it.openBookmarksInCurrentTab }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    var folderGuid: String by mutableStateOf(bookmarksRepository.root.guid)
+        private set
+
+    val folder = snapshotFlow { folderGuid }
+        .mapLatest { bookmarksRepository.getBookmark(folderGuid).getOrNull() ?: bookmarksRepository.root }
+        .filterNotNull()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = bookmarksRepository.root
+        )
+
+    val isRootFolder = snapshotFlow { folderGuid }
+        .map { it == bookmarksRepository.root.guid }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = true
+        )
+
+    val bookmarks = snapshotFlow { folderGuid }
+        .flatMapLatest { bookmarksRepository.bookmarksPager(it) }
+        .cachedIn(viewModelScope)
+
+    fun destinationFolders(guid: String) = bookmarksRepository.folderChoices(guid)
+
+    suspend fun destinationAncestors(guid: String?) = bookmarksRepository.folderAncestors(guid)
+
+    fun visitFolder(folderGuid: String) {
+        this.folderGuid = folderGuid
+    }
+
+    fun addFolder(title: String, parentGuid: String? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bookmarksRepository.addFolder(parentGuid ?: bookmarksRepository.root.guid, title)
+        }
+    }
+
+    fun deleteBookmark(item: BookmarkNode) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bookmarksRepository.deleteNode(item.guid)
+        }
+    }
+
+    fun editBookmark(item: BookmarkNode, title: String, url: String? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bookmarksRepository.updateNode(item.guid, BookmarkInfo(
+                title = title,
+                url = url,
+                parentGuid = null,
+                position = null
+            ))
+        }
+    }
+
+    fun moveBookmark(item: BookmarkNode, toGuid: String?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bookmarksRepository.updateNode(item.guid, BookmarkInfo(
+                parentGuid = toGuid ?: bookmarksRepository.root.guid,
+                title = null,
+                url = null,
+                position = null
+            ))
+        }
+    }
+
+    fun openBookmarkTab(item: BookmarkNode, private: Boolean = false, forceNewTab: Boolean = false) {
+        val url = item.url?.toNormalizedUrl() ?: return
+        val currentTab = browserStore.state.selectedTab
+        if (!forceNewTab && openInCurrentTab.value && currentTab != null && !private) {
+            sessionUseCases.loadUrl(url = url, sessionId = currentTab.id)
+        } else {
+            tabsUseCases.addTab(url, private = private)
+        }
+    }
+}

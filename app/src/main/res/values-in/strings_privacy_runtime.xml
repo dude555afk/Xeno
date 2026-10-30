@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">Pemblokir Midori</string>
+    <string name="native_blocker_blocked_count">Diblokir di halaman ini: %1$d</string>
+    <string name="native_blocker_site_on">Perlindungan aktif untuk situs ini.</string>
+    <string name="native_blocker_site_off">Perlindungan nonaktif untuk situs ini.</string>
+    <string name="native_blocker_enable_site">Aktifkan untuk situs ini</string>
+    <string name="native_blocker_disable_site">Nonaktifkan untuk situs ini</string>
+    <string name="privacy_setting_fingerprinting_label">Perlindungan sidik peramban</string>
+    <string name="privacy_setting_gpc_label">Kontrol Privasi Global (GPC)</string>
+    <string name="privacy_setting_cookie_partitioning_label">Pemisahan cookie</string>
+    <string name="settings_enhanced_tracking_protection_label">Perlindungan pelacakan yang ditingkatkan</string>
+    <string name="settings_enhanced_tracking_protection_description">Firefox melindungi Anda dari banyak pelacak umum yang mengikuti aktivitas Anda secara online.</string>
+    <string name="settings_tracking_protection_standard">Standar (default)</string>
+    <string name="settings_tracking_protection_standard_desc">Halaman dimuat secara normal, tetapi lebih sedikit pelacak diblokir.</string>
+    <string name="settings_tracking_protection_strict">Ketat</string>
+    <string name="settings_tracking_protection_strict_desc">Perlindungan pelacakan lebih kuat dan kinerja lebih cepat, tetapi beberapa situs mungkin tidak berfungsi dengan baik.</string>
+    <string name="settings_tracking_protection_custom">Kustom</string>
+    <string name="settings_tracking_protection_custom_desc">Pilih pelacak dan skrip yang diblokir.</string>
+    <string name="settings_total_cookie_protection">Minta situs agar tidak membagikan dan menjual data</string>
+    <string name="settings_https_only_mode_label">Mode hanya HTTPS</string>
+    <string name="settings_https_only_mode_description">Otomatis mencoba terhubung ke situs menggunakan protokol enkripsi HTTPS untuk keamanan lebih baik.</string>
+    <string name="settings_https_only_off">Nonaktif</string>
+    <string name="settings_https_only_off_desc">Gunakan resolver DNS default Anda</string>
+    <string name="settings_https_only_all_tabs">Aktifkan di semua tab</string>
+    <string name="settings_https_only_private_tabs">Aktifkan hanya di tab pribadi</string>
+    <string name="settings_dns_over_https_label">DNS melalui HTTPS</string>
+    <string name="settings_dns_over_https_description">DNS melalui HTTPS mengirim permintaan nama domain lewat koneksi terenkripsi, menyediakan DNS aman dan mempersulit pihak lain melihat situs yang akan Anda akses.</string>
+    <string name="settings_dns_over_https_default">Perlindungan default</string>
+    <string name="settings_dns_over_https_default_desc">Firefox menentukan kapan menggunakan DNS aman untuk melindungi privasi Anda.</string>
+    <string name="settings_dns_over_https_increased">Perlindungan ditingkatkan</string>
+    <string name="settings_dns_over_https_increased_desc">Anda mengontrol kapan menggunakan DNS aman dan memilih penyedianya.</string>
+    <string name="settings_dns_over_https_max">Perlindungan maksimal</string>
+    <string name="settings_dns_over_https_max_desc">Firefox akan selalu menggunakan DNS aman. Anda akan melihat peringatan risiko keamanan sebelum kami menggunakan DNS sistem.</string>
+    <string name="settings_dns_over_https_exceptions">Pengecualian</string>
+</resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">Midori بلاکر</string>
+    <string name="native_blocker_blocked_count">اس صفحے پر روکے گئے: %1$d</string>
+    <string name="native_blocker_site_on">اس سائٹ کے لیے تحفظ فعال ہے۔</string>
+    <string name="native_blocker_site_off">اس سائٹ کے لیے تحفظ بند ہے۔</string>
+    <string name="native_blocker_enable_site">اس سائٹ کے لیے فعال کریں</string>
+    <string name="native_blocker_disable_site">اس سائٹ کے لیے غیر فعال کریں</string>
+    <string name="privacy_setting_fingerprinting_label">فنگرپرنٹنگ سے تحفظ</string>
+    <string name="privacy_setting_gpc_label">رازداری کا عالمی کنٹرول (GPC)</string>
+    <string name="privacy_setting_cookie_partitioning_label">کوکیز کی علیحدگی</string>
+    <string name="settings_enhanced_tracking_protection_label">نگرانی سے بہتر تحفظ</string>
+    <string name="settings_enhanced_tracking_protection_description">Firefox آپ کو بہت سے عام ٹریکرز سے بچاتا ہے جو آن لائن آپ کی سرگرمی کی نگرانی کرتے ہیں۔</string>
+    <string name="settings_tracking_protection_standard">معیاری (طے شدہ)</string>
+    <string name="settings_tracking_protection_standard_desc">صفحات معمول کے مطابق لوڈ ہوں گے، لیکن کم ٹریکرز روکے جائیں گے۔</string>
+    <string name="settings_tracking_protection_strict">سخت</string>
+    <string name="settings_tracking_protection_strict_desc">نگرانی سے مضبوط تحفظ اور تیز کارکردگی، لیکن کچھ سائٹس درست کام نہیں کر سکتیں۔</string>
+    <string name="settings_tracking_protection_custom">حسبِ ضرورت</string>
+    <string name="settings_tracking_protection_custom_desc">منتخب کریں کہ کون سے ٹریکرز اور اسکرپٹس روکے جائیں۔</string>
+    <string name="settings_total_cookie_protection">ویب سائٹس کو ڈیٹا شیئر اور فروخت نہ کرنے کو کہیں</string>
+    <string name="settings_https_only_mode_label">صرف HTTPS موڈ</string>
+    <string name="settings_https_only_mode_description">بہتر سیکیورٹی کے لیے HTTPS رمز بندی کے ذریعے سائٹس سے خودکار طور پر جڑنے کی کوشش کرتا ہے۔</string>
+    <string name="settings_https_only_off">بند</string>
+    <string name="settings_https_only_off_desc">اپنا طے شدہ DNS ریزالور استعمال کریں</string>
+    <string name="settings_https_only_all_tabs">تمام ٹیبز میں فعال کریں</string>
+    <string name="settings_https_only_private_tabs">صرف نجی ٹیبز میں فعال کریں</string>
+    <string name="settings_dns_over_https_label">HTTPS کے ذریعے DNS</string>
+    <string name="settings_dns_over_https_description">HTTPS کے ذریعے ڈومین نام کا نظام (DNS) آپ کی ڈومین نام کی درخواست رمز بند کنکشن سے بھیجتا ہے، محفوظ DNS فراہم کرتا ہے اور دوسروں کے لیے یہ دیکھنا مشکل بناتا ہے کہ آپ کون سی ویب سائٹ کھولنے والے ہیں۔</string>
+    <string name="settings_dns_over_https_default">طے شدہ تحفظ</string>
+    <string name="settings_dns_over_https_default_desc">Firefox فیصلہ کرتا ہے کہ آپ کی رازداری کے تحفظ کے لیے محفوظ DNS کب استعمال ہو۔</string>
+    <string name="settings_dns_over_https_increased">زیادہ تحفظ</string>
+    <string name="settings_dns_over_https_increased_desc">آپ محفوظ DNS استعمال کرنے کا وقت اور فراہم کنندہ منتخب کرتے ہیں۔</string>
+    <string name="settings_dns_over_https_max">زیادہ سے زیادہ تحفظ</string>
+    <string name="settings_dns_over_https_max_desc">Firefox ہمیشہ محفوظ DNS استعمال کرے گا۔ سسٹم DNS استعمال کرنے سے پہلے آپ کو سیکیورٹی کے خطرے کی تنبیہ دکھائی جائے گی۔</string>
+    <string name="settings_dns_over_https_exceptions">استثنائیں</string>
+</resources>

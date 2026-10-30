@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">मिडोरी ब्लॉकर</string>
+    <string name="native_blocker_blocked_count">इस पेज पर ब्लॉक किए गए आइटम: %1$d</string>
+    <string name="native_blocker_site_on">इस साइट के लिए सुरक्षा चालू है।</string>
+    <string name="native_blocker_site_off">इस साइट के लिए सुरक्षा बंद है।</string>
+    <string name="native_blocker_enable_site">इस साइट के लिए चालू करें</string>
+    <string name="native_blocker_disable_site">इस साइट के लिए बंद करें</string>
+    <string name="privacy_setting_fingerprinting_label">फ़िंगरप्रिंटिंग सुरक्षा</string>
+    <string name="privacy_setting_gpc_label">वैश्विक गोपनीयता नियंत्रण (जीपीसी)</string>
+    <string name="privacy_setting_cookie_partitioning_label">कुकी विभाजन</string>
+    <string name="settings_enhanced_tracking_protection_label">उन्नत ट्रैकिंग सुरक्षा</string>
+    <string name="settings_enhanced_tracking_protection_description">फ़ायरफ़ॉक्स आपको कई सबसे आम ट्रैकर्स से बचाता है जो आपके ऑनलाइन काम पर नज़र रखते हैं।</string>
+    <string name="settings_tracking_protection_standard">मानक (डिफ़ॉल्ट)</string>
+    <string name="settings_tracking_protection_standard_desc">पेज सामान्य रूप से लोड होंगे, लेकिन कम ट्रैकर्स को ब्लॉक करेंगे।</string>
+    <string name="settings_tracking_protection_strict">सख्त</string>
+    <string name="settings_tracking_protection_strict_desc">मजबूत ट्रैकिंग सुरक्षा और तेज़ प्रदर्शन, लेकिन कुछ साइटें ठीक से काम नहीं कर सकती हैं।</string>
+    <string name="settings_tracking_protection_custom">कस्टम</string>
+    <string name="settings_tracking_protection_custom_desc">चुनें कि किन ट्रैकर्स और स्क्रिप्ट को ब्लॉक करना है।</string>
+    <string name="settings_total_cookie_protection">वेबसाइटों से कहें कि वे डेटा साझा न करें और न बेचें</string>
+    <string name="settings_https_only_mode_label">HTTPS-केवल मोड</string>
+    <string name="settings_https_only_mode_description">बढ़ी हुई सुरक्षा के लिए HTTPS एन्क्रिप्शन प्रोटोकॉल का उपयोग करके स्वचालित रूप से साइटों से जुड़ने का प्रयास करता है।</string>
+    <string name="settings_https_only_off">बंद</string>
+    <string name="settings_https_only_off_desc">अपने डिफ़ॉल्ट DNS रिज़ॉल्वर का उपयोग करें</string>
+    <string name="settings_https_only_all_tabs">सभी टैब में सक्षम करें</string>
+    <string name="settings_https_only_private_tabs">केवल निजी टैब में सक्षम करें</string>
+    <string name="settings_dns_over_https_label">HTTPS पर DNS</string>
+    <string name="settings_dns_over_https_description">HTTPS पर डोमेन नाम सिस्टम (DNS) एक एन्क्रिप्टेड कनेक्शन के माध्यम से डोमेन नाम के लिए आपका अनुरोध भेजता है, एक सुरक्षित DNS प्रदान करता है और दूसरों के लिए यह देखना कठिन बना देता है कि आप किस वेबसाइट तक पहुंचने वाले हैं।</string>
+    <string name="settings_dns_over_https_default">डिफ़ॉल्ट सुरक्षा</string>
+    <string name="settings_dns_over_https_default_desc">फ़ायरफ़ॉक्स यह तय करता है कि आपकी गोपनीयता की सुरक्षा के लिए सुरक्षित DNS का उपयोग कब करना है।</string>
+    <string name="settings_dns_over_https_increased">बढ़ी हुई सुरक्षा</string>
+    <string name="settings_dns_over_https_increased_desc">आप नियंत्रित करते हैं कि सुरक्षित DNS का उपयोग कब करना है और अपना प्रदाता चुनें।</string>
+    <string name="settings_dns_over_https_max">अधिकतम सुरक्षा</string>
+    <string name="settings_dns_over_https_max_desc">फ़ायरफ़ॉक्स हमेशा सुरक्षित DNS का उपयोग करेगा। आपके सिस्टम DNS का उपयोग करने से पहले आपको एक सुरक्षा जोखिम चेतावनी दिखाई देगी।</string>
+    <string name="settings_dns_over_https_exceptions">अपवाद</string>
+</resources>

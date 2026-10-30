@@ -1,18 +1,34 @@
-# Room
--keep class * extends androidx.room.RoomDatabase
--dontwarn androidx.room.paging.
+# Add project specific ProGuard rules here.
+# You can control the set of applied configuration files using the
+# proguardFiles setting in build.gradle.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Kotlinx serialization
--keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.**
--keepclassmembers class com.dude555afk.xeno.** {
-    *** Companion;
-}
--keepclasseswithmembers class com.dude555afk.xeno.** {
-    kotlinx.serialization.KSerializer serializer(...);
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+
+# Uncomment this to preserve the line number information for
+# debugging stack traces.
+#-keepattributes SourceFile,LineNumberTable
+
+# If you keep the line number information, uncomment this to
+# hide the original source file name.
+#-renamesourcefileattribute SourceFile
+
+# Protobuf-lite resolves message fields by exact generated field names (e.g. "hideToolbarOnScroll_").
+# Keep member names for generated messages to avoid release-only startup crashes after R8 obfuscation.
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    <fields>;
 }
 
-# OkHttp
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn org.conscrypt.**
+# Hilt generated application injector can be absent from certain transformed classpaths during R8 analysis.
+-dontwarn org.midorinext.android.MidoriApplication_GeneratedInjector
+
+-keep class org.midorinext.android.adblock.RustAdblock { *; }
+
+-keep class org.midorinext.android.sync.NativeSync { *; }

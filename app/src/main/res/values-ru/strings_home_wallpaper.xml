@@ -1,0 +1,34 @@
+<resources>
+    <string name="home_wallpaper_title">Обои</string>
+    <string name="home_wallpaper_description">Выберите фон для начальной страницы.</string>
+    <string name="home_wallpaper_choose">Выбрать обои</string>
+    <string name="home_wallpaper_collection">Коллекция Midori</string>
+    <string name="home_wallpaper_preview">Предпросмотр</string>
+    <string name="home_wallpaper_apply">Установить обои</string>
+    <string name="home_wallpaper_selected">Выбрано</string>
+    <string name="home_wallpaper_none">Следовать теме</string>
+    <string name="home_wallpaper_save_error">Не удалось сохранить обои. Повторите попытку.</string>
+    <string name="home_wallpaper_back">Все обои</string>
+    <string name="home_wallpaper_load_error">Не удалось открыть эти обои. Выберите другие.</string>
+    <string name="home_wallpaper_all">Все</string>
+    <string name="home_wallpaper_nature">Природа</string>
+    <string name="home_wallpaper_space">Космос</string>
+    <string name="home_wallpaper_travel">Путешествия</string>
+    <string name="home_wallpaper_colors">Однотонные цвета</string>
+    <string name="home_wallpaper_black">Чёрный</string>
+    <string name="home_wallpaper_white">Белый</string>
+    <string name="home_wallpaper_gray">Серый</string>
+    <string name="home_wallpaper_blue">Синий</string>
+    <string name="home_wallpaper_green">Зелёный</string>
+    <string name="home_wallpaper_purple">Фиолетовый</string>
+    <string name="home_wallpaper_red">Красный</string>
+    <string name="home_wallpaper_coral">Коралловый</string>
+    <string name="home_wallpaper_orange">Оранжевый</string>
+    <string name="home_wallpaper_yellow">Жёлтый</string>
+    <string name="home_wallpaper_mint">Мятный</string>
+    <string name="home_wallpaper_teal">Сине-зелёный</string>
+    <string name="home_wallpaper_sky">Небесно-голубой</string>
+    <string name="home_wallpaper_pink">Розовый</string>
+    <string name="home_wallpaper_sand">Песочный</string>
+    <string name="home_wallpaper_brown">Коричневый</string>
+</resources>

@@ -1,0 +1,7 @@
+*.apk
+*.aab
+
+/build
+/release/app-release.aab
+/originalPlaystore/
+/app/src/main/assets/extensions

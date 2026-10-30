@@ -1,0 +1,34 @@
+<resources>
+    <string name="home_wallpaper_title">Sfonde</string>
+    <string name="home_wallpaper_description">Zgjidh një sfond për faqen fillestare.</string>
+    <string name="home_wallpaper_choose">Zgjidh sfondin</string>
+    <string name="home_wallpaper_collection">Koleksioni Midori</string>
+    <string name="home_wallpaper_preview">Pamje paraprake</string>
+    <string name="home_wallpaper_apply">Vendos sfondin</string>
+    <string name="home_wallpaper_selected">I zgjedhur</string>
+    <string name="home_wallpaper_none">Ndiq temën</string>
+    <string name="home_wallpaper_save_error">Sfondi nuk u ruajt. Provo përsëri.</string>
+    <string name="home_wallpaper_back">Të gjitha sfondet</string>
+    <string name="home_wallpaper_load_error">Ky sfond nuk u hap. Zgjidh një tjetër.</string>
+    <string name="home_wallpaper_all">Të gjitha</string>
+    <string name="home_wallpaper_nature">Natyrë</string>
+    <string name="home_wallpaper_space">Hapësirë</string>
+    <string name="home_wallpaper_travel">Udhëtime</string>
+    <string name="home_wallpaper_colors">Ngjyra të njëtrajtshme</string>
+    <string name="home_wallpaper_black">E zezë</string>
+    <string name="home_wallpaper_white">E bardhë</string>
+    <string name="home_wallpaper_gray">Gri</string>
+    <string name="home_wallpaper_blue">Blu</string>
+    <string name="home_wallpaper_green">E gjelbër</string>
+    <string name="home_wallpaper_purple">Vjollcë</string>
+    <string name="home_wallpaper_red">E kuqe</string>
+    <string name="home_wallpaper_coral">Koral</string>
+    <string name="home_wallpaper_orange">Portokalli</string>
+    <string name="home_wallpaper_yellow">E verdhë</string>
+    <string name="home_wallpaper_mint">Mente</string>
+    <string name="home_wallpaper_teal">E gjelbër në blu</string>
+    <string name="home_wallpaper_sky">Bojëqielli</string>
+    <string name="home_wallpaper_pink">Rozë</string>
+    <string name="home_wallpaper_sand">Ngjyrë rëre</string>
+    <string name="home_wallpaper_brown">Kafe</string>
+</resources>

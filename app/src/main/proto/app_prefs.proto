@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+option java_package = "org.midorinext.android.preferences.app";
+option java_multiple_files = true;
+
+enum ToolbarPosition {
+  TOP = 0;
+  BOTTOM = 1;
+}
+
+enum TabsViewOption {
+  GRID = 0;
+  LIST = 1;
+  CAROUSEL = 2;
+}
+
+enum ToolbarShortcut {
+  TOOLBAR_SHORTCUT_NONE = 0;
+  TOOLBAR_SHORTCUT_NEW_TAB = 1;
+  TOOLBAR_SHORTCUT_SHARE = 2;
+  TOOLBAR_SHORTCUT_BOOKMARK = 3;
+  TOOLBAR_SHORTCUT_HOMEPAGE = 4;
+  TOOLBAR_SHORTCUT_BACK = 5;
+  TOOLBAR_SHORTCUT_SUMMARIZE = 6;
+}
+
+enum DownloadRemovalBehavior {
+  DOWNLOAD_REMOVAL_ASK = 0;
+  DOWNLOAD_REMOVAL_DELETE_FROM_DEVICE = 1;
+  DOWNLOAD_REMOVAL_REMOVE_FROM_HISTORY = 2;
+}
+
+enum Appearance {
+  SYSTEM_SETTINGS = 0;
+  LIGHT = 1;
+  DARK = 2;
+}
+
+enum TrackingProtectionLevel {
+  STANDARD = 0;
+  STRICT = 1;
+  CUSTOM = 2;
+}
+
+enum DoHProvider {
+  DOH_DEFAULT = 0;
+  DOH_INCREASED_PROTECTION = 1;
+  DOH_MAX_PROTECTION = 2;
+  DOH_OFF = 3;
+}
+
+enum HttpsOnlyLevel {
+  OFF = 0;
+  ALL_TABS = 1;
+  PRIVATE_TABS = 2;
+}
+
+enum HomepageOpeningScreen {
+  HOMEPAGE = 0;
+  LAST_TAB = 1;
+  HOMEPAGE_AFTER_FOUR_HOURS = 2;
+}
+
+enum SearchEnginePreference {
+  ASTIANGO = 0;
+  ECOSIA = 1;
+  QWANT = 2;
+  STARTPAGE = 3;
+  BING = 4;
+  GOOGLE = 5;
+  DUCKDUCKGO = 6;
+}
+
+message AppPreferences {
+  bool hide_toolbar_on_scroll = 1;
+  ToolbarPosition toolbar_position = 2;
+  TabsViewOption tabs_view = 3;
+  bool open_links_in_app = 4;
+  bool clear_data_on_quit = 5;
+  bool clear_data_history = 6;
+  bool clear_data_tabs = 7;
+  int32 clear_data_browsingdata = 8;
+  reserved 9;
+  Appearance appearance = 10;
+  bool privacy_global_privacy_control = 11;
+  bool privacy_fingerprinting_protection = 12;
+  bool privacy_cookie_partitioning = 13;
+  bool privacy_strict_tracking_protection = 14;
+  TrackingProtectionLevel tracking_protection_level = 15;
+  DoHProvider doh_provider = 16;
+  HttpsOnlyLevel https_only_level = 17;
+  reserved 18, 19, 20;
+  reserved "app_tracking_protection_mode", "app_tracking_system_enabled",
+    "app_tracking_excluded_packages";
+  bool download_wifi_only = 21;
+  bool open_blank_new_tab = 22;
+  reserved 23, 24, 25, 26;
+  reserved "homepage_shortcuts_enabled", "homepage_privacy_stats_enabled",
+    "homepage_weather_enabled", "homepage_background_photo_enabled";
+  bool pull_to_refresh_enabled = 27;
+  bool save_passwords_enabled = 28;
+  bool password_autofill_enabled = 29;
+  reserved 30;
+  bool autofill_addresses_enabled = 31;
+  bool autofill_cards_enabled = 32;
+  bool accessibility_automatic_font_sizing = 33;
+  int32 accessibility_font_scale = 34;
+  bool accessibility_force_zoom_enabled = 35;
+  HomepageOpeningScreen homepage_opening_screen = 36;
+  ToolbarShortcut toolbar_shortcut = 37;
+  bool swipe_address_bar_to_switch_tabs_enabled = 38;
+  bool swipe_toolbar_to_show_tabs_enabled = 39;
+  bool shake_to_summarize_enabled = 40;
+  DownloadRemovalBehavior download_removal_behavior = 41;
+  bool manage_downloads_with_other_app = 42;
+  map<string, int32> tab_group_colors = 43;
+  bool translations_disabled = 44;
+  bool translations_download_in_data_saver = 45;
+  string download_directory_uri = 46;
+  repeated string recent_searches = 47;
+  bool https_only_all_tabs_migration_completed = 48;
+  repeated SavedTabGroup tab_groups = 49;
+  bool tab_groups_migrated = 50;
+  SearchEnginePreference search_engine = 51;
+  bool open_bookmarks_in_current_tab = 52;
+  SearchEnginePreference private_search_engine = 53;
+  bool use_separate_private_search_engine = 54;
+  repeated string hidden_search_engines = 55;
+  bool disable_search_suggestions = 56;
+  bool search_suggestions_in_private = 57;
+  bool disable_trending_suggestions = 58;
+  bool disable_recent_searches = 59;
+  bool disable_history_suggestions = 60;
+  bool disable_bookmark_suggestions = 61;
+  bool disable_tab_suggestions = 62;
+  bool disable_clipboard_suggestions = 63;
+  bool disable_voice_search = 64;
+  bool disable_url_autocomplete = 65;
+  repeated CustomSearchEngine custom_search_engines = 66;
+  string custom_default_search_engine_id = 67;
+  string custom_private_search_engine_id = 68;
+  bool show_tab_strip = 69;
+  bool close_tabs_on_exit = 70;
+  reserved 71 to 78;
+  repeated HomeShortcut home_shortcuts = 79;
+  bool home_shortcuts_initialized = 80;
+  bool hide_home_shortcuts = 81;
+  bool hide_home_continue = 82;
+  bool hide_home_recent_visits = 83;
+  bool hide_home_stories = 84;
+  bool hide_home_privacy = 85;
+  string home_wallpaper_id = 86;
+  HomeShortcutShape home_shortcut_shape = 87;
+  bool home_large_shortcuts = 88;
+  bool hide_home_add_shortcut = 89;
+  bool hide_home_logo = 90;
+  bool hide_home_customize_shortcut = 91;
+}
+
+message HomeShortcut {
+  string id = 1;
+  string title = 2;
+  string url = 3;
+  bool is_folder = 4;
+  string parent_id = 5;
+}
+
+enum HomeShortcutShape {
+  HOME_SHORTCUT_ROUNDED = 0;
+  HOME_SHORTCUT_CIRCLE = 1;
+  HOME_SHORTCUT_SQUARE = 2;
+}
+
+message CustomSearchEngine {
+  string id = 1;
+  string name = 2;
+  string search_url_template = 3;
+  string suggestion_url_template = 4;
+}
+
+message SavedTabGroup {
+  string id = 1;
+  string name = 2;
+  repeated string tab_ids = 3;
+}

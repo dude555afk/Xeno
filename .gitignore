@@ -1,21 +1,21 @@
-*.iml
-.gradle/
+/.gradle/
+/tests.MD
+/app/release/
+/.idea
 /local.properties
-/.idea/
-.DS_Store
+/fastlane/report.xml
+/.kotlin/
 /build/
-/captures/
-.externalNativeBuild/
-.cxx/
-local.properties
-*.apk
-*.aab
-*.keystore
-*.jks
-key.properties
+/buildSrc/.gradle/
+/buildSrc/build/
+upload-keystore.jks
+upload_certificate.pem
+deployment_cert.der
+/app/src/main/assets/extensions/*
+!/app/src/main/assets/extensions/midori_sync/
+/artifacts/
+/docs/
 
-# Release signing material. `key.properties` above is the Flutter convention;
-# this project is Kotlin, so the real file is `keystore.properties`. Without
-# this line the file is committable, and a keystore password that reaches a
-# public repository is the single worst accident this build can have.
-keystore.properties
+/native/sync/target/
+/native/sync/core/target/
+/native/sync/core/Cargo.lock

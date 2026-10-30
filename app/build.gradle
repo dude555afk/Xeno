@@ -1,0 +1,514 @@
+import groovy.xml.XmlSlurper
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.protobuf)
+    alias(libs.plugins.ksp)
+    id 'midori.without-telemetry'
+}
+
+def readConfigValue = { String key, String fallback = null ->
+    project.findProperty(key) ?: System.getenv(key) ?: System.getenv(key.toUpperCase()) ?: fallback
+}
+
+def parseIntConfig = { String key, Integer fallback ->
+    def value = readConfigValue(key, null)
+    if (value == null || value.toString().trim().isEmpty()) {
+        return fallback
+    }
+    try {
+        return Integer.parseInt(value.toString())
+    } catch (NumberFormatException ignored) {
+        throw new GradleException("Invalid integer for '${key}': '${value}'")
+    }
+}
+
+def readVersionCodeFromFile = {
+    def versionFile = rootProject.file("version.properties")
+    if (!versionFile.exists()) {
+        return 2026000083
+    }
+
+    def properties = new Properties()
+    versionFile.withInputStream { stream -> properties.load(stream) }
+    def rawValue = properties.getProperty("PLAYSTORE_VERSION_CODE", "2026000080")
+    try {
+        return Integer.parseInt(rawValue)
+    } catch (NumberFormatException ignored) {
+        throw new GradleException("Invalid PLAYSTORE_VERSION_CODE in version.properties: '${rawValue}'")
+    }
+}
+
+def shouldAutoBumpVersionCode = {
+    if (gradle.startParameter.isDryRun()) {
+        return false
+    }
+    def taskNames = gradle.startParameter.taskNames.collect { it.toLowerCase() }
+    taskNames.any { taskName ->
+        def simpleTaskName = taskName.substring(taskName.lastIndexOf(':') + 1)
+        simpleTaskName.startsWith("assemble") ||
+                simpleTaskName.startsWith("bundle") ||
+                simpleTaskName.startsWith("install") ||
+                simpleTaskName.startsWith("compile")
+    }
+}
+
+def resolvePlaystoreVersionCode = {
+    def explicitVersionCode = readConfigValue("playstore_version_code", null)
+    if (explicitVersionCode != null && !explicitVersionCode.toString().trim().isEmpty()) {
+        return parseIntConfig("playstore_version_code", 2026000080)
+    }
+
+    def persistedVersionCode = readVersionCodeFromFile()
+    if (!shouldAutoBumpVersionCode()) {
+        return persistedVersionCode
+    }
+
+    def nextVersionCode = persistedVersionCode + 1
+    def versionFile = rootProject.file("version.properties")
+    def properties = new Properties()
+    properties.setProperty("PLAYSTORE_VERSION_CODE", nextVersionCode.toString())
+    versionFile.withOutputStream { stream ->
+        properties.store(stream, "Auto-generated. Incremented on each compilation build.")
+    }
+    return nextVersionCode
+}
+
+def maxPlayVersionCode = 2_100_000_000
+def preLimitVersionCode = 2_090_000_000
+def configuredPlaystoreVersionCode = resolvePlaystoreVersionCode()
+
+android {
+    ndkVersion "29.0.14206865"
+    // AGP 8.13 can fail preBundle when resource shrinking runs with multi-APK ABI splits.
+    // Keep ABI splits for APK builds, but disable them when a bundle task is requested.
+    def requestedTasks = gradle.startParameter.taskNames.collect { it.toLowerCase() }
+    def isBundleBuild = requestedTasks.any { taskName ->
+        taskName.substring(taskName.lastIndexOf(':') + 1).startsWith("bundle")
+    }
+    def splitAbis = (project.findProperty("fullAbiBuild") == "true")
+            ? ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+            : ["armeabi-v7a", "arm64-v8a", "x86_64"]
+
+    namespace 'org.midorinext.android'
+    compileSdk 37
+    compileSdkMinor 0
+    defaultConfig {
+        applicationId "org.midorinext.android"
+        minSdk 26
+        targetSdk 36
+        versionCode configuredPlaystoreVersionCode
+        versionName "11.9.4.5"
+        buildConfigField "String", "ADBLOCK_BUNDLE_VERSION", groovy.json.JsonOutput.toJson(
+                new groovy.json.JsonSlurper().parse(file("src/main/assets/adblock/content/manifest.json")).version)
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+
+        resourceConfigurations += [
+            "en", "fr", "de", "es", "it", "ru", "pt-rPT", "pt-rBR", "zh-rCN", "ja", "sq", "hi",
+            "fil", "pl", "en-rNG", "in", "ur"
+        ]
+    }
+
+    bundle {
+        density {
+            enableSplit true
+        }
+        abi {
+            enableSplit true
+        }
+        language {
+            enableSplit = false
+        }
+    }
+
+    splits {
+        abi {
+            enable !isBundleBuild
+            if (!isBundleBuild) {
+                reset()
+                include(*splitAbis)
+            }
+            universalApk true
+        }
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(readConfigValue("keystore_playstore_path", "${rootProject.projectDir}/upload-keystore.jks"))
+            storePassword readConfigValue("keystore_playstore_password", 'Hornela21@.*')
+            keyAlias readConfigValue("keystore_playstore_alias", 'amelia2024')
+            keyPassword readConfigValue("keystore_playstore_key_password", 'Hornela21@.*')
+        }
+    }
+
+    buildTypes {
+        debug {
+            getIsDefault().set(true)
+            applicationIdSuffix ".debug"
+        }
+        syncTest {
+            initWith debug
+            applicationIdSuffix ".synctest"
+            matchingFallbacks = ["debug"]
+        }
+        release {
+            // Shrink bytecode and resources to reduce final artifact size.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    flavorDimensions += ["version", "target"]
+    productFlavors {
+        original {
+            dimension "version"
+            getIsDefault().set(true)
+            buildConfigField("String", "QWANT_BASE_URL", '"https://astiango.com"')
+            buildConfigField("String", "QWANT_API_BASE_URL", '"https://api.qwant.com/v3"')
+            manifestPlaceholders += [WIDGET_ACTION: "org.midorinext.android.intent.action.WIDGET"]
+            buildConfigField("String", "WIDGET_ACTION", '"org.midorinext.android.intent.action.WIDGET"')
+        }
+
+        playstore {
+            getIsDefault().set(true)
+            dimension "target"
+        }
+    }
+
+    if (project.findProperty("syncIntegration") == "true") {
+        testBuildType "syncTest"
+    }
+
+    buildFeatures {
+        viewBinding true
+        compose true
+        buildConfig true
+    }
+
+    androidResources {
+        // GeckoView packages its internal JavaScript in omni.ja. Keeping it uncompressed avoids
+        // inflating ~15 MB before Gecko can start, which directly improves cold startup.
+        noCompress 'ja'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlin {
+        jvmToolchain(17)
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+            freeCompilerArgs.addAll('-Xjvm-default=all-compatibility', '-opt-in=kotlin.RequiresOptIn', '-Xannotation-default-target=param-property')
+        }
+    }
+    hilt {
+        enableAggregatingTask = true
+    }
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+    // To include every files in the assets folder (and not ignore VIP)
+    aaptOptions {
+        ignoreAssetsPattern  '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+}
+
+tasks.register("verifyLocalizedStrings") {
+    group = "verification"
+    description = "Checks that every locale declared by locale-config.xml defines every app string."
+
+    doLast {
+        def resourcesDirectory = file("src/main/res")
+        def stringNamesIn = { File directory ->
+            fileTree(directory) {
+                include "strings*.xml"
+            }.collectMany { resourceFile ->
+                new XmlSlurper(false, false)
+                    .parse(resourceFile)
+                    .children()
+                    .findAll { it.@name.text() && it.@translatable.text() != "false" }
+                    .collect { it.@name.text() }
+            } as Set
+        }
+
+        def baseNames = stringNamesIn(resourcesDirectory.toPath().resolve("values").toFile())
+        def localeConfig = new XmlSlurper(false, false).parse(file("src/main/res/xml/locales_config.xml"))
+        def missingByLocale = localeConfig.locale.collectEntries { locale ->
+            def languageTag = locale.attributes().find { key, value -> key.toString().endsWith("name") }?.value?.toString()
+            if (languageTag == "en") {
+                return [(languageTag): [] as Set]
+            }
+            def qualifierParts = []
+            languageTag.split("-").eachWithIndex { part, index ->
+                qualifierParts << (index == 0 ? (part == "id" ? "in" : part) : "r${part}")
+            }
+            def qualifier = qualifierParts.join("-")
+            def localeNames = stringNamesIn(resourcesDirectory.toPath().resolve("values-${qualifier}").toFile())
+            [(languageTag): baseNames - localeNames]
+        }.findAll { _, missing -> !missing.isEmpty() }
+
+        if (!missingByLocale.isEmpty()) {
+            def details = missingByLocale.collect { locale, missing ->
+                "${locale}: ${missing.size()} missing (${missing.sort().join(', ')})"
+            }.join("\n")
+            throw new GradleException("Localized strings are out of sync:\n${details}")
+        }
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(tasks.named("verifyLocalizedStrings"))
+}
+
+tasks.register("verifyNativeHome") {
+    group = "verification"
+    description = "Verifies that the native New Tab screen is packaged without the retired web bundle."
+    def homeSource = file("src/main/java/org/midorinext/android/ui/browser/home/NativeHomeScreen.kt")
+    inputs.file(homeSource)
+    inputs.dir(file("src/main/assets"))
+    doLast {
+        if (!homeSource.isFile() || !homeSource.getText("UTF-8").contains("fun NativeHomeScreen(")) {
+            throw new GradleException("The native New Tab screen is missing")
+        }
+        if (file("src/main/assets/extensions/midori_newtab").exists()) {
+            throw new GradleException("The retired Midori New Tab web bundle must not be packaged")
+        }
+    }
+}
+
+tasks.matching { task -> task.name.startsWith("pre") && task.name.endsWith("Build") }.configureEach {
+    dependsOn("verifyNativeHome")
+}
+
+tasks.matching { task -> task.name == "testOriginalPlaystoreDebugUnitTest" }.configureEach {
+    inputs.dir(file("src/main/assets/adblock"))
+    dependsOn("buildHostAdblock")
+    systemProperty("midori.adblock.library", layout.buildDirectory.file("rust-host/libmidori_adblock.so").get().asFile.absolutePath)
+}
+
+def rustInputs = rootProject.files("native/adblock/Cargo.toml", "native/adblock/Cargo.lock", "native/adblock/rust-toolchain.toml", "scripts/build-adblock.py") + rootProject.fileTree("native/adblock/src")
+
+tasks.register("buildHostAdblock", Exec) {
+    inputs.files(rustInputs)
+    outputs.file(layout.buildDirectory.file("rust-host/libmidori_adblock.so"))
+    commandLine("python3", rootProject.file("scripts/build-adblock.py"), "--host", "--output", layout.buildDirectory.dir("rust-host").get().asFile)
+}
+
+tasks.register("buildAndroidAdblock", Exec) {
+    inputs.files(rustInputs)
+    inputs.property("fullAbiBuild", project.findProperty("fullAbiBuild") ?: "false")
+    outputs.dir(layout.buildDirectory.dir("rust-jni"))
+    def abis = project.findProperty("fullAbiBuild") == "true" ? ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"] : ["armeabi-v7a", "arm64-v8a", "x86_64"]
+    commandLine(["python3", rootProject.file("scripts/build-adblock.py"), "--ndk", android.ndkDirectory,
+        "--output", layout.buildDirectory.dir("rust-jni").get().asFile] + abis.collectMany { ["--abi", it] })
+}
+
+def syncInputs = rootProject.files("native/sync/Cargo.toml", "native/sync/Cargo.lock", "scripts/build-sync.py") + rootProject.fileTree("native/sync/src") + rootProject.fileTree("native/sync/core")
+tasks.register("buildHostSync", Exec) {
+    inputs.files(syncInputs)
+    outputs.file(layout.buildDirectory.file("rust-sync-host/libmidori_sync_android.so"))
+    commandLine("python3", rootProject.file("scripts/build-sync.py"), "--host", "--output", layout.buildDirectory.dir("rust-sync-host").get().asFile)
+}
+tasks.register("buildAndroidSync", Exec) {
+    inputs.files(syncInputs)
+    outputs.dir(layout.buildDirectory.dir("rust-sync-jni"))
+    commandLine(["python3", rootProject.file("scripts/build-sync.py"), "--ndk", android.ndkDirectory,
+        "--output", layout.buildDirectory.dir("rust-sync-jni").get().asFile] + splitAbisForSync(project).collectMany { ["--abi", it] })
+}
+android.sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir("rust-sync-jni").get().asFile)
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("JniLibFolders") }.configureEach {
+    dependsOn("buildAndroidSync")
+}
+tasks.matching { it.name in ["testOriginalPlaystoreDebugUnitTest", "testOriginalPlaystoreSyncTestUnitTest"] }.configureEach {
+    dependsOn("buildHostSync")
+    systemProperty("midori.sync.library", layout.buildDirectory.file("rust-sync-host/libmidori_sync_android.so").get().asFile.absolutePath)
+}
+
+android.sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir("rust-jni").get().asFile)
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("JniLibFolders") }.configureEach {
+    dependsOn("buildAndroidAdblock")
+}
+
+tasks.register("generateBundledFilters", JavaExec) {
+    group = "verification"
+    description = "Compiles the bundled filter snapshots with the native parser for fast Android startup."
+    dependsOn("compileOriginalPlaystoreDebugUnitTestKotlin", "compileOriginalPlaystoreDebugUnitTestJavaWithJavac", "buildHostAdblock")
+    systemProperty("midori.adblock.library", layout.buildDirectory.file("rust-host/libmidori_adblock.so").get().asFile.absolutePath)
+    mainClass = "org.midorinext.android.adblock.GenerateBundledFilters"
+    classpath = tasks.named("testOriginalPlaystoreDebugUnitTest").get().classpath
+    args(file("src/main/assets/adblock").absolutePath)
+}
+
+
+dependencies {
+    // Legacy Onboarding
+    implementation libs.androidx.constraintlayout
+    // Legacy assistant
+    implementation libs.material
+    // Old preferences for migration. Remove after migration is complete
+    implementation libs.androidx.preference
+
+    // AndroidX
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.runtime.compose
+    implementation libs.androidx.lifecycle.process
+    implementation libs.androidx.biometric
+    implementation libs.androidx.datastore
+    implementation libs.androidx.paging.runtime.ktx
+    implementation libs.androidx.localbroadcastmanager
+    implementation libs.androidx.work.runtime
+
+    // Hilt
+    implementation libs.hilt.main
+    implementation libs.hilt.navigation.compose
+    ksp libs.hilt.compiler.dagger
+
+    // Compose BOM
+    implementation(platform(libs.compose.bom))
+    androidTestImplementation(platform(libs.compose.bom))
+    implementation libs.compose.ui.main
+    implementation libs.compose.ui.viewbinding
+    implementation libs.compose.ui.preview
+    implementation libs.compose.animation
+    debugImplementation libs.compose.ui.tooling
+    debugImplementation libs.compose.ui.test.manifest
+    syncTestImplementation libs.compose.ui.test.manifest
+    androidTestImplementation libs.compose.ui.test.junit4
+    // Other compose libs
+    implementation libs.compose.material3
+    implementation libs.compose.android.activity
+    implementation libs.compose.android.paging
+    implementation libs.compose.android.navigation.main
+    implementation libs.coil.compose
+    androidTestImplementation libs.compose.android.navigation.test
+
+    // Room
+    implementation libs.room.ktx
+    implementation libs.room.runtime
+    // implementation libs.room.paging
+    ksp libs.room.compiler
+    testImplementation libs.room.testing
+
+    // Mozac
+    implementation libs.mozac.concept.engine
+    implementation libs.mozac.browser.engine.gecko
+    implementation libs.mozac.browser.errorpages
+    implementation libs.mozac.browser.state
+    implementation libs.mozac.browser.session.storage
+    implementation libs.mozac.browser.thumbnails
+    implementation libs.mozac.browser.icons
+    implementation libs.mozac.feature.session
+    implementation libs.mozac.feature.tabs
+    implementation libs.mozac.feature.contextmenu
+    implementation libs.mozac.feature.sitepermissions
+    implementation libs.mozac.feature.downloads
+    implementation libs.mozac.feature.applinks
+    implementation libs.mozac.feature.prompts
+    implementation libs.mozac.feature.pwa
+    implementation libs.mozac.feature.intent
+    implementation libs.mozac.feature.webcompat
+    implementation libs.mozac.feature.media
+    implementation libs.mozac.feature.readerview
+    implementation libs.mozac.support.utils
+    implementation libs.mozac.support.ktx
+    implementation libs.mozac.support.appservices
+    implementation libs.mozac.lib.publicsuffixlist
+    implementation libs.mozac.service.sync.logins
+    implementation libs.mozac.service.sync.autofill
+    implementation libs.mozac.support.webextensions
+    implementation libs.mozac.feature.addons
+    implementation libs.mozac.ui.widgets // SnackbarDelegate
+    implementation libs.mozac.ui.icons // Permission feature icons // TODO remove this dependency after replacing with our icons
+
+    // Others
+    implementation libs.protobuf
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
+    // Tests
+    testImplementation libs.junit.main
+    testImplementation libs.mozac.lib.fetch.httpurlconnection
+    testImplementation libs.json
+    androidTestImplementation libs.junit.androidx
+    androidTestImplementation libs.espresso
+}
+
+protobuf {
+    protoc {
+        def protoVersion = "4.34.0"
+        // Protobuf compiler is not supported for Apple M1 architecture,
+        // fallback to specific 'protoc_platform' version if specify
+        if (project.hasProperty('protoc_platform')) {
+            artifact = "com.google.protobuf:protoc:$protoVersion:${protoc_platform}"
+        } else {
+            artifact = "com.google.protobuf:protoc:$protoVersion"
+        }
+    }
+
+    // Generates the java Protobuf-lite code for the Protobufs in this project. See
+    // https://github.com/google/protobuf-gradle-plugin#customizing-protobuf-compilation
+    // for more information.
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}
+
+tasks.register("validatePlaystoreReleaseConfig") {
+    group = "verification"
+    description = "Validates signing and versionCode constraints before publishing to Google Play"
+    doLast {
+        if (configuredPlaystoreVersionCode <= 0) {
+            throw new GradleException("playstore_version_code must be a positive integer")
+        }
+        if (configuredPlaystoreVersionCode >= maxPlayVersionCode) {
+            throw new GradleException(
+                    "playstore_version_code (${configuredPlaystoreVersionCode}) exceeds Google Play max (${maxPlayVersionCode - 1})"
+            )
+        }
+        if (configuredPlaystoreVersionCode >= preLimitVersionCode) {
+            throw new GradleException(
+                    "playstore_version_code (${configuredPlaystoreVersionCode}) is too close to Google Play max; choose a lower strategy"
+            )
+        }
+
+        def keystorePath = readConfigValue("keystore_playstore_path", "${rootProject.projectDir}/upload-keystore.jks")
+        if (!file(keystorePath).exists()) {
+            throw new GradleException("Upload keystore not found at: ${keystorePath}")
+        }
+    }
+}
+
+tasks.matching { it.name == "bundleOriginalPlaystoreRelease" }.configureEach {
+    dependsOn("validatePlaystoreReleaseConfig")
+}
+
+static List<String> splitAbisForSync(Project project) {
+    project.findProperty("fullAbiBuild") == "true" ? ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"] : ["armeabi-v7a", "arm64-v8a", "x86_64"]
+}

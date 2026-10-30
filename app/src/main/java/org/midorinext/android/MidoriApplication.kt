@@ -1,0 +1,301 @@
+package org.midorinext.android
+
+import android.app.Activity
+import android.app.Application
+import android.os.Bundle
+import android.os.Looper
+import androidx.annotation.MainThread
+import org.midorinext.android.mozac.BrowserMemoryBudget
+import org.midorinext.android.mozac.BrowserWorkerFactory
+import androidx.work.Configuration
+import org.midorinext.android.migration.MigrationUtility
+import org.midorinext.android.mozac.GeckoPreferences
+import org.midorinext.android.mozac.BrowserSessionLifecycle
+import org.midorinext.android.mozac.awaitInitialBrowserContent
+import org.midorinext.android.adblock.AdBlockSettings
+import org.midorinext.android.adblock.AdBlockUpdateWorker
+import org.midorinext.android.adblock.AdBlockConfiguration
+import org.midorinext.android.adblock.NativeContentBlockingFeature
+import org.midorinext.android.mozac.media.BackgroundPlaybackFeature
+import org.midorinext.android.preferences.app.AppPreferences
+import org.midorinext.android.preferences.app.AppPreferencesSerializer
+import org.midorinext.android.preferences.app.AppPreferencesRepository
+import org.midorinext.android.preferences.app.migrateLegacyTabGroups
+import org.midorinext.android.storage.autofill.AutofillPreferenceState
+import org.midorinext.android.storage.history.HistoryRepository
+import org.midorinext.android.usecases.MidoriUseCases
+import org.midorinext.android.vpn.MidoriVpnFeature
+import org.midorinext.android.newtab.HomeFaviconRepository
+import org.midorinext.android.newtab.HomeWallpaper
+import org.midorinext.android.newtab.HomeWallpaperRepository
+import mozilla.components.browser.icons.BrowserIcons
+import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import mozilla.components.browser.session.storage.SessionStorage
+import mozilla.components.browser.state.action.SystemAction
+import mozilla.components.browser.state.action.TranslationsAction
+import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.fetch.Client
+import mozilla.components.feature.media.MediaSessionFeature
+import mozilla.components.feature.session.SessionUseCases
+import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.lib.state.ext.flow
+import mozilla.components.support.AppServicesInitializer
+import mozilla.components.support.base.log.Log
+import mozilla.components.support.base.log.sink.AndroidLogSink
+import mozilla.components.support.ktx.android.content.isMainProcess
+import mozilla.components.support.ktx.android.content.runOnlyInMainProcess
+import mozilla.components.support.rusthttp.RustHttpConfig
+import mozilla.components.support.webextensions.WebExtensionSupport
+import org.mozilla.geckoview.GeckoRuntime
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+
+private const val READING_LIST_DATABASE_NAME = "reading_list_db"
+
+@HiltAndroidApp
+class MidoriApplication : Application(), Configuration.Provider {
+    @Inject lateinit var memoryBudget: BrowserMemoryBudget
+    @Inject lateinit var engine: dagger.Lazy<Engine>
+    @Inject lateinit var client: dagger.Lazy<Client>
+    @Inject lateinit var store: dagger.Lazy<BrowserStore>
+    @Inject lateinit var sessionStorage: dagger.Lazy<SessionStorage>
+    @Inject lateinit var tabsUseCases: dagger.Lazy<TabsUseCases>
+    @Inject lateinit var sessionUseCases: dagger.Lazy<SessionUseCases>
+    @Inject lateinit var MidoriUseCases: dagger.Lazy<MidoriUseCases>
+    @Inject lateinit var migrationUtility: dagger.Lazy<MigrationUtility>
+    @Inject lateinit var mediaFeature: dagger.Lazy<MediaSessionFeature>
+    @Inject lateinit var backgroundPlaybackFeature: dagger.Lazy<BackgroundPlaybackFeature>
+    @Inject lateinit var geckoRuntime: dagger.Lazy<GeckoRuntime>
+    @Inject lateinit var appPreferencesRepository: dagger.Lazy<AppPreferencesRepository>
+    @Inject lateinit var adBlockSettings: dagger.Lazy<AdBlockSettings>
+    @Inject lateinit var nativeContentBlockingFeature: dagger.Lazy<NativeContentBlockingFeature>
+    @Inject lateinit var autofillPreferenceState: dagger.Lazy<AutofillPreferenceState>
+    @Inject lateinit var historyRepository: dagger.Lazy<HistoryRepository>
+    @Inject lateinit var midoriVpnFeature: dagger.Lazy<MidoriVpnFeature>
+    @Inject lateinit var browserIcons: dagger.Lazy<BrowserIcons>
+    @Inject lateinit var homeFavicons: dagger.Lazy<HomeFaviconRepository>
+    @Inject lateinit var homeWallpaper: dagger.Lazy<HomeWallpaperRepository>
+    @Inject lateinit var addonManager: dagger.Lazy<mozilla.components.feature.addons.AddonManager>
+
+    @Inject internal lateinit var syncCoordinator: dagger.Lazy<org.midorinext.android.sync.SyncCoordinator>
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val postFirstFrameWorkStarted = AtomicBoolean(false)
+    private val nativeHomeFrameDrawn = MutableStateFlow(false)
+
+    fun onNativeHomeFrameDrawn() {
+        nativeHomeFrameDrawn.value = true
+    }
+    private var browserStateRestoration: Job? = null
+    private var browserInitialized = false
+    private val browserSessionLifecycle by lazy {
+        BrowserSessionLifecycle(
+            preferences = appPreferencesRepository.get().flow,
+            store = store.get(),
+            clearSavedSession = { withContext(Dispatchers.IO) { sessionStorage.get().clear() } },
+            restoreSavedSession = { tabsUseCases.get().restore(sessionStorage.get()) },
+        )
+    }
+
+    /** Lazily initializes WorkManager when Mozilla's add-on updater first schedules work. */
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(BrowserWorkerFactory(this, addonManager))
+            .build()
+
+    override fun onCreate() {
+        super.onCreate()
+
+        setupLogging()
+
+        if (!isMainProcess()) {
+            // Rust/AppServices and Gecko are owned by the browser process. Initializing them in
+            // Gecko content and crash processes duplicates startup work and competes for CPU.
+            return
+        }
+
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            private var started = 0
+            override fun onActivityStarted(activity: Activity) {
+                if (started++ == 0) memoryBudget.onVisibilityChanged(true)
+            }
+            override fun onActivityStopped(activity: Activity) {
+                if (--started == 0 && !activity.isChangingConfigurations) memoryBudget.onVisibilityChanged(false)
+            }
+            override fun onActivityCreated(activity: Activity, state: Bundle?) = Unit
+            override fun onActivityResumed(activity: Activity) = Unit
+            override fun onActivityPaused(activity: Activity) = Unit
+            override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) = Unit
+            override fun onActivityDestroyed(activity: Activity) = Unit
+        })
+        StartupTiming.mark("application_create (${BuildConfig.VERSION_NAME}, ${BuildConfig.BUILD_TYPE})")
+        StartupTiming.measure("app_services") {
+            AppServicesInitializer.init(
+                AppServicesInitializer.Config(
+                    crashReporting = null,
+                    logLevel = if (BuildConfig.DEBUG) Log.Priority.DEBUG else Log.Priority.INFO,
+                ),
+            )
+        }
+        RustHttpConfig.setClient(lazy { client.get() })
+        StartupTiming.mark("application_ready")
+    }
+
+    @MainThread
+    fun initializeBrowser(reason: String, restoreSession: Boolean = true) {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        if (!browserInitialized) {
+            StartupTiming.mark("browser_initialization ($reason)")
+            initializeBrowserComponents()
+            browserInitialized = true
+            StartupTiming.mark("browser_ready")
+        }
+        if (restoreSession && browserStateRestoration == null) {
+            applicationScope.launch(Dispatchers.IO) {
+                val preferences = appPreferencesRepository.get().flow.first()
+                StartupTiming.mark("preferences_ready")
+                homeWallpaper.get().load(HomeWallpaper.fromId(preferences.homeWallpaperId))
+            }
+            browserStateRestoration = restoreBrowserState()
+        }
+    }
+
+    private fun initializeBrowserComponents() {
+        // Apply safe defaults immediately; persisted settings are applied below without blocking startup.
+        StartupTiming.measure("initial_gecko_settings") {
+            GeckoPreferences.initialize(geckoRuntime.get(), AppPreferencesSerializer.defaultValue.toGeckoSettings(adBlockSettings.get().current))
+        }
+        StartupTiming.measure("gecko_warm_up") { geckoRuntime.get().warmUp() }
+
+        // Watch for preference changes and apply them without requiring restart
+        applicationScope.launch(Dispatchers.IO) {
+            geckoSettingsChanges(appPreferencesRepository.get().flow, adBlockSettings.get().state)
+                .collect { settings -> GeckoPreferences.initialize(geckoRuntime.get(), settings) }
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            appPreferencesRepository.get().flow.collect { prefs ->
+                autofillPreferenceState.get().update(prefs)
+            }
+        }
+
+        StartupTiming.measure("native_blocker") { nativeContentBlockingFeature.get().start() }
+
+        // TODO
+        //  Should be removed in futur version, once mozilla has fully migrated
+        //  meanwhile move this elsewhere
+        val tuc = tabsUseCases.get()
+        WebExtensionSupport.initialize(
+            runtime = engine.get(),
+            store = store.get(),
+            openPopupInTab = true,
+            onNewTabOverride = { _, engineSession, url, isActive, isPrivate ->
+                val tabId = tuc.addTab(
+                    url = url,
+                    selectTab = isActive,
+                    engineSession = engineSession,
+                    private = isPrivate,
+                )
+                tabId
+            },
+            onCloseTabOverride = { _, sessionId ->
+                tuc.removeTab(sessionId)
+            },
+            onSelectTabOverride = { _, sessionId ->
+                tuc.selectTab(sessionId)
+            },
+            onExtensionsLoaded = {}
+        )
+    }
+
+    /**
+     * Starts work that is useful for an active browser session but is not required to draw the
+     * first frame. Maintenance and secondary services wait for the initial document to load.
+     */
+    fun onFirstFrameDrawn() {
+        if (!postFirstFrameWorkStarted.compareAndSet(false, true)) {
+            return
+        }
+        StartupTiming.mark("first_frame")
+
+        applicationScope.launch {
+            org.midorinext.android.sync.SyncScheduler.start(this@MidoriApplication, syncCoordinator.get())
+            mediaFeature.get().start()
+            backgroundPlaybackFeature.get().start()
+        }
+
+        applicationScope.launch {
+            val contentDrawn = awaitInitialBrowserContent(store.get().flow(), nativeHomePainted = nativeHomeFrameDrawn)
+            StartupTiming.mark(if (contentDrawn) "initial_content_loaded" else "maintenance_timeout")
+            val preferences = withContext(Dispatchers.IO) { appPreferencesRepository.get().flow.first() }
+            store.get().dispatch(TranslationsAction.SetTranslationsEnabledAction(!preferences.translationsDisabled))
+            // VPN registration is optional and can wait until the initial document is visible.
+            midoriVpnFeature.get().install(geckoRuntime.get())
+            withContext(Dispatchers.IO) {
+                AdBlockUpdateWorker.schedule(this@MidoriApplication)
+                // Reading Mode and its Room database have been removed. Delete any data left by
+                // earlier versions without doing file-system work before the first frame.
+                deleteDatabase(READING_LIST_DATABASE_NAME)
+                migrationUtility.get().checkMigrations()
+                org.midorinext.android.storage.history.HistoryMaintenanceWorker.schedule(this@MidoriApplication)
+            }
+        }
+    }
+
+    private fun restoreBrowserState() = applicationScope.launch(Dispatchers.Main) {
+        migrateLegacyTabGroups(this@MidoriApplication, engine.get().name(), appPreferencesRepository.get())
+        browserSessionLifecycle.restore()
+        sessionStorage.get().let {
+            // Now that we have restored our previous state (if there's one) let's setup auto saving the state while the app is used.
+            it.autoSave(store.get())
+                .periodicallyInForeground(interval = 30, unit = TimeUnit.SECONDS)
+                .whenGoingToBackground()
+                .whenSessionsChange()
+        }
+    }
+
+    fun onBrowserClosed() = applicationScope.launch {
+        val restoration = browserStateRestoration ?: return@launch
+        restoration.join()
+        browserSessionLifecycle.close()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        runOnlyInMainProcess {
+            memoryBudget.onTrimMemory(level)
+        }
+    }
+}
+
+internal fun geckoSettingsChanges(
+    preferences: Flow<AppPreferences>,
+    adBlock: Flow<AdBlockConfiguration>,
+): Flow<GeckoPreferences.UserSettings> = combine(preferences, adBlock) { prefs, blocking ->
+    prefs.toGeckoSettings(blocking)
+}.distinctUntilChanged()
+
+private fun AppPreferences.toGeckoSettings(adBlock: AdBlockConfiguration) = GeckoPreferences.UserSettings(
+    globalPrivacyControl = privacyGlobalPrivacyControl,
+    fingerprintingProtection = privacyFingerprintingProtection,
+    cookiePartitioning = privacyCookiePartitioning,
+    strictTrackingProtection = adBlock.strict,
+    trackingProtectionLevel = trackingProtectionLevel,
+    adBlockLevel = adBlock.level,
+    trackerSourceEnabled = adBlock.builtInTrackers,
+    httpsOnlyLevel = httpsOnlyLevel,
+    dohProvider = dohProvider,
+)
+
+private fun setupLogging() {
+    // We want the log messages of all builds to go to Android logcat
+    Log.addSink(AndroidLogSink())
+}

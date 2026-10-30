@@ -1,0 +1,81 @@
+package org.midorinext.android.mozac.hilt
+
+import android.content.Context
+import org.midorinext.android.StartupTiming
+import org.midorinext.android.adblock.LegacyBlockerMigration
+import org.midorinext.android.newtab.MidoriNewTabFeature
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import mozilla.components.browser.engine.gecko.GeckoEngine
+import mozilla.components.browser.engine.gecko.fetch.GeckoViewFetchClient
+import mozilla.components.browser.engine.gecko.permission.GeckoSitePermissionsStorage
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.Settings
+import mozilla.components.concept.fetch.Client
+import mozilla.components.feature.sitepermissions.OnDiskSitePermissionsStorage
+import mozilla.components.feature.webcompat.WebCompatFeature
+import mozilla.components.support.ktx.android.content.isMainProcess
+import org.mozilla.geckoview.Autocomplete
+import org.mozilla.geckoview.GeckoRuntime
+import org.mozilla.geckoview.GeckoRuntimeSettings
+import javax.inject.Singleton
+
+
+@Module
+@InstallIn(SingletonComponent::class)
+object GeckoHiltModule {
+    @Singleton
+    @Provides
+    @Synchronized
+    fun provideGeckoRuntime(
+        @ApplicationContext context: Context,
+        settings: GeckoRuntimeSettings,
+        autocompleteStorageDelegate: Autocomplete.StorageDelegate,
+    ): GeckoRuntime {
+        assert(context.isMainProcess())
+        return StartupTiming.measure("gecko_runtime") {
+            GeckoRuntime.create(context, settings).apply {
+                setAutocompleteStorageDelegate(autocompleteStorageDelegate)
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideEngine(
+        @ApplicationContext context: Context,
+        runtime: GeckoRuntime,
+        settings: Settings,
+        legacyBlockerMigration: LegacyBlockerMigration,
+        newTabFeature: MidoriNewTabFeature,
+    ): Engine {
+        return StartupTiming.measure("browser_engine") {
+            GeckoEngine(context, settings, runtime).also {
+                legacyBlockerMigration.uninstall(runtime)
+                newTabFeature.registerLegacyOrigins(runtime)
+                WebCompatFeature.install(it)
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideClient(
+        @ApplicationContext context: Context,
+        runtime: GeckoRuntime
+    ): Client {
+        return GeckoViewFetchClient(context, runtime)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGeckoSitePermissionsStorage(
+        @ApplicationContext context: Context,
+        runtime: GeckoRuntime
+    ): GeckoSitePermissionsStorage {
+        return GeckoSitePermissionsStorage(runtime, OnDiskSitePermissionsStorage(context))
+    }
+}

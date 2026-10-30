@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">Midori ブロッカー</string>
+    <string name="native_blocker_blocked_count">このページのブロック数：%1$d</string>
+    <string name="native_blocker_site_on">このサイトの保護は有効です。</string>
+    <string name="native_blocker_site_off">このサイトの保護は無効です。</string>
+    <string name="native_blocker_enable_site">このサイトで有効にする</string>
+    <string name="native_blocker_disable_site">このサイトで無効にする</string>
+    <string name="privacy_setting_fingerprinting_label">指紋保護</string>
+    <string name="privacy_setting_gpc_label">グローバル プライバシー コントロール (GPC)</string>
+    <string name="privacy_setting_cookie_partitioning_label">クッキーのパーティショニング</string>
+    <string name="settings_enhanced_tracking_protection_label">強化されたトラッキング保護</string>
+    <string name="settings_enhanced_tracking_protection_description">Firefox は、オンラインでの行動を追跡する最も一般的なトラッカーの多くからユーザーを保護します。</string>
+    <string name="settings_tracking_protection_standard">標準 (デフォルト)</string>
+    <string name="settings_tracking_protection_standard_desc">ページは通常どおり読み込まれますが、ブロックされるトラッカーは少なくなります。</string>
+    <string name="settings_tracking_protection_strict">厳格</string>
+    <string name="settings_tracking_protection_strict_desc">より強力な追跡保護と高速なパフォーマンスですが、一部のサイトは正しく動作しない可能性があります。</string>
+    <string name="settings_tracking_protection_custom">カスタム</string>
+    <string name="settings_tracking_protection_custom_desc">どのトラッカーとスクリプトをブロックするかを選択します。</string>
+    <string name="settings_total_cookie_protection">ウェブサイトにデータの共有や販売を行わないよう指示する</string>
+    <string name="settings_https_only_mode_label">HTTPS 専用モード</string>
+    <string name="settings_https_only_mode_description">セキュリティを強化するために、HTTPS 暗号化プロトコルを使用してサイトへの接続を自動的に試行します。</string>
+    <string name="settings_https_only_off">オフ</string>
+    <string name="settings_https_only_off_desc">デフォルトの DNS リゾルバーを使用する</string>
+    <string name="settings_https_only_all_tabs">すべてのタブで有効にする</string>
+    <string name="settings_https_only_private_tabs">プライベートタブでのみ有効にする</string>
+    <string name="settings_dns_over_https_label">HTTPS 経由の DNS</string>
+    <string name="settings_dns_over_https_description">HTTPS 経由のドメイン ネーム システム (DNS) は、暗号化された接続を通じてドメイン名のリクエストを送信し、安全な DNS を提供し、アクセスしようとしている Web サイトを他の人が知るのを困難にします。</string>
+    <string name="settings_dns_over_https_default">デフォルトの保護</string>
+    <string name="settings_dns_over_https_default_desc">Firefox は、プライバシーを保護するためにセキュア DNS をいつ使用するかを決定します。</string>
+    <string name="settings_dns_over_https_increased">保護の強化</string>
+    <string name="settings_dns_over_https_increased_desc">セキュア DNS をいつ使用するかを制御し、プロバイダーを選択します。</string>
+    <string name="settings_dns_over_https_max">最大の保護</string>
+    <string name="settings_dns_over_https_max_desc">Firefox は常に安全な DNS を使用します。システム DNS を使用する前に、セキュリティ リスクの警告が表示されます。</string>
+    <string name="settings_dns_over_https_exceptions">例外</string>
+</resources>

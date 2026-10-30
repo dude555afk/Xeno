@@ -1,0 +1,34 @@
+<resources>
+    <string name="home_wallpaper_title">Hintergrundbilder</string>
+    <string name="home_wallpaper_description">Wähle einen Hintergrund für deine Startseite.</string>
+    <string name="home_wallpaper_choose">Hintergrundbild wählen</string>
+    <string name="home_wallpaper_collection">Midori-Kollektion</string>
+    <string name="home_wallpaper_preview">Vorschau</string>
+    <string name="home_wallpaper_apply">Hintergrund anwenden</string>
+    <string name="home_wallpaper_selected">Ausgewählt</string>
+    <string name="home_wallpaper_none">Design übernehmen</string>
+    <string name="home_wallpaper_save_error">Der Hintergrund konnte nicht gespeichert werden. Versuche es erneut.</string>
+    <string name="home_wallpaper_back">Alle Hintergründe</string>
+    <string name="home_wallpaper_load_error">Dieser Hintergrund konnte nicht geöffnet werden. Wähle einen anderen.</string>
+    <string name="home_wallpaper_all">Alle</string>
+    <string name="home_wallpaper_nature">Natur</string>
+    <string name="home_wallpaper_space">Weltraum</string>
+    <string name="home_wallpaper_travel">Reisen</string>
+    <string name="home_wallpaper_colors">Einfarbig</string>
+    <string name="home_wallpaper_black">Schwarz</string>
+    <string name="home_wallpaper_white">Weiß</string>
+    <string name="home_wallpaper_gray">Grau</string>
+    <string name="home_wallpaper_blue">Blau</string>
+    <string name="home_wallpaper_green">Grün</string>
+    <string name="home_wallpaper_purple">Violett</string>
+    <string name="home_wallpaper_red">Rot</string>
+    <string name="home_wallpaper_coral">Koralle</string>
+    <string name="home_wallpaper_orange">Orange</string>
+    <string name="home_wallpaper_yellow">Gelb</string>
+    <string name="home_wallpaper_mint">Mint</string>
+    <string name="home_wallpaper_teal">Petrol</string>
+    <string name="home_wallpaper_sky">Himmelblau</string>
+    <string name="home_wallpaper_pink">Rosa</string>
+    <string name="home_wallpaper_sand">Sand</string>
+    <string name="home_wallpaper_brown">Braun</string>
+</resources>

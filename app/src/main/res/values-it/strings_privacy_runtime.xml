@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">Blocco contenuti di Midori</string>
+    <string name="native_blocker_blocked_count">Elementi bloccati su questa pagina: %1$d</string>
+    <string name="native_blocker_site_on">La protezione è attiva per questo sito.</string>
+    <string name="native_blocker_site_off">La protezione è disattivata per questo sito.</string>
+    <string name="native_blocker_enable_site">Attiva per questo sito</string>
+    <string name="native_blocker_disable_site">Disattiva per questo sito</string>
+    <string name="privacy_setting_fingerprinting_label">Protezione dalle impronte digitali</string>
+    <string name="privacy_setting_gpc_label">Controllo globale della privacy (GPC)</string>
+    <string name="privacy_setting_cookie_partitioning_label">Partizionamento dei cookie</string>
+    <string name="settings_enhanced_tracking_protection_label">Protezione dal tracciamento avanzata</string>
+    <string name="settings_enhanced_tracking_protection_description">Firefox ti protegge da molti dei tracker più comuni che seguono ciò che fai online.</string>
+    <string name="settings_tracking_protection_standard">Standard (predefinito)</string>
+    <string name="settings_tracking_protection_standard_desc">Le pagine verranno caricate normalmente, ma bloccheranno meno tracker.</string>
+    <string name="settings_tracking_protection_strict">Rigoroso</string>
+    <string name="settings_tracking_protection_strict_desc">Protezione dal tracciamento più forte e prestazioni più veloci, ma alcuni siti potrebbero non funzionare correttamente.</string>
+    <string name="settings_tracking_protection_custom">Personalizzato</string>
+    <string name="settings_tracking_protection_custom_desc">Scegli quali tracker e script bloccare.</string>
+    <string name="settings_total_cookie_protection">Di\' ai siti web di non condividere e vendere dati</string>
+    <string name="settings_https_only_mode_label">Modalità solo HTTPS</string>
+    <string name="settings_https_only_mode_description">Tenta automaticamente di connettersi ai siti utilizzando il protocollo di crittografia HTTPS per una maggiore sicurezza.</string>
+    <string name="settings_https_only_off">Spento</string>
+    <string name="settings_https_only_off_desc">Utilizza il tuo risolutore DNS predefinito</string>
+    <string name="settings_https_only_all_tabs">Abilita in tutte le schede</string>
+    <string name="settings_https_only_private_tabs">Abilita solo nelle schede private</string>
+    <string name="settings_dns_over_https_label">DNS su HTTPS</string>
+    <string name="settings_dns_over_https_description">Domain Name System (DNS) su HTTPS invia la tua richiesta per un nome di dominio tramite una connessione crittografata, fornendo un DNS sicuro e rendendo più difficile per gli altri vedere a quale sito web stai per accedere.</string>
+    <string name="settings_dns_over_https_default">Protezione predefinita</string>
+    <string name="settings_dns_over_https_default_desc">Firefox decide quando utilizzare il DNS sicuro per proteggere la tua privacy.</string>
+    <string name="settings_dns_over_https_increased">Maggiore protezione</string>
+    <string name="settings_dns_over_https_increased_desc">Sei tu a controllare quando utilizzare il DNS sicuro e a scegliere il tuo provider.</string>
+    <string name="settings_dns_over_https_max">Protezione massima</string>
+    <string name="settings_dns_over_https_max_desc">Firefox utilizzerà sempre DNS sicuri. Verrà visualizzato un avviso di rischio per la sicurezza prima di utilizzare il DNS del sistema.</string>
+    <string name="settings_dns_over_https_exceptions">Eccezioni</string>
+</resources>

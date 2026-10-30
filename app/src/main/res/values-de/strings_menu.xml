@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_add_to_homescreen">Dem Home-Bildschirm hinzufügen</string>
+    <string name="menu_request_desktop_site">Desktop-Website anfordern</string>
+    <string name="menu_quit_app">Die App schließen</string>
+    <string name="menu_find_in_page">Auf der Seite finden</string>
+    <string name="menu_save_as_pdf">Seite als PDF speichern</string>
+    <string name="menu_save_as_pdf_failed">Seite konnte nicht als PDF gespeichert werden</string>
+    <string name="menu_login">Login</string>
+
+    <string name="menu_midori_vpn">MidoriVPN</string>
+    <string name="menu_more_options">Weitere Optionen</string>
+    <string name="menu_back_to_main">Hauptaktionen</string>
+    <string name="menu_customize_homepage">Startseite anpassen</string>
+    <string name="menu_dismiss_default_prompt">Vorschlag für den Standardbrowser schließen</string>
+    <string name="menu_default_browser_description">Schnell, privat und für dich gemacht.</string>
+</resources>

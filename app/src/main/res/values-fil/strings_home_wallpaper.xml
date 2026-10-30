@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_wallpaper_title">Mga wallpaper</string>
+    <string name="home_wallpaper_description">Pumili ng background para sa iyong panimulang pahina.</string>
+    <string name="home_wallpaper_choose">Pumili ng wallpaper</string>
+    <string name="home_wallpaper_collection">Koleksiyon ng Midori</string>
+    <string name="home_wallpaper_preview">I-preview</string>
+    <string name="home_wallpaper_apply">Itakda ang wallpaper</string>
+    <string name="home_wallpaper_selected">Napili</string>
+    <string name="home_wallpaper_none">Sundin ang tema</string>
+    <string name="home_wallpaper_save_error">Hindi ma-save ang wallpaper. Subukang muli.</string>
+    <string name="home_wallpaper_back">Lahat ng wallpaper</string>
+    <string name="home_wallpaper_load_error">Hindi mabuksan ang wallpaper na ito. Pumili ng iba.</string>
+    <string name="home_wallpaper_all">Lahat</string>
+    <string name="home_wallpaper_nature">Kalikasan</string>
+    <string name="home_wallpaper_space">Kalawakan</string>
+    <string name="home_wallpaper_travel">Paglalakbay</string>
+    <string name="home_wallpaper_colors">Mga solid na kulay</string>
+    <string name="home_wallpaper_black">Itim</string>
+    <string name="home_wallpaper_white">Puti</string>
+    <string name="home_wallpaper_gray">Abo</string>
+    <string name="home_wallpaper_blue">Asul</string>
+    <string name="home_wallpaper_green">Berde</string>
+    <string name="home_wallpaper_purple">Lila</string>
+    <string name="home_wallpaper_red">Pula</string>
+    <string name="home_wallpaper_coral">Koral</string>
+    <string name="home_wallpaper_orange">Kahel</string>
+    <string name="home_wallpaper_yellow">Dilaw</string>
+    <string name="home_wallpaper_mint">Mint</string>
+    <string name="home_wallpaper_teal">Berdeng asul</string>
+    <string name="home_wallpaper_sky">Asul na langit</string>
+    <string name="home_wallpaper_pink">Rosas</string>
+    <string name="home_wallpaper_sand">Buhangin</string>
+    <string name="home_wallpaper_brown">Kayumanggi</string>
+</resources>

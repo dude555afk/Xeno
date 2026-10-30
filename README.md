@@ -1,88 +1,89 @@
-# Xeno
+[![CircleCI](https://circleci.com/gh/midori-browser/core.svg?style=svg)](https://circleci.com/gh/midori-browser/core)
+[![Telegram](https://img.shields.io/badge/Telegram-Chat-gray.svg?style=flat&logo=telegram&colorA=5583a4&logoColor=fff)](https://t.me/midoriweb)
+[![Twitter](https://img.shields.io/twitter/follow/midoriweb.svg?style=social&label=Follow)](https://twitter.com/grupoastian)
+[![Donate](https://img.shields.io/badge/Stripe-Donate-gray.svg?style=flat&logo=stripe&colorA=0071bb&logoColor=fff)](https://donate.stripe.com/00g6s675Xawl6ZO9AH)
+[![Patreon](https://img.shields.io/badge/PATREON-Pledge-red.svg)](https://www.patreon.com/midori_browser)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T5V5269OIA)
 
-**A lightweight, AI-powered browser for Android.**
+<p align="center">
+    <b>Midori</b>
+    a lightweight, fast and free web browser for Android
+</p>
 
-Arc-grade feel — spaces, peek bubbles, a command palette that doubles as an answer engine — at a fraction of the footprint. No Gecko, no Electron. Just the system WebView and a lot of taste.
+![Midori Screenshot](https://astian.org/wp-content/uploads/2023/09/Midori-Claro-ImagoTipo.webp)
 
----
+Midori is a lightweight yet powerful web browser which runs just as well on little embedded computers named for delicious pastries as it does on beefy machines with a core temperature exceeding that of planet earth. And it looks good doing that, too. Oh, and of course it's free software. And for Android
 
-## What it is
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+alt="Get it on F-Droid"
+height="80">](https://f-droid.org/packages/org.midorinext.android/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+alt="Get it on Google Play"
+height="80">](https://play.google.com/store/apps/details?id=org.midorinext.android)
 
-Xeno is a browser built around one idea: **the address bar should answer, not just navigate.**
 
-Type a question, get a cited, synthesized answer sourced from the live web. Type a URL, get a page. One bar, two modes, one keystroke apart.
 
+[Midori Android](https://ads.fund/token/0xadff14b59f07c283470dbd50695b0df84e30471a) project is supported by ADS.FUND
+
+**Privacy out of the box**
+
+* Tabs Browser.
+* Private browsing.
+* Support extensions.
+
+**Productivity features**
+
+* Opens many Tabs.
+* History Manage
+* Download Manage.
+* Bookmark.
+* Dark Theme.
+* Share Content.
+* and much more.
+
+## Sponsors
+<div align="left">
+  <a href="https://www.herodevs.com/">
+    <img src="https://cdn.prod.website-files.com/62865614b39c464b76d339aa/668c0ec8bc50d24d58a40475_Logo%20Gradient%20Darkmode.svg" alt="HeroDevs Logo" width="400" height="200">
+  </a>
+</div>
+
+![Midori Screenshot](https://astian.org/wp-content/uploads/2023/09/midori-devices.webp)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=goastian/midori-android&type=Date)](https://www.star-history.com/#goastian/midori-android&Date)
+
+## Midori Sync
+
+Settings → Midori Sync connects this browser to the same account and encrypted
+collections used by Midori Desktop. The Android client supports bookmarks,
+history, passwords, payment cards, addresses and saved form values. Existing
+local data is reconciled with incoming data; concurrent changes remain available
+for review. Tabs and browser settings are outside the Android scope of this change.
+
+Sign in through the Sync website with PKCE, or enter a Desktop pairing code, then
+unlock the data with the account's MS2 recovery code. New accounts can create
+client-held encryption after confirming that the recovery code was saved.
+Disconnecting retains local browsing data.
+
+The native cryptographic and merge code is copied from the Desktop SDK with a
+hash manifest. In the combined development checkout, verify the copy with:
+
+```sh
+python3 scripts/vendor-sync-core.py --check
 ```
-you:   "what's quantum entanglement?"
-xeno:  ┌─────────────────────────────┐
-       │ Entanglement is a quantum   │
-       │ correlation where measuring │
-       │ one particle fixes the      │
-       │ state of its partner        │
-       │ instantly, at any distance  │
-       │ [1][3]                      │
-       └─────────────────────────────┘
-         [1] Nature   [3] Physics.SE
+
+Build the isolated device-test application without replacing a regular Midori
+installation:
+
+```sh
+./gradlew :app:assembleOriginalPlaystoreSyncTest \
+  :app:assembleOriginalPlaystoreSyncTestAndroidTest \
+  -PsyncIntegration=true -Pplaystore_version_code=2026000200
 ```
 
-## Feature set
-
-| Feature | Status |
-|---|---|
-| WebView engine + multi-session pool | 🚧 planned |
-| Readability.js page extraction | 🚧 planned |
-| Filter-list ad blocking (uBO lists, native) | 🚧 planned |
-| Spaces (accent-tinted workspaces) | 🚧 planned |
-| Peek bubble (Little Arc equivalent) | 🚧 planned |
-| Command palette + fuzzy search | 🚧 planned |
-| **AI answer engine (search → fetch → cite)** | 🎯 flagship |
-| Streaming page summarizer | 🚧 planned |
-| Semantic tab/history search (MiniLM) | 🚧 planned |
-| TextRank offline summarizer (fallback) | 🚧 planned |
-
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│                    UI                        │
-│   Spaces · Tab stack · Command bar · AI sheet │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               AI LAYER                        │
-│   summarizer · answer engine · embeddings     │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               CORE                            │
-│   reader (Readability.js) · fetch/rank        │
-│   blocking (adblock-rust + uBO lists)         │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│            ENGINE                             │
-│      Android System WebView                   │
-└──────────────────────────────────────────────┘
-```
-
-**See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the pipeline specs and
-[`docs/DESIGN.md`](docs/DESIGN.md) for the design tokens.**
-
-## Stack
-
-- Kotlin + Jetpack Compose (Material 3), `minSdk 26`, `targetSdk 35`
-- Android System WebView (zero extra engine bytes)
-- `adblock-rust` for native filter-list blocking — uBlock Origin's lists and syntax, without the 190 MB Gecko engine
-- Readability.js injected in-page for clean text extraction
-- Kilo Gateway (OpenAI-compatible) as the default AI backend, BYOK for anything OpenAI-compatible
-- MiniLM ONNX via sherpa-onnx for on-device semantic search
-
-## Design language
-
-AMOLED black, frosted glass, everything is a pill, spring physics on every overlay. Design tokens live in [`docs/DESIGN.md`](docs/DESIGN.md).
-
-## Status
-
-Early scaffolding. First module going in: reader + summarizer pipeline.
+Its application ID is `org.midorinext.android.synctest`. Physical interoperability
+tests require the Desktop checkout, a local Sync server on port 8000, and the
+Desktop `scripts/test-sync-android-live.py` runner. That runner resets only this
+isolated test application and uses a synthetic account.

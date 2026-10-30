@@ -1,0 +1,73 @@
+package org.midorinext.android.integration
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.midorinext.android.R
+import org.midorinext.android.newtab.NATIVE_HOME_URL
+import org.midorinext.android.newtab.isNativeHomeUrl
+import org.midorinext.android.preferences.app.AppPreferencesSerializer
+import org.midorinext.android.preferences.app.HomepageOpeningScreen
+import org.midorinext.android.preferences.app.HttpsOnlyLevel
+import org.midorinext.android.ui.browser.TabOpening
+import org.midorinext.android.ui.nav.NavDestination
+
+@RunWith(AndroidJUnit4::class)
+class NavigationTest {
+    @Test
+    fun browserRoutesCarryNewTabIntent() {
+        assertEquals("browse?openNewTab=NONE", NavDestination.Browser.route())
+        assertEquals("browse?openNewTab=NORMAL", NavDestination.Browser.route(TabOpening.NORMAL))
+        assertEquals("browse?openNewTab=PRIVATE", NavDestination.Browser.route(TabOpening.PRIVATE))
+    }
+
+    @Test
+    fun settingsRoutesExposePersonalizationSections() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        assertEquals("settings/homepage", NavDestination.HomepageSettings.route())
+        assertEquals("settings/customize", NavDestination.CustomizeSettings.route())
+        assertEquals("settings/passwords", NavDestination.PasswordSettings.route())
+        assertEquals("settings/autofill", NavDestination.AutofillSettings.route())
+        assertEquals("settings/passwords/saved", NavDestination.SavedPasswords.route())
+        assertEquals("settings/autofill/saved", NavDestination.SavedAutofill.route())
+        assertEquals("settings/accessibility", NavDestination.AccessibilitySettings.route())
+        assertEquals("New Tab", context.getString(R.string.settings_homepage_title))
+        assertEquals("Customize", context.getString(R.string.settings_customize_title))
+        assertEquals("Passwords", context.getString(R.string.settings_passwords_title))
+        assertEquals("Autofill", context.getString(R.string.settings_autofill_title))
+        assertEquals("Accessibility", context.getString(R.string.settings_accessibility_title))
+    }
+
+    @Test
+    fun settingsDefaultsKeepBrowserBehaviorConsistent() {
+        val defaults = AppPreferencesSerializer.defaultValue
+
+        assertFalse(defaults.openBlankNewTab)
+        assertTrue(defaults.pullToRefreshEnabled)
+        assertTrue(defaults.savePasswordsEnabled)
+        assertTrue(defaults.passwordAutofillEnabled)
+        assertFalse(defaults.autofillAddressesEnabled)
+        assertFalse(defaults.accessibilityAutomaticFontSizing)
+        assertEquals(100, defaults.accessibilityFontScale)
+        assertFalse(defaults.accessibilityForceZoomEnabled)
+        assertEquals(HttpsOnlyLevel.ALL_TABS, defaults.httpsOnlyLevel)
+        assertTrue(defaults.httpsOnlyAllTabsMigrationCompleted)
+        assertEquals(HomepageOpeningScreen.HOMEPAGE_AFTER_FOUR_HOURS, defaults.homepageOpeningScreen)
+    }
+
+    @Test
+    fun newTabUsesNativeResourcesWithoutTheRetiredWebBundle() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertTrue(isNativeHomeUrl(NATIVE_HOME_URL))
+        assertFalse(context.assets.list("extensions").orEmpty().contains("midori_newtab"))
+        assertTrue(context.getString(R.string.home_shortcuts).isNotBlank())
+        assertTrue(context.getString(R.string.home_recent_visits).isNotBlank())
+    }
+
+
+}

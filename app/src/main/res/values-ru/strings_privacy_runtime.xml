@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="native_blocker_title">Блокировщик Midori</string>
+    <string name="native_blocker_blocked_count">Заблокировано на этой странице: %1$d</string>
+    <string name="native_blocker_site_on">Защита включена для этого сайта.</string>
+    <string name="native_blocker_site_off">Защита отключена для этого сайта.</string>
+    <string name="native_blocker_enable_site">Включить для этого сайта</string>
+    <string name="native_blocker_disable_site">Отключить для этого сайта</string>
+    <string name="privacy_setting_fingerprinting_label">Защита от отпечатков пальцев</string>
+    <string name="privacy_setting_gpc_label">Глобальный контроль конфиденциальности (GPC)</string>
+    <string name="privacy_setting_cookie_partitioning_label">Разделение файлов cookie</string>
+    <string name="settings_enhanced_tracking_protection_label">Улучшенная защита от отслеживания</string>
+    <string name="settings_enhanced_tracking_protection_description">Firefox защищает вас от многих наиболее распространенных трекеров, которые следят за тем, что вы делаете в Интернете.</string>
+    <string name="settings_tracking_protection_standard">Стандартный (по умолчанию)</string>
+    <string name="settings_tracking_protection_standard_desc">Страницы загружаются нормально, но блокируют меньше трекеров.</string>
+    <string name="settings_tracking_protection_strict">Строгий</string>
+    <string name="settings_tracking_protection_strict_desc">Более надежная защита от отслеживания и более высокая производительность, но некоторые сайты могут работать некорректно.</string>
+    <string name="settings_tracking_protection_custom">Пользовательский</string>
+    <string name="settings_tracking_protection_custom_desc">Выберите, какие трекеры и скрипты блокировать.</string>
+    <string name="settings_total_cookie_protection">Расскажите веб-сайтам, чтобы они не делились и не продавали данные</string>
+    <string name="settings_https_only_mode_label">Режим «Только HTTPS»</string>
+    <string name="settings_https_only_mode_description">Автоматически пытается подключиться к сайтам, используя протокол шифрования HTTPS для повышения безопасности.</string>
+    <string name="settings_https_only_off">Выкл.</string>
+    <string name="settings_https_only_off_desc">Используйте DNS-преобразователь по умолчанию</string>
+    <string name="settings_https_only_all_tabs">Включить во всех вкладках</string>
+    <string name="settings_https_only_private_tabs">Включать только в личных вкладках</string>
+    <string name="settings_dns_over_https_label">DNS через HTTPS</string>
+    <string name="settings_dns_over_https_description">Система доменных имен (DNS) через HTTPS отправляет ваш запрос на доменное имя через зашифрованное соединение, обеспечивая безопасный DNS и затрудняя другим возможность увидеть, к какому веб-сайту вы собираетесь получить доступ.</string>
+    <string name="settings_dns_over_https_default">Защита по умолчанию</string>
+    <string name="settings_dns_over_https_default_desc">Firefox решает, когда использовать безопасный DNS, чтобы защитить вашу конфиденциальность.</string>
+    <string name="settings_dns_over_https_increased">Повышенная защита</string>
+    <string name="settings_dns_over_https_increased_desc">Вы сами контролируете, когда использовать безопасный DNS, и выбираете своего провайдера.</string>
+    <string name="settings_dns_over_https_max">Максимальная защита</string>
+    <string name="settings_dns_over_https_max_desc">Firefox всегда будет использовать безопасный DNS. Прежде чем мы воспользуемся DNS вашей системы, вы увидите предупреждение об угрозе безопасности.</string>
+    <string name="settings_dns_over_https_exceptions">Исключения</string>
+</resources>

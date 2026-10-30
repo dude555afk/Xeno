@@ -1,0 +1,768 @@
+package org.midorinext.android.ui.browser
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import org.midorinext.android.adblock.DesktopHostFilter
+import org.midorinext.android.adblock.BlockingLevel
+import org.midorinext.android.adblock.NativeContentBlockingFeature
+import org.midorinext.android.adblock.hostOf
+import org.midorinext.android.mozac.pdf.PdfSaveEvents
+import org.midorinext.android.mozac.media.BackgroundPlaybackFeature
+import org.midorinext.android.pwa.WebAppRepository
+import org.midorinext.android.vpn.MidoriVpnFeature
+import org.midorinext.android.preferences.app.AppPreferencesRepository
+import org.midorinext.android.preferences.app.AppPreferencesSerializer
+import org.midorinext.android.storage.bookmarks.BookmarksRepository
+import org.midorinext.android.storage.autofill.LoginAutofillRepository
+import org.midorinext.android.ui.browser.toolbar.BrowserToolbarState
+import org.midorinext.android.ui.browser.toolbar.BrowserToolbarStateFactory
+import org.midorinext.android.usecases.MidoriUseCases
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import mozilla.components.browser.engine.gecko.permission.GeckoSitePermissionsStorage
+import mozilla.components.browser.icons.BrowserIcons
+import mozilla.components.browser.state.selector.selectedTab
+import mozilla.components.browser.state.action.TranslationsAction
+import mozilla.components.browser.state.action.EngineAction
+import mozilla.components.browser.state.state.WebExtensionState
+import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.pageextraction.ContentParams
+import mozilla.components.concept.engine.translate.Language
+import mozilla.components.concept.engine.translate.LanguageSetting
+import mozilla.components.concept.engine.translate.TranslationOptions
+import mozilla.components.concept.engine.translate.TranslationPageSettingOperation
+import mozilla.components.concept.fetch.Client
+import mozilla.components.feature.contextmenu.ContextMenuUseCases
+import mozilla.components.feature.downloads.DownloadsUseCases
+import mozilla.components.feature.downloads.FileSizeFormatter
+import mozilla.components.feature.downloads.manager.DownloadManager
+import mozilla.components.feature.pwa.WebAppUseCases
+import mozilla.components.feature.pwa.ext.installableManifest
+import mozilla.components.feature.session.SessionUseCases
+import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.lib.state.ext.flow
+import mozilla.components.support.ktx.kotlin.isUrl
+import mozilla.components.support.ktx.kotlin.toNormalizedUrl
+import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
+import javax.inject.Inject
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class BrowserScreenViewModel @Inject constructor(
+    bookmarksRepositoryProvider: dagger.Lazy<BookmarksRepository>,
+    webAppUseCasesProvider: dagger.Lazy<WebAppUseCases>,
+    val sessionUseCases: SessionUseCases,
+    val tabsUseCases: TabsUseCases,
+    val contextMenuUseCases: ContextMenuUseCases,
+    val downloadUseCases: DownloadsUseCases,
+    val fileSizeFormatter: FileSizeFormatter,
+    permissionStorageProvider: dagger.Lazy<GeckoSitePermissionsStorage>,
+    val browserIcons: BrowserIcons,
+    downloadManagerProvider: dagger.Lazy<DownloadManager>,
+    val store: BrowserStore,
+    val engine: Engine,
+    val client: Client,
+    val MidoriUseCases: MidoriUseCases,
+    private val appPreferencesRepository: AppPreferencesRepository,
+    val pdfSaveEvents: PdfSaveEvents,
+    val loginRepository: LoginAutofillRepository,
+    private val backgroundPlaybackFeature: BackgroundPlaybackFeature,
+    webAppRepositoryProvider: dagger.Lazy<WebAppRepository>,
+    private val desktopHostFilter: DesktopHostFilter,
+    private val contentBlocking: NativeContentBlockingFeature,
+): ViewModel() {
+    private val bookmarksRepository by lazy { bookmarksRepositoryProvider.get() }
+    private val webAppUseCases by lazy { webAppUseCasesProvider.get() }
+    private val webAppRepository by lazy { webAppRepositoryProvider.get() }
+    val permissionStorage by lazy { permissionStorageProvider.get() }
+    val downloadManager by lazy { downloadManagerProvider.get() }
+    data class TranslationSheetState(
+        val enabled: Boolean = false,
+        val sourceLanguage: String? = null,
+        val targetLanguage: String? = null,
+        val sourceLanguages: List<Language> = emptyList(),
+        val targetLanguages: List<Language> = emptyList(),
+        val offerTranslation: Boolean = true,
+        val alwaysTranslateSource: Boolean = false,
+        val neverTranslateSource: Boolean = false,
+        val neverTranslateSite: Boolean = false,
+    )
+
+    data class SelectedTabSnapshot(
+        val id: String,
+        val url: String,
+        val engineReady: Boolean,
+        val private: Boolean,
+    )
+
+    data class ReaderModeStatus(
+        val isAvailable: Boolean = false,
+        val isActive: Boolean = false,
+    )
+
+    data class InstalledMenuExtension(
+        val id: String,
+        val name: String,
+        val badgeText: String?,
+        val hasBrowserAction: Boolean,
+    )
+
+    @Inject lateinit var toolbarStateFactory: BrowserToolbarStateFactory
+    val toolbarState: BrowserToolbarState by lazy {
+        toolbarStateFactory.create(viewModelScope)
+    }
+
+    val tabCount = store.flow()
+        .ifAnyChanged { s -> arrayOf(s.tabs.size, s.selectedTab?.content?.private) }
+        .map { state -> state.tabs.count { it.content.private == state.selectedTab?.content?.private } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = store.state.tabs.count {
+                it.content.private == store.state.selectedTab?.content?.private
+            }
+        )
+
+    val tabStripTabs = store.flow()
+        .map { state ->
+            state.tabs.filter { it.content.private == (state.selectedTab?.content?.private == true) }
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = store.state.tabs.filter {
+                it.content.private == (store.state.selectedTab?.content?.private == true)
+            }
+        )
+
+    val isFullScreen = store.flow()
+        .map { state -> state.selectedTab?.content?.fullScreen == true }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    fun selectTab(tabId: String) {
+        tabsUseCases.selectTab(tabId)
+    }
+
+    fun closeTab(tabId: String) {
+        tabsUseCases.removeTab(tabId)
+    }
+
+    private val urlFlow = store.flow()
+        .map { state -> state.selectedTab?.content?.url }
+        .distinctUntilChanged()
+
+    val currentUrl = urlFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = store.state.selectedTab?.content?.url
+        )
+
+    val restoreComplete = store.flow()
+        .map { state -> state.restoreComplete }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = store.state.restoreComplete,
+        )
+
+    val selectedTabSnapshot = store.flow()
+        .map { state ->
+            state.selectedTab?.let { tab ->
+                SelectedTabSnapshot(tab.id, tab.content.url,
+                    tab.engineState.engineSession != null && !tab.engineState.initializing && !tab.content.loading,
+                    tab.content.private)
+            }
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = store.state.selectedTab?.let {
+                SelectedTabSnapshot(it.id, it.content.url,
+                    it.engineState.engineSession != null && !it.engineState.initializing && !it.content.loading,
+                    it.content.private)
+            },
+        )
+
+    val readerModeStatus = store.flow()
+        .map { state ->
+            state.selectedTab?.let { tab ->
+                ReaderModeStatus(
+                    // Midori offers Reader View for every regular web document. The bundled
+                    // extension falls back to a text-first extraction when Mozilla Readability's
+                    // conservative article detector cannot produce a result.
+                    isAvailable = tab.content.url.startsWith("http://", ignoreCase = true) ||
+                        tab.content.url.startsWith("https://", ignoreCase = true),
+                    isActive = tab.readerState.active,
+                )
+            } ?: ReaderModeStatus()
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = ReaderModeStatus(),
+        )
+
+    val appPreferences = appPreferencesRepository.snapshot.filterNotNull()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = appPreferencesRepository.snapshot.value ?: AppPreferencesSerializer.defaultValue
+        )
+
+    private val tabsWithUserNavigationInFlight = mutableSetOf<String>()
+
+    init {
+        viewModelScope.launch {
+            store.flow().collect { state ->
+                if (tabsWithUserNavigationInFlight.isEmpty()) return@collect
+                val replaceableTabIds = state.tabs
+                    .filter { tab ->
+                        MidoriUseCases.isLegacyNewTabUrl(tab.content.url)
+                    }
+                    .mapTo(mutableSetOf()) { tab -> tab.id }
+                tabsWithUserNavigationInFlight.retainAll(replaceableTabIds)
+            }
+        }
+        viewModelScope.launch {
+            combine(store.flow(), desktopHostFilter.settings.state) { state, config ->
+                state.tabs.mapNotNull { tab ->
+                    val session = tab.engineState.engineSession ?: return@mapNotNull null
+                    val host = hostOf(tab.content.url) ?: return@mapNotNull null
+                    val shouldIgnore = config.siteLevels[host] == BlockingLevel.OFF
+                    if (shouldIgnore == tab.trackingProtection.ignoredOnTrackingProtection) null
+                    else Triple(session, tab.content.private, shouldIgnore)
+                }
+            }.distinctUntilChanged().collect { changes ->
+                changes.forEach { (session, private, shouldIgnore) ->
+                    if (shouldIgnore) engine.trackingProtectionExceptionStore.add(session, private)
+                    else engine.trackingProtectionExceptionStore.remove(session)
+                }
+            }
+        }
+    }
+
+    val legacyNewTabOrigins = MidoriUseCases.legacyNewTabOrigins
+
+    fun prepareNativeHomeSession(tabId: String?) {
+        val tab = store.state.tabs.firstOrNull { it.id == tabId } ?: return
+        if (MidoriUseCases.isNewTabUrl(tab.content.url) && tab.engineState.engineSession == null) {
+            store.dispatch(EngineAction.CreateEngineSessionAction(tab.id))
+        }
+    }
+
+    fun openHomeUrl(url: String) {
+        markSelectedNewTabAsUserNavigation()
+        toolbarState.updateFocus(false)
+        sessionUseCases.loadUrl(url)
+    }
+
+    fun keepPlayingMediaActive() {
+        backgroundPlaybackFeature.reassertPlayingSession()
+    }
+
+    fun keepPlayingMediaWhileSurfaceIsHidden() {
+        backgroundPlaybackFeature.onBrowserSurfaceHidden()
+    }
+
+    fun onBrowserSurfaceVisible() {
+        backgroundPlaybackFeature.onBrowserSurfaceVisible()
+    }
+
+    val currentEngineSession = store.flow()
+        .map { state -> state.selectedTab?.engineState?.engineSession }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = null
+        )
+
+    val canTranslateCurrentPage = combine(store.flow(), appPreferences) { state, preferences ->
+            val tab = state.selectedTab
+            // Language detection can arrive after the page menu is opened. Keep the action
+            // available for normal pages and let translateCurrentPage wait for Gecko's detected
+            // language pair before starting the native translation.
+            !preferences.translationsDisabled && tab != null && !tab.content.private
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val translationSheetState = combine(store.flow(), appPreferences) { state, preferences ->
+            val tab = state.selectedTab
+            val detectedLanguages = tab?.translationsState?.translationEngineState?.detectedLanguages
+            val supportedLanguages = state.translationEngine.supportedLanguages
+            val sourceLanguage = detectedLanguages?.documentLangTag?.takeIf { it.isNotBlank() }
+            val languageSetting = sourceLanguage?.let { state.translationEngine.languageSettings?.get(it) }
+
+            TranslationSheetState(
+                enabled = !preferences.translationsDisabled && tab != null && !tab.content.private,
+                sourceLanguage = sourceLanguage,
+                targetLanguage = detectedLanguages?.userPreferredLangTag?.takeIf { it.isNotBlank() },
+                sourceLanguages = supportedLanguages?.fromLanguages.orEmpty().distinctBy { it.code },
+                targetLanguages = supportedLanguages?.toLanguages.orEmpty().distinctBy { it.code },
+                offerTranslation = state.translationEngine.offerTranslation ?: true,
+                alwaysTranslateSource = languageSetting == LanguageSetting.ALWAYS,
+                neverTranslateSource = languageSetting == LanguageSetting.NEVER,
+                neverTranslateSite = tab?.translationsState?.pageSettings?.neverTranslateSite ?: false,
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = TranslationSheetState()
+        )
+
+    var isUrlBookmarked = urlFlow
+        .filterNotNull()
+        .flatMapLatest { bookmarksRepository.isUrlBookmarkedFlow(it) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    fun addBookmark() {
+        store.state.selectedTab?.let { tab ->
+            viewModelScope.launch(Dispatchers.IO) {
+                bookmarksRepository.addItem(
+                    parentGuid = bookmarksRepository.root.guid,
+                    url = tab.content.url,
+                    title = tab.content.title,
+                    position = null
+                )
+            }
+        }
+    }
+
+    fun removeBookmark() {
+        store.state.selectedTab?.content?.url?.let { url ->
+            viewModelScope.launch(Dispatchers.IO) {
+                bookmarksRepository.deleteBookmarksByUrl(url)
+            }
+        }
+    }
+
+    val canGoBackInPage = store.flow()
+        .map { state -> state.selectedTab?.content?.canGoBack ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val hasParentTab = store.flow()
+        .map { state ->
+            val parentId = state.selectedTab?.parentId
+            parentId != null && state.tabs.any { it.id == parentId }
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val canGoBack = store.flow()
+        .map { state ->
+            val tab = state.selectedTab
+            tab?.content?.canGoBack == true ||
+                (tab?.parentId != null && state.tabs.any { it.id == tab.parentId })
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val canGoForward = store.flow()
+        .map { state -> state.selectedTab?.content?.canGoForward ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val desktopMode = store.flow()
+        .map { state -> state.selectedTab?.content?.desktopMode ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false
+        )
+
+    val installedMenuExtensions = store.flow()
+        .map { state ->
+            state.extensions.values
+                .filter { !it.isBuiltIn }
+                .map { extension -> extension.toInstalledMenuExtension() }
+                .sortedBy { it.name.lowercase() }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
+
+    val nativeBlockerState = combine(store.flow(), desktopHostFilter.changes) { state, _ ->
+            state.selectedTab?.let { tab ->
+                NativeBlockerState(
+                    blockedCount = tab.trackingProtection.blockedTrackers.size +
+                        desktopHostFilter.blockedCount(tab.engineState.engineSession),
+                    level = desktopHostFilter.settings.current.levelFor(tab.content.url),
+                )
+            } ?: NativeBlockerState()
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = NativeBlockerState(),
+        )
+
+    data class NativeBlockerState(
+        val blockedCount: Int = 0,
+        val level: BlockingLevel = BlockingLevel.TRACKERS_AND_ADS,
+    )
+
+    fun setNativeBlockerLevelForSite(level: BlockingLevel?) {
+        val tab = store.state.selectedTab ?: return
+        val session = tab.engineState.engineSession ?: return
+        val exceptions = engine.trackingProtectionExceptionStore
+        val host = hostOf(tab.content.url) ?: return
+        desktopHostFilter.settings.setSiteLevel(host, level)
+        if ((level ?: desktopHostFilter.settings.current.level) == BlockingLevel.OFF) {
+            exceptions.add(session, tab.content.private)
+        } else {
+            exceptions.remove(session)
+        }
+        val config = desktopHostFilter.settings.current
+        viewModelScope.launch {
+            contentBlocking.awaitConfiguration(config)
+            if (desktopHostFilter.settings.current == config && store.state.tabs.any { it.id == tab.id && it.content.url == tab.content.url }) {
+                sessionUseCases.reload(tab.id)
+            }
+        }
+    }
+
+    val isMidoriVpnActionAvailable = store.flow()
+        .map { state ->
+            val extension = state.extensions[MidoriVpnFeature.EXTENSION_ID]
+            extension?.enabled == true && extension.browserAction?.enabled != false
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false,
+        )
+
+    var showFindInPage by mutableStateOf(false)
+        private set
+
+    val isShortcutSupported by lazy { webAppUseCases.isPinningSupported() }
+
+    val canInstallWebApp = store.flow()
+        .map { state ->
+            state.selectedTab?.let {
+                !it.content.private && it.content.url.startsWith("https://", ignoreCase = true)
+            } == true
+        }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false,
+        )
+
+    fun addShortcutToHomeScreen(onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            runCatching { webAppUseCases.addToHomescreen() }
+                .onSuccess { onResult(true) }
+                .onFailure { onResult(false) }
+        }
+    }
+
+    fun installCurrentPageAsWebApp(onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val session = store.state.selectedTab
+            if (session == null || session.content.private ||
+                !session.content.url.startsWith("https://", ignoreCase = true)) {
+                onResult(false)
+                return@launch
+            }
+            val manifest = session.installableManifest()
+            val success = runCatching {
+                if (manifest != null) {
+                    webAppRepository.install(session, manifest)
+                } else {
+                    webAppRepository.installSite(
+                        session.content.url,
+                        session.content.title.ifBlank { java.net.URI(session.content.url).host ?: session.content.url },
+                        session.content.icon,
+                    )
+                }
+            }.isSuccess
+            onResult(success)
+        }
+    }
+
+    val reloadUrl = sessionUseCases.reload
+    val stopLoading = sessionUseCases.stopLoading
+    fun goBack() {
+        val tab = store.state.selectedTab ?: return
+        if (tab.content.canGoBack) {
+            sessionUseCases.goBack(tab.id)
+        } else {
+            returnToParentTab()
+        }
+    }
+
+    fun returnToParentTab() {
+        val tab = store.state.selectedTab ?: return
+        if (tab.parentId != null && store.state.tabs.any { it.id == tab.parentId }) {
+            tabsUseCases.removeTab(tab.id, selectParentIfExists = true)
+        }
+    }
+    val goForward = sessionUseCases.goForward
+    val requestDesktopSite = sessionUseCases.requestDesktopSite
+
+    fun switchTab(direction: Int) {
+        val selectedTab = store.state.selectedTab ?: return
+        val tabs = store.state.tabs.filter { it.content.private == selectedTab.content.private }
+        if (tabs.size < 2) return
+
+        val currentIndex = tabs.indexOfFirst { it.id == selectedTab.id }
+        if (currentIndex < 0) return
+        val targetIndex = (currentIndex + direction).floorMod(tabs.size)
+        tabsUseCases.selectTab(tabs[targetIndex].id)
+    }
+
+    fun summarizeCurrentPage(onResult: (String) -> Unit, onError: () -> Unit) {
+        currentEngineSession.value?.getPageContent(
+            options = ContentParams(removeBoilerplate = true),
+            onResult = { content -> onResult(compactSummary(content)) },
+            onException = { onError() }
+        ) ?: onError()
+    }
+
+    /** Starts GeckoView's on-device translation after the user confirms its language pair. */
+    fun translateCurrentPage(fromLanguage: String, toLanguage: String): Boolean {
+        val tab = store.state.selectedTab ?: return false
+        if (tab.content.private || appPreferences.value.translationsDisabled) return false
+        if (fromLanguage.isBlank() || toLanguage.isBlank()) return false
+        if (sameLanguage(fromLanguage, toLanguage)) return false
+
+        store.dispatch(
+            TranslationsAction.TranslateAction(
+                tabId = tab.id,
+                fromLanguage = fromLanguage,
+                toLanguage = toLanguage,
+                options = TranslationOptions(downloadModel = true)
+            )
+        )
+        return true
+    }
+
+    fun updateTranslationOffer(enabled: Boolean) {
+        store.dispatch(TranslationsAction.UpdateGlobalOfferTranslateSettingAction(enabled))
+    }
+
+    fun updateAlwaysTranslateSource(enabled: Boolean) {
+        updateTranslationPageSetting(
+            operation = TranslationPageSettingOperation.UPDATE_ALWAYS_TRANSLATE_LANGUAGE,
+            enabled = enabled
+        )
+        if (enabled) {
+            updateTranslationPageSetting(
+                operation = TranslationPageSettingOperation.UPDATE_NEVER_TRANSLATE_LANGUAGE,
+                enabled = false
+            )
+        }
+    }
+
+    fun updateNeverTranslateSource(enabled: Boolean) {
+        updateTranslationPageSetting(
+            operation = TranslationPageSettingOperation.UPDATE_NEVER_TRANSLATE_LANGUAGE,
+            enabled = enabled
+        )
+        if (enabled) {
+            updateTranslationPageSetting(
+                operation = TranslationPageSettingOperation.UPDATE_ALWAYS_TRANSLATE_LANGUAGE,
+                enabled = false
+            )
+        }
+    }
+
+    fun updateNeverTranslateSite(enabled: Boolean) {
+        updateTranslationPageSetting(
+            operation = TranslationPageSettingOperation.UPDATE_NEVER_TRANSLATE_SITE,
+            enabled = enabled
+        )
+    }
+
+    private fun updateTranslationPageSetting(
+        operation: TranslationPageSettingOperation,
+        enabled: Boolean,
+    ) {
+        val tab = store.state.selectedTab ?: return
+        store.dispatch(
+            TranslationsAction.UpdatePageSettingAction(
+                tabId = tab.id,
+                operation = operation,
+                setting = enabled
+            )
+        )
+    }
+
+    fun commitSearch(searchText: String, category: String? = null) {
+        val trimmedSearch = searchText.trim()
+        if (trimmedSearch.isBlank()) {
+            toolbarState.updateFocus(false)
+            return
+        }
+
+        val engineOverride = toolbarState.searchEngineOverride
+        toolbarState.updateFocus(false)
+        markSelectedNewTabAsUserNavigation()
+        if (trimmedSearch.isUrl()) {
+            sessionUseCases.loadUrl(url = trimmedSearch.toNormalizedUrl())
+        } else {
+            if (store.state.selectedTab?.content?.private != true) {
+                viewModelScope.launch {
+                    appPreferencesRepository.recordRecentSearch(trimmedSearch)
+                }
+            }
+            MidoriUseCases.loadSERPPage(
+                trimmedSearch,
+                category,
+                private = store.state.selectedTab?.content?.private == true,
+                engineOverride = engineOverride,
+            )
+        }
+    }
+
+    fun openNewMidoriTab(private: Boolean = false) {
+        toolbarState.updateFocus(false)
+        MidoriUseCases.openMidoriPage(private = private)
+    }
+
+    fun switchBrowsingMode(private: Boolean) {
+        toolbarState.updateFocus(false)
+        MidoriUseCases.openMidoriPage(private = private, selectIfExists = true)
+    }
+
+    fun goToHomepage() {
+        toolbarState.updateFocus(false)
+        store.state.selectedTabId?.let { tabId ->
+            tabsWithUserNavigationInFlight.remove(tabId)
+            MidoriUseCases.loadNewTabPage(tabId)
+        }
+    }
+
+    private fun Int.floorMod(size: Int): Int = ((this % size) + size) % size
+
+    private fun compactSummary(content: String): String {
+        val normalized = content
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (normalized.isBlank()) return ""
+
+        val sentences = normalized
+            .split(Regex("(?<=[.!?])\\s+"))
+            .filter { it.length >= 35 }
+            .take(3)
+        return (if (sentences.isEmpty()) listOf(normalized.take(600)) else sentences)
+            .joinToString(" ")
+            .take(900)
+    }
+
+    fun replaceTabWithNewTab(tabId: String, expectedUrl: String) {
+        if (tabId in tabsWithUserNavigationInFlight) return
+        val tab = store.state.tabs.firstOrNull { it.id == tabId } ?: return
+        if (tab.content.url != expectedUrl || !MidoriUseCases.isLegacyNewTabUrl(tab.content.url)) return
+        if (tab.engineState.initializing || tab.content.loading) return
+        if (tab.engineState.engineSession == null && tab.engineState.engineSessionState != null) return
+
+        MidoriUseCases.loadNewTabPage(tabId, replaceCurrent = true, expectedUrl = expectedUrl,
+            canReplace = { tabId !in tabsWithUserNavigationInFlight })
+    }
+
+    private fun markSelectedNewTabAsUserNavigation(): String? {
+        val tab = store.state.selectedTab ?: return null
+        val isReplaceable = MidoriUseCases.isLegacyNewTabUrl(tab.content.url)
+        if (!isReplaceable) return null
+
+        tabsWithUserNavigationInFlight += tab.id
+        return tab.id
+    }
+
+    fun isNewTabUrl(url: String?): Boolean = MidoriUseCases.isNewTabUrl(url)
+
+    fun isNewTabLoadingUrl(url: String?): Boolean = MidoriUseCases.isNewTabLoadingUrl(url)
+
+    private var safetyTabOpening = false
+
+    fun openSafetyTabIfNeeded() {
+        if (!store.state.restoreComplete || store.state.tabs.isNotEmpty() || safetyTabOpening) {
+            return
+        }
+
+        safetyTabOpening = true
+        viewModelScope.launch {
+            try {
+                toolbarState.updateFocus(false)
+                MidoriUseCases.openMidoriPage(onlyIfEmpty = true).join()
+            } finally {
+                safetyTabOpening = false
+            }
+        }
+    }
+
+    fun updateShowFindInPage(show: Boolean) {
+        toolbarState.updateVisibility(!show)
+        showFindInPage = show
+    }
+
+    fun triggerInstalledExtensionAction(extensionId: String) {
+        viewModelScope.launch(Dispatchers.Main) {
+            val extension = store.state.extensions[extensionId] ?: return@launch
+            val action = extension.browserAction
+            if (extension.enabled && action?.enabled != false) {
+                action?.onClick?.invoke()
+            }
+        }
+    }
+
+    private fun WebExtensionState.toInstalledMenuExtension(): InstalledMenuExtension {
+        val displayName = name?.takeIf { it.isNotBlank() } ?: id
+        return InstalledMenuExtension(
+            id = id,
+            name = displayName,
+            badgeText = browserAction?.badgeText,
+            hasBrowserAction = browserAction != null,
+        )
+    }
+}
+
+private fun sameLanguage(first: String?, second: String?): Boolean =
+    first?.substringBefore('-')?.equals(second?.substringBefore('-'), ignoreCase = true) == true

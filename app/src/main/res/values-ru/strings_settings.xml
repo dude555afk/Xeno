@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_favicon_label">Отображение значков сайта</string>
+    <string name="toolbar_position_label">Панель инструментов</string>
+    <string name="available_toolbar_position_top">Наверху</string>
+    <string name="available_toolbar_position_bottom">Внизу</string>
+    <string name="hide_toolbar_on_scroll_label">Скрыть панель инструментов при прокрутке</string>
+    <string name="appearance_label">Внешний вид</string>
+    <string name="available_appearance_system">Автоматический</string>
+    <string name="cleardata_storage">Хранение</string>
+    <string name="settings">Настройки</string>
+    <string name="settings_group_general">Общий</string>
+    <string name="settings_group_langue">Язык</string>
+    <string name="settings_group_privacy">Конфиденциальность</string>
+    <string name="settings_group_about">О</string>
+    <string name="default_browser_label">Установить браузером по умолчанию</string>
+    <string name="tabs_view_label">Настройки вкладки</string>
+    <string name="tab_strip_label">Показывать панель вкладок</string>
+    <string name="tab_strip_description">Показывать открытые вкладки в верхней части браузера.</string>
+    <string name="close_tabs_on_exit_label">Закрывать вкладки при выходе</string>
+    <string name="close_tabs_on_exit_description">Закрывать все вкладки при выходе из Midori или удалении его из списка недавних приложений. При следующем запуске откроется новая вкладка.</string>
+    <string name="available_tabs_view_grid">Сетка</string>
+    <string name="available_tabs_view_list">Список</string>
+    <string name="settings_all">Все настройки</string>
+    <string name="settings_on">Вкл.</string>
+    <string name="settings_off">Выкл.</string>
+    <string name="settings_homepage_title">Новая вкладка</string>
+    <string name="settings_homepage_summary">Ярлыки, виджеты, пространства, темы и фоны</string>
+    <string name="settings_homepage_sections">Новая вкладка Мидори</string>
+    <string name="settings_homepage_midori_tab">Персонализируйте свою новую вкладку</string>
+    <string name="settings_homepage_midori_tab_description">Откройте новую вкладку и используйте кнопку «Настройки» для управления ярлыками, виджетами, пространствами, языком, темой и фоном. Ваш выбор останется на этом устройстве.</string>
+    <string name="settings_customize_title">Настроить</string>
+    <string name="settings_customize_summary">Тема, панель инструментов, вкладки и жесты</string>
+    <string name="settings_customize_gestures">Жесты</string>
+    <string name="settings_translations_title">Переводы</string>
+    <string name="settings_translations_summary">Частные переводы веб-сайтов на устройстве</string>
+    <string name="settings_translations_enabled">Переводы</string>
+    <string name="settings_translations_enabled_summary">Переводы остаются конфиденциальными на вашем устройстве.</string>
+    <string name="settings_translations_offer">Предложите перевести, если это возможно.</string>
+    <string name="settings_translations_data_saver">Всегда скачивайте языки в режиме экономии данных</string>
+    <string name="settings_translations_preferences">Настройки перевода</string>
+    <string name="settings_translations_automatic">Автоматический перевод</string>
+    <string name="settings_translations_automatic_none">Языки не выбраны</string>
+    <string name="settings_translations_never_sites">Никогда не переводите эти сайты</string>
+    <string name="settings_translations_never_sites_none">Ни один сайт не исключен</string>
+    <string name="settings_translations_never_sites_count">Сайты %1$d исключены</string>
+    <string name="settings_translations_download_languages">Скачать языки</string>
+    <string name="settings_translations_downloaded_count">%1$d языки загружены</string>
+    <string name="settings_translations_manage_automatic">Всегда переводите эти языки</string>
+    <string name="settings_translations_manage_automatic_summary">Выберите языки, которые должны быть переведены автоматически.</string>
+    <string name="settings_translations_manage_sites">Никогда не переводите сайты</string>
+    <string name="settings_translations_manage_sites_empty">Здесь появятся сайты, которые вы исключили при переводе страницы.</string>
+    <string name="settings_translations_remove">Удалить</string>
+    <string name="settings_translations_manage_downloads">Скачать языки</string>
+    <string name="settings_translations_manage_downloads_summary">Загрузите языковые модели для частных переводов в автономном режиме.</string>
+    <string name="settings_translations_done">Готово</string>
+    <string name="settings_translations_model_downloading">Загрузка</string>
+    <string name="settings_translations_model_downloaded">Скачано</string>
+    <string name="settings_pull_to_refresh">Потяните, чтобы обновить</string>
+    <string name="settings_shake_to_summarize_summary">Подведение итогов текущей страницы при встряхивании устройства.</string>
+    <string name="settings_notifications_open_system_summary">Выберите категории уведомлений, которые может использовать Midori.</string>
+    <string name="settings_passwords_title">Пароли</string>
+    <string name="settings_save_passwords">Сохраняйте пароли</string>
+    <string name="settings_save_passwords_desc">Спросите, прежде чем сохранять логины сайта.</string>
+    <string name="settings_password_autofill">Автозаполнение в Мидори</string>
+    <string name="settings_password_autofill_desc">Заполните сохраненные имена пользователей и пароли на веб-сайтах.</string>
+    <string name="settings_passwords_manage">Управление</string>
+    <string name="settings_saved_passwords">Сохраненные пароли</string>
+    <string name="settings_password_exceptions">Исключения</string>
+    <string name="settings_secure_store_required">Прежде чем в нем можно будет хранить данные, требуется безопасное хранилище.</string>
+    <string name="settings_autofill_title">Автозаполнение</string>
+    <string name="settings_autofill_addresses">Адреса</string>
+    <string name="settings_autofill_save_addresses">Сохраните и заполните адреса</string>
+    <string name="settings_autofill_save_addresses_desc">Включает номера телефонов и адреса электронной почты.</string>
+    <string name="settings_autofill_add_address">Добавить адрес</string>
+    <string name="settings_autofill_cards">Способы оплаты</string>
+    <string name="settings_autofill_save_cards">Сохраните и заполните способы оплаты</string>
+    <string name="settings_autofill_save_cards_desc">Перед сохранением платежные данные должны храниться в зашифрованном виде.</string>
+    <string name="settings_autofill_add_card">Добавить карту</string>
+    <string name="settings_accessibility_title">Доступность</string>
+    <string name="settings_accessibility_auto_font">Использовать размер текста устройства</string>
+    <string name="settings_accessibility_auto_font_desc">Соответствуйте настройкам размера текста Android.</string>
+    <string name="settings_accessibility_font_size">Размер шрифта</string>
+    <string name="settings_accessibility_font_percent">%1$d %%</string>
+    <string name="settings_accessibility_force_zoom">Увеличить масштаб всех веб-сайтов</string>
+    <string name="settings_accessibility_force_zoom_desc">Разрешите масштабирование и масштабирование даже на сайтах, которые пытаются его заблокировать.</string>
+    <string name="available_appearance_dark">Темный</string>
+    <string name="available_appearance_light">Свет</string>
+    <string name="custom_page_color_label">Тема</string>
+    <string name="custom_page_color_disabled_description">Вы не можете изменить цвет темы в темном режиме.</string>
+    <string name="available_custom_page_color_blue">Синий</string>
+    <string name="available_custom_page_color_green">Зеленый</string>
+    <string name="available_custom_page_color_pink">Розовый</string>
+    <string name="available_custom_page_color_purple">Фиолетовый</string>
+    <string name="custom_page_character_label">Персонажи</string>
+    <string name="available_custom_page_character_none">Нет</string>
+    <string name="available_custom_page_character_random">Случайный</string>
+    <string name="available_custom_page_character_doudoune">Дудун</string>
+    <string name="available_custom_page_character_football">Футбол</string>
+    <string name="available_custom_page_character_turtleneck">Водолазка</string>
+    <string name="available_custom_page_character_glasses">Очки</string>
+    <string name="available_custom_page_character_cat">Кот</string>
+    <string name="available_custom_page_character_balloon">Воздушный шар</string>
+    <string name="available_custom_page_character_pull">Потянуть</string>
+    <string name="available_custom_page_character_hat">Шляпа</string>
+    <string name="available_custom_page_character_hands">Руки</string>
+    <string name="show_news_label">Новости на главной странице</string>
+    <string name="show_sponsor_label">Рекламные ярлыки на главной странице</string>
+    <string name="adult_filter_label">Фильтр контента для взрослых</string>
+    <string name="available_adult_filter_none">Нет</string>
+    <string name="available_adult_filter_moderate">Умеренный</string>
+    <string name="available_adult_filter_strict">Строгий</string>
+    <string name="open_links_in_app_label">Открытие ссылок в родном приложении</string>
+    <string name="open_results_in_new_tab_label">Открыть результаты в новой вкладке</string>
+    <string name="search_engine_label">Поисковая система</string>
+    <string name="search_engine_current_midori">АстианГО</string>
+    <string name="search_engine_description">В этой версии встроен поиск Midori.</string>
+    <string name="interface_language_label">Язык интерфейса</string>
+    <string name="available_language_english">английский</string>
+    <string name="available_language_french">французский</string>
+    <string name="available_language_german">немецкий</string>
+    <string name="available_language_italian">итальянский</string>
+    <string name="available_language_spanish">испанский</string>
+    <string name="search_region_label">Регион поиска</string>
+    <string name="available_region_france">Франция</string>
+    <string name="available_region_great_britain">Великобритания</string>
+    <string name="available_region_germany">Германия</string>
+    <string name="available_region_italy">Италия</string>
+    <string name="available_region_argentina">Аргентина</string>
+    <string name="available_region_australia">Австралия</string>
+    <string name="available_region_usa">Соединенные Штаты</string>
+    <string name="available_region_spain_es">Испанский (и)</string>
+    <string name="available_region_spain_ca">Испанский (ок.)</string>
+    <string name="available_region_czech_republic">Чехия</string>
+    <string name="available_region_romania">Румыния</string>
+    <string name="available_region_greece">Греция</string>
+    <string name="available_region_china">Китай</string>
+    <string name="available_region_hong_kong">Гонконг</string>
+    <string name="available_region_new_zealand">Новая Зеландия</string>
+    <string name="available_region_thailand">Таиланд</string>
+    <string name="available_region_south_korea">Южная Корея</string>
+    <string name="available_region_sweden">Швеция</string>
+    <string name="available_region_norway">Норвегия</string>
+    <string name="available_region_denmark">Дания</string>
+    <string name="available_region_hungary">Венгрия</string>
+    <string name="available_region_estonia">Эстония</string>
+    <string name="available_region_mexico">Мексика</string>
+    <string name="available_region_chile">Чили</string>
+    <string name="available_region_canada_en">Канада (en)</string>
+    <string name="available_region_canada_fr">Канада (фр)</string>
+    <string name="available_region_malaysia">Малайзия</string>
+    <string name="available_region_bulgaria">Болгария</string>
+    <string name="available_region_finland">Финляндия</string>
+    <string name="available_region_poland">Польша</string>
+    <string name="available_region_netherlands">Нидерланды</string>
+    <string name="available_region_portugal">Португалия</string>
+    <string name="available_region_switzerland_de">Швейцария (де)</string>
+    <string name="available_region_switzerland_fr">Швейцария (фр)</string>
+    <string name="available_region_switzerland_it">Швейцария (оно)</string>
+    <string name="available_region_austria">Австрия</string>
+    <string name="available_region_belgium_fr">Бельгия (фр.)</string>
+    <string name="available_region_belgium_nl">Бельгия (Нидерланды)</string>
+    <string name="available_region_ireland">Ирландия</string>
+    <string name="cleardata_settings_label">Настройки удаления браузера</string>
+    <string name="cleardata_allsites">Все данные сайтов</string>
+    <string name="cleardata_cache">Кэш</string>
+    <string name="cleardata_cookies">Файлы cookie</string>
+    <string name="cleardata_sessions">Сессии</string>
+    <string name="cleardata_permissions">Разрешения</string>
+    <string name="cleardata_failed">Ошибка удаления данных.</string>
+    <string name="cleardata_tabs">Открыты обычные вкладки</string>
+    <string name="cleardata_tabs_private">Открытые приватные вкладки</string>
+    <string name="cleardata_use_now">Удалить данные</string>
+    <string name="cleardata_confirm_text">Эта кнопка закрывает все ваши вкладки и удаляет все данные просмотра.</string>
+    <string name="cleardata_done">Данные удалены</string>
+    <string name="permissions_settings_label">Разрешения</string>
+    <string name="clear_data_on_quit_label">Удалить данные о прекращении курения</string>
+    <string name="clear_data_on_quit_description">Пожалуйста, используйте кнопку «Выйти из приложения», чтобы убедиться, что она применена.</string>
+    <string name="privacy_policy_label">Политика конфиденциальности</string>
+    <string name="rate_us_label">Оцените это приложение</string>
+    <string name="privacy_policy_url" translatable="false">https://astian.org/astian-privacy-policies/</string>
+    <string name="qwant_details_description" translatable="false">%1$s\nСборка %2$s - Gecko %3$s</string>
+    <string name="settings_tests_label" translatable="false">Тесты</string>
+    <string name="settings_tests_prompts_label" translatable="false">Подсказки</string>
+    <string name="licence_label" translatable="false">Лицензия МПЛ 2.0</string>
+    <string name="settings_licence_content" translatable="false"><![CDATA[
+        <h2 id="definitions">1. Definitions</h2><br/>
+        <dl>
+        <dt>1.1. “Contributor”</dt>
+        <dd><p>means each individual or legal entity that creates, contributes to the creation of, or owns Covered Software.</p>
+        </dd><br/>
+        <dt>1.2. “Contributor Version”</dt>
+        <dd><p>means the combination of the Contributions of others (if any) used by a Contributor and that particular Contributor’s Contribution.</p>
+        </dd><br/>
+        <dt>1.3. “Contribution”</dt>
+        <dd><p>means Covered Software of a particular Contributor.</p>
+        </dd><br/>
+        <dt>1.4. “Covered Software”</dt>
+        <dd><p>means Source Code Form to which the initial Contributor has attached the notice in Exhibit A, the Executable Form of such Source Code Form, and Modifications of such Source Code Form, in each case including portions thereof.</p>
+        </dd><br/>
+        <dt>1.5. “Incompatible With Secondary Licenses”</dt>
+        <dd><p>means</p>
+        <ol type="a">
+        <li><p>that the initial Contributor has attached the notice described in Exhibit B to the Covered Software; or</p></li>
+        <li><p>that the Covered Software was made available under the terms of version 1.1 or earlier of the License, but not also under the terms of a Secondary License.</p></li>
+        </ol>
+        </dd><br/>
+        <dt>1.6. “Executable Form”</dt>
+        <dd><p>means any form of the work other than Source Code Form.</p>
+        </dd><br/>
+        <dt>1.7. “Larger Work”</dt>
+        <dd><p>means a work that combines Covered Software with other material, in a separate file or files, that is not Covered Software.</p>
+        </dd><br/>
+        <dt>1.8. “License”</dt>
+        <dd><p>means this document.</p>
+        </dd><br/>
+        <dt>1.9. “Licensable”</dt>
+        <dd><p>means having the right to grant, to the maximum extent possible, whether at the time of the initial grant or subsequently, any and all of the rights conveyed by this License.</p>
+        </dd><br/>
+        <dt>1.10. “Modifications”</dt>
+        <dd><p>means any of the following:</p>
+        <ol type="a"><br/>
+        <li><p>any file in Source Code Form that results from an addition to, deletion from, or modification of the contents of Covered Software; or</p></li>
+        <li><p>any new file in Source Code Form that contains any Covered Software.</p></li>
+        </ol>
+        </dd><br/>
+        <dt>1.11. “Patent Claims” of a Contributor</dt>
+        <dd><p>means any patent claim(s), including without limitation, method, process, and apparatus claims, in any patent Licensable by such Contributor that would be infringed, but for the grant of the License, by the making, using, selling, offering for sale, having made, import, or transfer of either its Contributions or its Contributor Version.</p>
+        </dd><br/>
+        <dt>1.12. “Secondary License”</dt>
+        <dd><p>means either the GNU General Public License, Version 2.0, the GNU Lesser General Public License, Version 2.1, the GNU Affero General Public License, Version 3.0, or any later versions of those licenses.</p>
+        </dd><br/>
+        <dt>1.13. “Source Code Form”</dt>
+        <dd><p>means the form of the work preferred for making modifications.</p>
+        </dd><br/>
+        <dt>1.14. “You” (or “Your”)</dt>
+        <dd><p>means an individual or a legal entity exercising rights under this License. For legal entities, “You” includes any entity that controls, is controlled by, or is under common control with You. For purposes of this definition, “control” means (a) the power, direct or indirect, to cause the direction or management of such entity, whether by contract or otherwise, or (b) ownership of more than fifty percent (50%) of the outstanding shares or beneficial ownership of such entity.</p>
+        </dd><br/>
+        </dl><br/>
+        <h2 id="license-grants-and-conditions">2. License Grants and Conditions</h2><br/>
+        <h3 id="grants">2.1. Grants</h3><br/>
+        <p>Each Contributor hereby grants You a world-wide, royalty-free, non-exclusive license:</p>
+        <ol type="a">
+        <li><p>under intellectual property rights (other than patent or trademark) Licensable by such Contributor to use, reproduce, make available, modify, display, perform, distribute, and otherwise exploit its Contributions, either on an unmodified basis, with Modifications, or as part of a Larger Work; and</p></li>
+        <li><p>under Patent Claims of such Contributor to make, use, sell, offer for sale, have made, import, and otherwise transfer either its Contributions or its Contributor Version.</p></li>
+        </ol><br/>
+        <h3 id="effective-date">2.2. Effective Date</h3><br/>
+        <p>The licenses granted in Section&nbsp;2.1 with respect to any Contribution become effective for each Contribution on the date the Contributor first distributes such Contribution.</p>
+        <br/><h3 id="limitations-on-grant-scope">2.3. Limitations on Grant Scope</h3><br/>
+        <p>The licenses granted in this Section&nbsp;2 are the only rights granted under this License. No additional rights or licenses will be implied from the distribution or licensing of Covered Software under this License. Notwithstanding Section&nbsp;2.1(b) above, no patent license is granted by a Contributor:</p>
+        <ol type="a">
+        <li><p>for any code that a Contributor has removed from Covered Software; or</p></li>
+        <li><p>for infringements caused by: (i) Your and any other third party’s modifications of Covered Software, or (ii) the combination of its Contributions with other software (except as part of its Contributor Version); or</p></li>
+        <li><p>under Patent Claims infringed by Covered Software in the absence of its Contributions.</p></li>
+        </ol>
+        <p>This License does not grant any rights in the trademarks, service marks, or logos of any Contributor (except as may be necessary to comply with the notice requirements in Section&nbsp;3.4).</p>
+        <br/><h3 id="subsequent-licenses">2.4. Subsequent Licenses</h3><br/>
+        <p>No Contributor makes additional grants as a result of Your choice to distribute the Covered Software under a subsequent version of this License (see Section&nbsp;10.2) or under the terms of a Secondary License (if permitted under the terms of Section&nbsp;3.3).</p>
+        <br/><h3 id="representation">2.5. Representation</h3><br/>
+        <p>Each Contributor represents that the Contributor believes its Contributions are its original creation(s) or it has sufficient rights to grant the rights to its Contributions conveyed by this License.</p>
+        <br/><h3 id="fair-use">2.6. Fair Use</h3><br/>
+        <p>This License is not intended to limit any rights You have under applicable copyright doctrines of fair use, fair dealing, or other equivalents.</p>
+        <br/><h3 id="conditions">2.7. Conditions</h3><br/>
+        <p>Sections 3.1, 3.2, 3.3, and 3.4 are conditions of the licenses granted in Section&nbsp;2.1.</p><br/>
+        <h2 id="responsibilities">3. Responsibilities</h2><br/>
+        <h3 id="distribution-of-source-form">3.1. Distribution of Source Form</h3><br/>
+        <p>All distribution of Covered Software in Source Code Form, including any Modifications that You create or to which You contribute, must be under the terms of this License. You must inform recipients that the Source Code Form of the Covered Software is governed by the terms of this License, and how they can obtain a copy of this License. You may not attempt to alter or restrict the recipients’ rights in the Source Code Form.</p>
+        <br/><h3 id="distribution-of-executable-form">3.2. Distribution of Executable Form</h3><br/>
+        <p>If You distribute Covered Software in Executable Form then:</p>
+        <ol type="a">
+        <li><p>such Covered Software must also be made available in Source Code Form, as described in Section&nbsp;3.1, and You must inform recipients of the Executable Form how they can obtain a copy of such Source Code Form by reasonable means in a timely manner, at a charge no more than the cost of distribution to the recipient; and</p></li>
+        <li><p>You may distribute such Executable Form under the terms of this License, or sublicense it under different terms, provided that the license for the Executable Form does not attempt to limit or alter the recipients’ rights in the Source Code Form under this License.</p></li>
+        </ol><br/>
+        <h3 id="distribution-of-a-larger-work">3.3. Distribution of a Larger Work</h3><br/>
+        <p>You may create and distribute a Larger Work under terms of Your choice, provided that You also comply with the requirements of this License for the Covered Software. If the Larger Work is a combination of Covered Software with a work governed by one or more Secondary Licenses, and the Covered Software is not Incompatible With Secondary Licenses, this License permits You to additionally distribute such Covered Software under the terms of such Secondary License(s), so that the recipient of the Larger Work may, at their option, further distribute the Covered Software under the terms of either this License or such Secondary License(s).</p>
+        <br/><h3 id="notices">3.4. Notices</h3><br/>
+        <p>You may not remove or alter the substance of any license notices (including copyright notices, patent notices, disclaimers of warranty, or limitations of liability) contained within the Source Code Form of the Covered Software, except that You may alter any license notices to the extent required to remedy known factual inaccuracies.</p>
+        <br/><h3 id="application-of-additional-terms">3.5. Application of Additional Terms</h3><br/>
+        <p>You may choose to offer, and to charge a fee for, warranty, support, indemnity or liability obligations to one or more recipients of Covered Software. However, You may do so only on Your own behalf, and not on behalf of any Contributor. You must make it absolutely clear that any such warranty, support, indemnity, or liability obligation is offered by You alone, and You hereby agree to indemnify every Contributor for any liability incurred by such Contributor as a result of warranty, support, indemnity or liability terms You offer. You may include additional disclaimers of warranty and limitations of liability specific to any jurisdiction.</p>
+        <br/><h2 id="inability-to-comply-due-to-statute-or-regulation">4. Inability to Comply Due to Statute or Regulation</h2><br/>
+        <p>If it is impossible for You to comply with any of the terms of this License with respect to some or all of the Covered Software due to statute, judicial order, or regulation then You must: (a) comply with the terms of this License to the maximum extent possible; and (b) describe the limitations and the code they affect. Such description must be placed in a text file included with all distributions of the Covered Software under this License. Except to the extent prohibited by statute or regulation, such description must be sufficiently detailed for a recipient of ordinary skill to be able to understand it.</p>
+        <br/><h2 id="termination">5. Termination</h2><br/>
+        <p>5.1. The rights granted under this License will terminate automatically if You fail to comply with any of its terms. However, if You become compliant, then the rights granted under this License from a particular Contributor are reinstated (a) provisionally, unless and until such Contributor explicitly and finally terminates Your grants, and (b) on an ongoing basis, if such Contributor fails to notify You of the non-compliance by some reasonable means prior to 60 days after You have come back into compliance. Moreover, Your grants from a particular Contributor are reinstated on an ongoing basis if such Contributor notifies You of the non-compliance by some reasonable means, this is the first time You have received notice of non-compliance with this License from such Contributor, and You become compliant prior to 30 days after Your receipt of the notice.</p>
+        <br/><p>5.2. If You initiate litigation against any entity by asserting a patent infringement claim (excluding declaratory judgment actions, counter-claims, and cross-claims) alleging that a Contributor Version directly or indirectly infringes any patent, then the rights granted to You by any and all Contributors for the Covered Software under Section&nbsp;2.1 of this License shall terminate.</p>
+        <br/><p>5.3. In the event of termination under Sections&nbsp;5.1 or 5.2 above, all end user license agreements (excluding distributors and resellers) which have been validly granted by You or Your distributors under this License prior to termination shall survive termination.</p>
+        <br/><h2 id="disclaimer-of-warranty">6. Disclaimer of Warranty</h2><br/>
+        <p><em>Covered Software is provided under this License on an “as is” basis, without warranty of any kind, either expressed, implied, or statutory, including, without limitation, warranties that the Covered Software is free of defects, merchantable, fit for a particular purpose or non-infringing. The entire risk as to the quality and performance of the Covered Software is with You. Should any Covered Software prove defective in any respect, You (not any Contributor) assume the cost of any necessary servicing, repair, or correction. This disclaimer of warranty constitutes an essential part of this License. No use of any Covered Software is authorized under this License except under this disclaimer.</em></p>
+        <br/><h2 id="limitation-of-liability">7. Limitation of Liability</h2><br/>
+        <p><em>Under no circumstances and under no legal theory, whether tort (including negligence), contract, or otherwise, shall any Contributor, or anyone who distributes Covered Software as permitted above, be liable to You for any direct, indirect, special, incidental, or consequential damages of any character including, without limitation, damages for lost profits, loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses, even if such party shall have been informed of the possibility of such damages. This limitation of liability shall not apply to liability for death or personal injury resulting from such party’s negligence to the extent applicable law prohibits such limitation. Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so this exclusion and limitation may not apply to You.</em></p>
+        <br/><h2 id="litigation">8. Litigation</h2><br/>
+        <p>Any litigation relating to this License may be brought only in the courts of a jurisdiction where the defendant maintains its principal place of business and such litigation shall be governed by laws of that jurisdiction, without reference to its conflict-of-law provisions. Nothing in this Section shall prevent a party’s ability to bring cross-claims or counter-claims.</p>
+        <br/><h2 id="miscellaneous">9. Miscellaneous</h2><br/>
+        <p>This License represents the complete agreement concerning the subject matter hereof. If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable. Any law or regulation which provides that the language of a contract shall be construed against the drafter shall not be used to construe this License against a Contributor.</p>
+        <br/><h2 id="versions-of-the-license">10. Versions of the License</h2><br/>
+        <h3 id="new-versions">10.1. New Versions</h3><br/>
+        <p>Mozilla Foundation is the license steward. Except as provided in Section&nbsp;10.3, no one other than the license steward has the right to modify or publish new versions of this License. Each version will be given a distinguishing version number.</p>
+        <br/><h3 id="effect-of-new-versions">10.2. Effect of New Versions</h3><br/>
+        <p>You may distribute the Covered Software under the terms of the version of the License under which You originally received the Covered Software, or under the terms of any subsequent version published by the license steward.</p>
+        <br/><h3 id="modified-versions">10.3. Modified Versions</h3><br/>
+        <p>If you create software not governed by this License, and you want to create a new license for such software, you may create and use a modified version of this License if you rename the license and remove any references to the name of the license steward (except to note that such modified license differs from this License).</p>
+        <br/><h3 id="distributing-source-code-form-that-is-incompatible-with-secondary-licenses">10.4. Distributing Source Code Form that is Incompatible With Secondary Licenses</h3>
+        <br/><p>If You choose to distribute Source Code Form that is Incompatible With Secondary Licenses under the terms of this version of the License, the notice described in Exhibit B of this License must be attached.</p>
+        <br/><h2 id="exhibit-a---source-code-form-license-notice">Exhibit A - Source Code Form License Notice</h2><br/>
+        <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.</p>
+        <br/>
+        <p>If it is not possible or desirable to put the notice in a particular file, then You may include the notice in a location (such as a LICENSE file in a relevant directory) where a recipient would be likely to look for such a notice.</p>
+        <br/><p>You may add additional accurate notices of copyright ownership.</p><br/>
+        <h2 id="exhibit-b---incompatible-with-secondary-licenses-notice">Exhibit B - “Incompatible With Secondary Licenses” Notice</h2><br/>
+        <p>This Source Code Form is “Incompatible With Secondary Licenses”, as defined by the Mozilla Public License, v. 2.0.</p>
+    ]]></string>
+    <string name="prompt_save_login_title">Сохранить пароль?</string>
+    <string name="prompt_save_login_description">Сохраните логин для %1$s в Midori.</string>
+    <string name="prompt_fill_login_title">Заполнить пароль?</string>
+    <string name="prompt_fill_login_description">Используйте сохраненный логин для %1$s.</string>
+    <string name="prompt_save_card_title">Сохранить способ оплаты?</string>
+    <string name="prompt_save_card_description">Сохраните карту %1$s в Мидори.</string>
+    <string name="prompt_fill_card_title">Заполнить способ оплаты?</string>
+    <string name="prompt_fill_card_description">Используйте карту %1$s для этой формы.</string>
+    <string name="prompt_fill_address_title">Заполнить адрес?</string>
+    <string name="prompt_fill_address_description">Используйте %1$s для этой формы.</string>
+    <string name="prompt_fill">Заполнить</string>
+    <string name="settings_saved_passwords_secure_desc">Зашифровано и защищено блокировкой вашего устройства</string>
+    <string name="settings_autofill_manage_secure_desc">Управляйте зашифрованной информацией</string>
+    <string name="settings_accessibility_font_disabled_hint">Отключите параметр «Использовать размер текста устройства», чтобы выбрать собственный размер.</string>
+    <string name="settings_accessibility_font_reload_hint">Новый размер используется после перезагрузки страницы.</string>
+    <string name="settings_accessibility_font_reset">Сбросить до 100 %</string>
+    <string name="secure_unlock_subtitle">Используйте свой отпечаток пальца, лицо, PIN-код, графический ключ или пароль.</string>
+    <string name="secure_unlock_description">Ваша конфиденциальная информация остается заблокированной до тех пор, пока Android не подтвердит вашу личность.</string>
+    <string name="secure_unlock_action">Разблокировать</string>
+    <string name="secure_unlock_failed">Не признан. Попробуйте еще раз.</string>
+    <string name="secure_unlock_no_screen_lock">Прежде чем использовать эту безопасную область, установите блокировку экрана в Android.</string>
+    <string name="secure_items_count">%1$d сохранено.</string>
+    <string name="secure_storage_error">Мидори не удалось обновить безопасное хранилище. Попробуйте еще раз.</string>
+    <string name="secure_required_fields">Заполните все обязательные поля.</string>
+    <string name="secure_delete_irreversible">Это невозможно отменить.</string>
+    <string name="passwords_vault_title">Ваше личное хранилище</string>
+    <string name="passwords_vault_description">Пароли на этом устройстве зашифрованы и предлагаются только соответствующим веб-сайтам.</string>
+    <string name="passwords_empty_description">Войдите на веб-сайт и выберите «Сохранить», когда Мидори спросит.</string>
+    <string name="passwords_no_username">Нет имени пользователя</string>
+    <string name="autofill_vault_title">Оплата и контактные данные</string>
+    <string name="autofill_vault_description">Номера карт зашифрованы. Проверка Android требуется каждый раз, когда вы открываете этот экран.</string>
+    <string name="saved_cards_empty_description">Добавьте карту для заполнения поддерживаемых форм оплаты.</string>
+    <string name="saved_cards_delete">Удалить карту</string>
+    <string name="saved_cards_expires">Срок действия истекает %1$02d/%2$d</string>
+    <string name="saved_cards_month">Месяц</string>
+    <string name="saved_cards_year">Год</string>
+    <string name="saved_cards_invalid_number">Введите действительный номер карты.</string>
+    <string name="saved_cards_invalid_expiry">Введите будущую дату истечения срока действия.</string>
+    <string name="saved_cards_encryption_note">Полный номер карты шифруется перед сохранением.</string>
+    <string name="saved_addresses_empty_description">Добавьте адрес, чтобы заполнить поддерживаемые формы связи и доставки.</string>
+    <string name="saved_addresses_delete">Удалить адрес</string>
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_add_to_homescreen">Ajouter à l\'accueil</string>
+    <string name="menu_request_desktop_site">Voir version ordinateur</string>
+    <string name="menu_quit_app">Quitter l\'application</string>
+    <string name="menu_find_in_page">Rechercher dans la page</string>
+    <string name="menu_save_as_pdf">Enregistrer la page au format PDF</string>
+    <string name="menu_save_as_pdf_failed">Impossible d\'enregistrer la page au format PDF</string>
+    <string name="menu_login">Se connecter</string>
+
+    <string name="menu_midori_vpn">MidoriVPN</string>
+    <string name="menu_more_options">Plus d\'options</string>
+    <string name="menu_back_to_main">Principales actions</string>
+    <string name="menu_customize_homepage">Personnaliser la page d’accueil</string>
+    <string name="menu_dismiss_default_prompt">Fermer la suggestion de navigateur par défaut</string>
+    <string name="menu_default_browser_description">Rapide, privé et conçu pour vous.</string>
+</resources>

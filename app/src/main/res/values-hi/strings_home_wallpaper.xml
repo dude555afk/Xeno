@@ -1,0 +1,34 @@
+<resources>
+    <string name="home_wallpaper_title">वॉलपेपर</string>
+    <string name="home_wallpaper_description">अपने आरंभ पृष्ठ के लिए पृष्ठभूमि चुनें।</string>
+    <string name="home_wallpaper_choose">वॉलपेपर चुनें</string>
+    <string name="home_wallpaper_collection">Midori संग्रह</string>
+    <string name="home_wallpaper_preview">पूर्वावलोकन</string>
+    <string name="home_wallpaper_apply">वॉलपेपर लगाएँ</string>
+    <string name="home_wallpaper_selected">चयनित</string>
+    <string name="home_wallpaper_none">थीम के अनुसार</string>
+    <string name="home_wallpaper_save_error">वॉलपेपर सहेजा नहीं जा सका। फिर से प्रयास करें।</string>
+    <string name="home_wallpaper_back">सभी वॉलपेपर</string>
+    <string name="home_wallpaper_load_error">यह वॉलपेपर नहीं खुल सका। कोई दूसरा चुनें।</string>
+    <string name="home_wallpaper_all">सभी</string>
+    <string name="home_wallpaper_nature">प्रकृति</string>
+    <string name="home_wallpaper_space">अंतरिक्ष</string>
+    <string name="home_wallpaper_travel">यात्रा</string>
+    <string name="home_wallpaper_colors">एक रंग वाले बैकग्राउंड</string>
+    <string name="home_wallpaper_black">काला</string>
+    <string name="home_wallpaper_white">सफ़ेद</string>
+    <string name="home_wallpaper_gray">धूसर</string>
+    <string name="home_wallpaper_blue">नीला</string>
+    <string name="home_wallpaper_green">हरा</string>
+    <string name="home_wallpaper_purple">बैंगनी</string>
+    <string name="home_wallpaper_red">लाल</string>
+    <string name="home_wallpaper_coral">मूंगा</string>
+    <string name="home_wallpaper_orange">नारंगी</string>
+    <string name="home_wallpaper_yellow">पीला</string>
+    <string name="home_wallpaper_mint">पुदीना हरा</string>
+    <string name="home_wallpaper_teal">नीला-हरा</string>
+    <string name="home_wallpaper_sky">आसमानी</string>
+    <string name="home_wallpaper_pink">गुलाबी</string>
+    <string name="home_wallpaper_sand">रेतीला</string>
+    <string name="home_wallpaper_brown">भूरा</string>
+</resources>

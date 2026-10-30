@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_wallpaper_title">وال پیپرز</string>
+    <string name="home_wallpaper_description">اپنے ابتدائی صفحے کے لیے پس منظر منتخب کریں۔</string>
+    <string name="home_wallpaper_choose">وال پیپر منتخب کریں</string>
+    <string name="home_wallpaper_collection">Midori کا مجموعہ</string>
+    <string name="home_wallpaper_preview">پیش منظر</string>
+    <string name="home_wallpaper_apply">وال پیپر لگائیں</string>
+    <string name="home_wallpaper_selected">منتخب</string>
+    <string name="home_wallpaper_none">تھیم کی پیروی کریں</string>
+    <string name="home_wallpaper_save_error">وال پیپر محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔</string>
+    <string name="home_wallpaper_back">تمام وال پیپرز</string>
+    <string name="home_wallpaper_load_error">یہ وال پیپر نہیں کھل سکا۔ کوئی اور منتخب کریں۔</string>
+    <string name="home_wallpaper_all">سبھی</string>
+    <string name="home_wallpaper_nature">قدرت</string>
+    <string name="home_wallpaper_space">خلا</string>
+    <string name="home_wallpaper_travel">سفر</string>
+    <string name="home_wallpaper_colors">یک رنگ پس منظر</string>
+    <string name="home_wallpaper_black">سیاہ</string>
+    <string name="home_wallpaper_white">سفید</string>
+    <string name="home_wallpaper_gray">سرمئی</string>
+    <string name="home_wallpaper_blue">نیلا</string>
+    <string name="home_wallpaper_green">سبز</string>
+    <string name="home_wallpaper_purple">جامنی</string>
+    <string name="home_wallpaper_red">سرخ</string>
+    <string name="home_wallpaper_coral">مرجانی</string>
+    <string name="home_wallpaper_orange">نارنجی</string>
+    <string name="home_wallpaper_yellow">پیلا</string>
+    <string name="home_wallpaper_mint">پودینے جیسا سبز</string>
+    <string name="home_wallpaper_teal">نیلگوں سبز</string>
+    <string name="home_wallpaper_sky">آسمانی</string>
+    <string name="home_wallpaper_pink">گلابی</string>
+    <string name="home_wallpaper_sand">ریتلا</string>
+    <string name="home_wallpaper_brown">بھورا</string>
+</resources>
