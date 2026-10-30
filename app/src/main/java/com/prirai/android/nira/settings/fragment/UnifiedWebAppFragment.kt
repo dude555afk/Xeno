@@ -1,0 +1,480 @@
+package com.prirai.android.nira.settings.fragment
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.tabs.TabLayout
+import com.prirai.android.nira.R
+import com.prirai.android.nira.databinding.FragmentUnifiedWebappBinding
+import com.prirai.android.nira.webapp.*
+import com.prirai.android.nira.ext.components
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.content.Intent
+import android.graphics.Bitmap
+import androidx.core.net.toUri
+
+/**
+ * Unified fragment for managing installed PWAs and discovering new ones
+ */
+class UnifiedWebAppFragment : Fragment() {
+
+    private lateinit var binding: FragmentUnifiedWebappBinding
+    private lateinit var installedAdapter: WebAppSettingsMenuAdapter
+    private lateinit var suggestionsAdapter: PwaSuggestionsAdapter
+    private lateinit var suggestionManager: PwaSuggestionManager
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentUnifiedWebappBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        suggestionManager = requireContext().components.pwaSuggestionManager
+        setupUI()
+        setupTabs()
+        setupRecyclerViews()
+        setupObservers()
+    }
+
+    private fun setupUI() {
+        // Title is handled by parent SettingsActivity
+        // No toolbar setup needed
+    }
+
+    private fun setupTabs() {
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(R.string.installed_apps))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(R.string.discover_apps))
+
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                when (tab.position) {
+                    0 -> showInstalledApps()
+                    1 -> showSuggestedApps()
+                }
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+
+        // Select first tab (Installed) by default to trigger initial load
+        binding.tabLayout.selectTab(binding.tabLayout.getTabAt(0))
+    }
+
+    private fun setupRecyclerViews() {
+        // Setup installed apps adapter (Linear layout) with three-dot menu
+        installedAdapter = WebAppSettingsMenuAdapter(
+            lifecycleOwner = viewLifecycleOwner,
+            context = requireContext(),
+            onWebAppClick = { webApp -> launchWebApp(webApp) },
+            onEnableToggle = { webApp, enabled -> toggleWebAppEnabled(webApp, enabled) },
+            onAddShortcut = { webApp -> addShortcut(webApp) },
+            onAssociateProfile = { webApp -> showAssociateProfileDialog(webApp) },
+            onClone = { webApp -> showCloneDialog(webApp) },
+            onClearData = { webApp -> showClearDataConfirmation(webApp) },
+            onUninstall = { webApp -> showUninstallConfirmation(webApp) }
+        )
+
+        // Setup suggestions adapter (Grid layout 4 columns)
+        suggestionsAdapter = PwaSuggestionsAdapter(
+            lifecycleOwner = viewLifecycleOwner,
+            context = requireContext(),
+            onInstallClick = { pwa -> installSuggestedPwa(pwa) }
+        )
+
+        // Set initial layout manager for installed apps
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.setHasFixedSize(true)
+
+        // Set initial adapter for installed apps
+        binding.recyclerView.adapter = installedAdapter
+    }
+
+    private fun setupObservers() {
+        // Observe installed apps - always collecting
+        viewLifecycleOwner.lifecycleScope.launch {
+            requireContext().components.webAppManager.getAllWebApps()
+                .collectLatest { webApps ->
+                    // Update list regardless of tab position
+                    // but only show if on installed tab
+                    installedAdapter.submitList(webApps)
+                    if (binding.tabLayout.selectedTabPosition == 0) {
+                        updateInstalledAppsVisibility(webApps)
+                    }
+                }
+        }
+
+        // Observe suggested apps
+        suggestionManager.suggestedPwas.observe(viewLifecycleOwner) { suggestions ->
+            suggestionsAdapter.submitList(suggestions)
+            if (binding.tabLayout.selectedTabPosition == 1) {
+                updateSuggestionsVisibility(suggestions)
+            }
+        }
+
+        // Load suggestions initially
+        suggestionManager.getAllSuggestedPwas()
+    }
+
+    private fun updateInstalledAppsVisibility(webApps: List<WebAppEntity>) {
+        if (webApps.isEmpty()) {
+            binding.emptyState.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+        } else {
+            binding.emptyState.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    private fun updateSuggestionsVisibility(suggestions: List<PwaSuggestionManager.PwaSuggestion>) {
+        if (suggestions.isEmpty()) {
+            binding.emptyState.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+        } else {
+            binding.emptyState.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    private fun showInstalledApps() {
+        // Switch to linear layout
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.adapter = installedAdapter
+        binding.emptyStateText.text = getString(R.string.no_installed_webapps)
+        // Data is already loaded via observer, just update visibility
+        updateInstalledAppsVisibility(installedAdapter.currentList)
+    }
+
+    private fun showSuggestedApps() {
+        // Switch to grid layout (4 columns)
+        binding.recyclerView.layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 4)
+        binding.recyclerView.adapter = suggestionsAdapter
+        binding.emptyStateText.text = getString(R.string.no_suggested_webapps)
+        // Data is already loaded via observer, just update visibility
+        updateSuggestionsVisibility(suggestionsAdapter.currentList)
+    }
+
+    private fun updateInstalledAppsList(webApps: List<WebAppEntity>) {
+        installedAdapter.submitList(webApps)
+        updateInstalledAppsVisibility(webApps)
+    }
+
+    private fun updateSuggestionsList(suggestions: List<PwaSuggestionManager.PwaSuggestion>) {
+        suggestionsAdapter.submitList(suggestions)
+        updateSuggestionsVisibility(suggestions)
+    }
+
+    // Installed Apps Actions
+    private fun launchWebApp(webApp: WebAppEntity) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            requireContext().components.webAppManager.updateWebAppUsage(webApp.id)
+            val intent = Intent(requireContext(), WebAppActivity::class.java).apply {
+                putExtra(WebAppActivity.EXTRA_WEB_APP_URL, webApp.url)
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun showUninstallConfirmation(webApp: WebAppEntity) {
+        WebAppUninstallDialog(
+            context = requireContext(),
+            webApp = webApp,
+            onConfirm = { uninstallWebApp(webApp) }
+        ).show()
+    }
+
+    private fun uninstallWebApp(webApp: WebAppEntity) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            requireContext().components.webAppManager.uninstallWebApp(webApp.id)
+        }
+    }
+
+    private fun toggleWebAppEnabled(webApp: WebAppEntity, enabled: Boolean) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            requireContext().components.webAppManager.setWebAppEnabled(webApp.id, enabled)
+        }
+    }
+
+    private fun showClearDataConfirmation(webApp: WebAppEntity) {
+        WebAppClearDataDialog(
+            context = requireContext(),
+            webApp = webApp,
+            onConfirm = { clearWebAppData(webApp) }
+        ).show()
+    }
+
+    private fun clearWebAppData(webApp: WebAppEntity) {
+        // Honest UX: this action isn't implemented. GeckoView exposes
+        // `Engine.clearData(BrowsingData)` which could purge site cache /
+        // cookies / DOM storage for the PWA's origin, but wiring that with
+        // per-profile isolation and a confirmation UI is a real feature, not
+        // a one-liner. Until then, don't lie about success.
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+            .setTitle(webApp.name)
+            .setMessage(R.string.web_app_action_not_implemented)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun updatePwaCache(webApp: WebAppEntity) {
+        // Honest UX: same story as clearWebAppData. A real "update cache"
+        // action would need to invalidate the PWA's service-worker cache
+        // scope; mozilla-components doesn't expose a scoped API for this.
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(webApp.name)
+            .setMessage(R.string.web_app_action_not_implemented)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun addShortcut(webApp: WebAppEntity) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                // Load icon with comprehensive fallback strategy
+                val icon = withContext(Dispatchers.IO) {
+                    requireContext().components.webAppManager.loadIconFromFile(webApp.iconUrl)
+                        ?:
+                        com.prirai.android.nira.utils.FaviconLoader.loadFavicon(requireContext(), webApp.url)
+                }
+
+                // Create shortcut using WebAppInstaller
+                val context = requireContext()
+                val shortcut = androidx.core.content.pm.ShortcutInfoCompat.Builder(context, "webapp_${webApp.id}")
+                    .setShortLabel(webApp.name)
+                    .setLongLabel(webApp.name)
+                    .setIntent(Intent(context, WebAppActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        data = webApp.url.toUri()
+                        putExtra(WebAppActivity.EXTRA_WEB_APP_URL, webApp.url)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_NEW_DOCUMENT or
+                                Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                    })
+                    .apply {
+                        if (icon != null) {
+                            setIcon(androidx.core.graphics.drawable.IconCompat.createWithBitmap(icon))
+                        } else {
+                            setIcon(
+                                androidx.core.graphics.drawable.IconCompat.createWithResource(
+                                    context,
+                                    R.drawable.ic_language
+                                )
+                            )
+                        }
+                    }
+                    .build()
+
+                // Request to pin the shortcut
+                androidx.core.content.pm.ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
+                // Shortcut will be added by system - no need to show success dialog
+            } catch (e: Exception) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.shortcut_failed)
+                    .setMessage(e.message ?: "Unknown error")
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            }
+        }
+    }
+
+    // Suggested Apps Actions
+    private fun installSuggestedPwa(pwa: PwaSuggestionManager.PwaSuggestion) {
+        // Get current profile as default
+        val profileManager = com.prirai.android.nira.browser.profile.ProfileManager.getInstance(requireContext())
+        val currentProfile = profileManager.getActiveProfile()
+
+        // Show Material 3 dialog with profile selection (icon loads inside dialog)
+        val dialog = WebAppInstallDialog(
+            context = requireContext(),
+            lifecycleOwner = viewLifecycleOwner,
+            appName = pwa.name,
+            appUrl = pwa.url,
+            appDescription = pwa.description,
+            defaultProfileId = currentProfile.id
+        ) { selectedProfileId ->
+            startInstallation(pwa, selectedProfileId)
+        }
+
+        dialog.show()
+    }
+
+    private fun startInstallation(pwa: PwaSuggestionManager.PwaSuggestion, profileId: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val webAppManager = requireContext().components.webAppManager
+
+                // Check if already installed with same profile
+                if (webAppManager.webAppExists(pwa.url, profileId)) {
+                    androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle(R.string.already_installed)
+                        .setMessage(getString(R.string.web_app_already_installed_profile))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                    return@launch
+                }
+
+                // Load icon for installation using PWA-optimized loader
+                val icon: Bitmap? = withContext(Dispatchers.IO) {
+                    try {
+                        // Use PWA-optimized loader (Google service + fallbacks)
+                        com.prirai.android.nira.utils.FaviconLoader.loadFaviconForPwa(
+                            requireContext(),
+                            pwa.url,
+                            size = 128 // Higher res for installation
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+
+                // Install using WebAppManager with profile
+                webAppManager.installWebApp(
+                    url = pwa.url,
+                    name = pwa.name,
+                    manifestUrl = null,
+                    icon = icon,
+                    themeColor = null,
+                    backgroundColor = null,
+                    profileId = profileId
+                )
+
+                // Create shortcut with the same icon
+                val intent = Intent(requireContext(), WebAppActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    data = pwa.url.toUri()
+                    putExtra(WebAppActivity.EXTRA_WEB_APP_URL, pwa.url)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_NEW_DOCUMENT or
+                            Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                }
+
+                val shortcut = androidx.core.content.pm.ShortcutInfoCompat.Builder(requireContext(), pwa.url)
+                    .setShortLabel(pwa.name)
+                    .setLongLabel(pwa.name)
+                    .setIntent(intent)
+                    .apply {
+                        if (icon != null) {
+                            setIcon(androidx.core.graphics.drawable.IconCompat.createWithBitmap(icon))
+                        } else {
+                            setIcon(
+                                androidx.core.graphics.drawable.IconCompat.createWithResource(
+                                    requireContext(),
+                                    R.drawable.ic_language
+                                )
+                            )
+                        }
+                    }
+                    .build()
+
+                androidx.core.content.pm.ShortcutManagerCompat.requestPinShortcut(requireContext(), shortcut, null)
+
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(getString(R.string.app_installed))
+                    .setMessage(getString(R.string.pwa_installation_complete, pwa.name))
+                    .setPositiveButton(R.string.launch) { _, _ ->
+                        launchSuggestedPwa(pwa)
+                    }
+                    .setNegativeButton(android.R.string.ok, null)
+                    .show()
+
+                // Switch to installed apps tab
+                binding.tabLayout.selectTab(binding.tabLayout.getTabAt(0))
+
+            } catch (e: Exception) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.installation_failed)
+                    .setMessage(e.message ?: "Unknown error")
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            }
+        }
+    }
+
+    private fun launchSuggestedPwa(pwa: PwaSuggestionManager.PwaSuggestion) {
+        val intent = Intent(requireContext(), WebAppActivity::class.java).apply {
+            putExtra(WebAppActivity.EXTRA_WEB_APP_URL, pwa.url)
+        }
+        startActivity(intent)
+    }
+
+
+    // New methods for profile association and cloning
+    private fun showAssociateProfileDialog(webApp: WebAppEntity) {
+        WebAppProfileDialog(
+            context = requireContext(),
+            lifecycleOwner = viewLifecycleOwner,
+            webApp = webApp,
+            onAssociate = { profileId ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    requireContext().components.webAppManager.updateWebApp(
+                        webApp.copy(profileId = profileId)
+                    )
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+                        .setTitle(R.string.success)
+                        .setMessage(R.string.profile_associated)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            }
+        ).show()
+    }
+
+    private fun showCloneDialog(webApp: WebAppEntity) {
+        WebAppCloneDialog(
+            context = requireContext(),
+            lifecycleOwner = viewLifecycleOwner,
+            webApp = webApp,
+            onClone = { name, profileId ->
+                cloneWebApp(webApp, name, profileId)
+            }
+        ).show()
+    }
+
+    private fun cloneWebApp(webApp: WebAppEntity, newName: String, newProfileId: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val webAppManager = requireContext().components.webAppManager
+                webAppManager.installWebApp(
+                    url = webApp.url,
+                    name = newName,
+                    manifestUrl = webApp.manifestUrl,
+                    icon = webAppManager.loadIconFromFile(webApp.iconUrl),
+                    themeColor = webApp.themeColor,
+                    backgroundColor = webApp.backgroundColor,
+                    profileId = newProfileId
+                )
+
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+                    .setTitle(R.string.success)
+                    .setMessage(getString(R.string.web_app_cloned_success, newName))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            } catch (e: Exception) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+                    .setTitle(R.string.error)
+                    .setMessage(e.message ?: getString(R.string.unknown_error))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            }
+        }
+    }
+
+    companion object {
+        fun newInstance(): UnifiedWebAppFragment {
+            return UnifiedWebAppFragment()
+        }
+    }
+}

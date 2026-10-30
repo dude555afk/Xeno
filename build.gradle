@@ -1,0 +1,33 @@
+// Removed buildscript block in favor of plugins block
+
+plugins {
+    alias libs.plugins.android.application apply false
+    alias libs.plugins.google.devtools.ksp apply false
+    alias libs.plugins.navigation.safeargs.kotlin apply false
+    alias libs.plugins.jetbrains.kotlin.plugin.compose apply false
+    alias libs.plugins.jetbrains.kotlin.plugin.serialization apply false
+}
+
+allprojects {
+    repositories {
+        google()
+
+        maven {
+            name = "Mozilla Nightly"
+            url = "https://nightly.maven.mozilla.org/maven2"
+        }
+        maven {
+            name = "Mozilla"
+            url = "https://maven.mozilla.org/maven2"
+        }
+
+        mavenCentral()
+        
+        maven { url = "https://jitpack.io" }
+    }
+}
+
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}
