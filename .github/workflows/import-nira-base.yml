@@ -1,0 +1,112 @@
+name: Import and verify Nira Browser base
+
+on:
+  push:
+    branches:
+      - feature/xeno-nira-browser-base
+    paths:
+      - .github/workflows/import-nira-base.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xeno-nira-base-import
+  cancel-in-progress: false
+
+jobs:
+  import-and-build:
+    name: Import Nira source and run browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Check out isolated Xeno branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/xeno-nira-browser-base
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch pinned Nira Browser source
+        shell: bash
+        env:
+          NIRA_SHA: ef717b65071557e707ffea299aa9a6367f9730ac
+        run: |
+          set -euo pipefail
+          git clone https://github.com/prirai/nira-browser.git "$RUNNER_TEMP/nira-browser"
+          git -C "$RUNNER_TEMP/nira-browser" fetch --depth 1 origin "$NIRA_SHA"
+          git -C "$RUNNER_TEMP/nira-browser" checkout --detach "$NIRA_SHA"
+          ACTUAL_SHA="$(git -C "$RUNNER_TEMP/nira-browser" rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "$NIRA_SHA"
+
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            "$RUNNER_TEMP/nira-browser/" "$GITHUB_WORKSPACE/"
+
+          cat > "$GITHUB_WORKSPACE/XENO_UPSTREAM_BASE.md" <<EOF
+# Xeno experimental browser base: Nira Browser
+
+This branch imports Nira Browser as an isolated GeckoView-based starting point for Xeno.
+
+- Upstream: https://github.com/prirai/nira-browser
+- Imported commit: $NIRA_SHA
+- License: Mozilla Public License 2.0 (MPL-2.0); retain notices and publish modifications to MPL-covered files as required.
+- Engine/UI: Mozilla GeckoView + Android Components + Kotlin/Jetpack Compose.
+- Upstream status: alpha; CI success is not a substitute for device/runtime testing.
+- Original application ID: `com.prirai.android.nira`; Xeno branding/package changes are intentionally deferred.
+- The stable Xeno branches are not changed by this import.
+EOF
+
+      - name: Commit upstream source on experimental branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Nira Browser MPL-2.0 baseline ef717b6 [skip ci]"
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic $AUTH" push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK platform 37.1
+        run: sdkmanager "platforms;android-37.1"
+
+      - name: Run lint, unit tests, and assemble all debug ABIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --max-workers=2 lintDebug testDebugUnitTest assembleDebug
+
+      - name: Verify ARM64 APK exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-arm64-v8a-debug.apk"
+          test -s "$APK"
+          ls -lh "$APK"
+
+      - name: Upload ARM64 debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeno-nira-geckoview-arm64-debug
+          path: app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+          if-no-files-found: error
+          retention-days: 14
