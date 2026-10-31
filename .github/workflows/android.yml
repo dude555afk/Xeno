@@ -171,9 +171,7 @@ jobs:
           KEYSTORE="$HOME/.android/debug.keystore"
           mkdir -p "$HOME/.android" artifacts-release-test
           if [ ! -f "$KEYSTORE" ]; then
-            keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storepass android \\
-              -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 \\
-              -dname "CN=Android Debug,O=Android,C=US"
+            keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
           APK="app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
