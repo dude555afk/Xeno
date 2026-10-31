@@ -1,51 +1,60 @@
 package com.dude555afk.xeno.ui.browser
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import com.dude555afk.xeno.R
 
-// Pixel samples from the 1200x667 four-panel Arc Search Android capture.
-// Points measured inside the 300x667 home panel. They are color anchors,
-// not an inferred universal Arc design system.
-private val ArcHomeTop = Color(0xFF1F143C)
-private val ArcHomeMiddle = Color(0xFF44243C)
-private val ArcHomeBottom = Color(0xFF34425F)
+private val CandyCanvasTop = Color(0xFFD4D0F7)
+private val CandyCanvasMiddle = Color(0xFFC4BDF1)
+private val CandyCanvasBottom = Color(0xFFE9E4FA)
+private val XenoInk = Color(0xFF302D43)
+private val XenoMutedInk = Color(0xFF6F6A82)
+private val XenoLime = Color(0xFFC9F63E)
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onNewSearch: () -> Unit,
@@ -59,179 +68,175 @@ fun HomeScreen(
             .background(
                 Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.0f to ArcHomeTop,
-                        0.1006f to ArcHomeTop,
-                        0.346f to ArcHomeMiddle,
-                        0.843f to ArcHomeBottom,
-                        1.0f to ArcHomeBottom
+                        0.0f to CandyCanvasTop,
+                        0.48f to CandyCanvasMiddle,
+                        1.0f to CandyCanvasBottom
                     )
                 )
             )
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        // Resolve viewport-relative dimensions here, before entering nested
-        // BoxScope/Surface content lambdas where maxWidth/maxHeight are shadowed.
-        val markBoxSize = (maxWidth * 0.447f).coerceIn(135.dp, 195.dp)
-        val controlWidth = (maxWidth * 0.20f).coerceIn(72.dp, 88.dp)
-        val controlHeight = (maxHeight * 0.045f).coerceIn(28.dp, 34.dp)
-        val controlBottomInset = maxHeight * 0.055f
-        val settingsEndInset = maxWidth * 0.08f
-        val controlInteraction = remember { MutableInteractionSource() }
-        val controlPressed by controlInteraction.collectIsPressedAsState()
-        val controlScale by animateFloatAsState(
-            targetValue = if (controlPressed) 0.94f else 1f,
-            animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
-            label = "home-plus-press-scale"
+        val searchInteraction = remember { MutableInteractionSource() }
+        val searchPressed by searchInteraction.collectIsPressedAsState()
+        val searchScale by animateFloatAsState(
+            targetValue = if (searchPressed) 0.985f else 1f,
+            animationSpec = spring(dampingRatio = 0.72f, stiffness = 560f),
+            label = "xeno-search-press"
         )
 
-        // The reference mark's visible bounds are ~110x105 px in a 300x667
-        // panel. Xeno's four-petal canvas fills ~82% of its parent box, so use
-        // 44.7% of viewport width for the box to produce ~36.7% visible art.
-        // The mark is centered on the viewport; no arbitrary vertical offset.
-        HomeMark(
+        // Soft, low-contrast light pools provide depth without obscuring the Xeno mark.
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 78.dp, y = (-86).dp)
+                .size(250.dp)
+                .background(Color.White.copy(alpha = 0.16f), CircleShape)
+        )
+        Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = (-90).dp, y = 94.dp)
+                .size(260.dp)
+                .background(Color(0xFFEEE9FF).copy(alpha = 0.52f), CircleShape)
+        )
+
+        Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(markBoxSize)
-        )
-
-        // Arc's new-tab canvas has two actions in this state: a small plus
-        // capsule centered horizontally and Settings at the right. The tab
-        // carousel control belongs to the webpage dock, not this home state.
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = controlBottomInset)
-                .size(width = controlWidth, height = 48.dp),
-            contentAlignment = Alignment.Center
+                .padding(bottom = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(11.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(7.dp),
-                // Source pixels inside the reference plus capsule cluster around #556179.
-                color = Color(0xFF556179),
-                shadowElevation = 0.dp,
-                modifier = Modifier
-                    .size(width = controlWidth, height = controlHeight)
-                    .graphicsLayer(scaleX = controlScale, scaleY = controlScale)
-                    .combinedClickable(
-                        interactionSource = controlInteraction,
-                        indication = null,
-                        onClick = onNewSearch,
-                        onLongClick = onVoiceSearch
-                    )
+                shape = RoundedCornerShape(34.dp),
+                color = Color(0xF7FFFFFF),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.92f)),
+                shadowElevation = 14.dp,
+                modifier = Modifier.size(132.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "New search; long-press for voice search",
-                        tint = Color(0xFFECEEF6),
-                        modifier = Modifier.size(24.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = "Xeno logo",
+                        modifier = Modifier.size(112.dp)
                     )
                 }
             }
-        }
 
-        Surface(
-            onClick = onOpenSettings,
-            shape = CircleShape,
-            color = Color.Transparent,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = settingsEndInset, bottom = controlBottomInset)
-                .size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = "Settings",
-                    tint = Color(0xFFD3D8E7),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeMark(modifier: Modifier = Modifier) {
-    // The Android reference uses a living four-colour mark, not a static logo.
-    // The exact source animation video is unavailable, so this is deliberately
-    // restrained: continuous rotation, a small breathing scale and a soft halo.
-    val motion = rememberInfiniteTransition(label = "arc-home-mark")
-    val rotation by motion.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 9200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "arc-mark-rotation"
-    )
-    val breathing by motion.animateFloat(
-        initialValue = 0.975f,
-        targetValue = 1.025f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "arc-mark-breathing"
-    )
-    val haloAlpha by motion.animateFloat(
-        initialValue = 0.10f,
-        targetValue = 0.23f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "arc-mark-halo"
-    )
-
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            val unit = size.minDimension
-            val radius = unit * 0.126f * breathing
-            val spread = unit * 0.125f * breathing
-
-            // The halo is kept low contrast so the mark doesn't turn into a neon
-            // loading indicator on darker displays.
-            drawCircle(
-                color = Color(0xFFFFDDEB).copy(alpha = haloAlpha),
-                radius = unit * 0.245f * breathing,
-                center = Offset(cx, cy)
+            Text(
+                text = "xeno",
+                color = XenoInk,
+                fontSize = 29.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-1.1).sp
             )
+            Text(
+                text = "A little less noise.",
+                color = XenoMutedInk,
+                fontSize = 14.sp
+            )
+        }
 
-            rotate(rotation, pivot = Offset(cx, cy)) {
-                val petals = listOf(
-                    Triple(Offset(cx, cy - spread), Color(0xFFFFD7E8), 0.94f),
-                    Triple(Offset(cx + spread, cy), Color(0xFFFFD3B8), 1.00f),
-                    Triple(Offset(cx, cy + spread), Color(0xFFD9C8FF), 0.97f),
-                    Triple(Offset(cx - spread, cy), Color(0xFFFFE8A9), 1.00f)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(13.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "PRIVATE BY DEFAULT",
+                    color = XenoMutedInk.copy(alpha = 0.92f),
+                    fontSize = 10.sp,
+                    letterSpacing = 1.45.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
-                petals.forEach { (center, tint, stretch) ->
-                    val petalRadius = radius * stretch
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFFFFBFF),
-                                tint,
-                                tint.copy(alpha = 0.88f)
-                            ),
-                            center = Offset(
-                                center.x - petalRadius * 0.22f,
-                                center.y - petalRadius * 0.25f
-                            ),
-                            radius = petalRadius * 1.8f
-                        ),
-                        radius = petalRadius,
-                        center = center
-                    )
+                Surface(
+                    onClick = onOpenSettings,
+                    shape = CircleShape,
+                    color = Color(0xCCFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            tint = XenoInk,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
-                drawCircle(
-                    color = Color(0xFFFFF4FA),
-                    radius = radius * 0.29f,
-                    center = Offset(cx, cy)
-                )
             }
+
+            Surface(
+                onClick = onNewSearch,
+                shape = RoundedCornerShape(30.dp),
+                color = Color(0xF7FFFFFF),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.95f)),
+                shadowElevation = 12.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .scale(searchScale)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 10.dp, end = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFECE8FF),
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = Color(0xFF6254B8),
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "Search or ask Xeno",
+                            color = XenoInk,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "A web search, a direct answer, or a URL",
+                            color = XenoMutedInk,
+                            fontSize = 11.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = onVoiceSearch,
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Mic,
+                            contentDescription = "Voice search",
+                            tint = XenoInk,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
         }
     }
 }
