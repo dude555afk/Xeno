@@ -17,7 +17,7 @@ To avoid pulling the upstream repository's unrelated 489 MB design-reference col
 ```bash
 git clone --depth 1 --filter=blob:none --sparse https://github.com/sk2andy/candy-browser.git candy-browser
 cd candy-browser
-git sparse-checkout set app shared pocket-runtime gradle scripts distribution release-notes
+git sparse-checkout set app shared pocket-runtime gradle scripts distribution release-notes docs
 git fetch --depth 1 origin 4d8a2277943b0524e08d86004b495525a074ee18
 git checkout --detach 4d8a2277943b0524e08d86004b495525a074ee18
 ```
