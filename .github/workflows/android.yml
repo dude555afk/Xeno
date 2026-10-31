@@ -38,6 +38,7 @@ jobs:
             scripts
             distribution
             release-notes
+            docs/screenshots
             docs
           sparse-checkout-cone-mode: true
 
