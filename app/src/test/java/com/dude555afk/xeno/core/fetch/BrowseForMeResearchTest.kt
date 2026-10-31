@@ -108,4 +108,13 @@ class BrowseForMeResearchTest {
                 .map { it.sourceIndex }
         )
     }
+    @Test
+    fun startpageFallbackExtractsExternalLinks() {
+        val html = """<a href="https://publisher.example/article">Publisher article</a>"""
+        val hits = SearchEngine().parseHtml("startpage", html)
+
+        assertEquals("https://publisher.example/article", hits.single().url)
+        assertEquals("Publisher article", hits.single().title)
+    }
+
 }
