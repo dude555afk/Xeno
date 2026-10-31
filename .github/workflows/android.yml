@@ -35,6 +35,7 @@ jobs:
             scripts
             distribution
             release-notes
+            docs
           sparse-checkout-cone-mode: true
 
       - name: Set up JDK 17
