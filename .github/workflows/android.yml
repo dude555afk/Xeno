@@ -132,12 +132,12 @@ jobs:
           # Keep this optimized test package separate from existing Xeno installs.
           python3 - <<'PY'
           from pathlib import Path
-          path = Path("app/build.gradle")
+          path = Path("app/build.gradle.kts")
           source = path.read_text()
-          needle = "    buildTypes {\n        release {\n"
+          needle = "        release {\n"
           if needle not in source:
-              raise SystemExit("Could not locate release build type")
-          source = source.replace(needle, needle + "            applicationIdSuffix = '.test'\n", 1)
+              raise SystemExit("Could not locate Kotlin DSL release build type")
+          source = source.replace(needle, needle + '            applicationIdSuffix = ".test"\n', 1)
           path.write_text(source)
           PY
           gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release-size.log
