@@ -21,11 +21,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch Candy Browser source
-        run: |
-          git submodule update --init --depth 1 --filter=blob:none
-          git -C vendor/candy-browser sparse-checkout init --cone
-          git -C vendor/candy-browser sparse-checkout set app shared pocket-runtime gradle scripts distribution release-notes
+      - name: Checkout pinned Candy Android source (sparse)
+        uses: actions/checkout@v4
+        with:
+          repository: sk2andy/candy-browser
+          ref: 4d8a2277943b0524e08d86004b495525a074ee18
+          path: vendor/candy-browser
+          sparse-checkout: |
+            app
+            shared
+            pocket-runtime
+            gradle
+            scripts
+            distribution
+            release-notes
+          sparse-checkout-cone-mode: true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
