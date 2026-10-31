@@ -28,7 +28,7 @@ class PageFetcher(
     private val reader: ReadabilityInjector
 ) {
 
-    suspend fun fetch(sources: List<AnswerSource>, maxSources: Int = 4): List<AnswerSource> =
+    suspend fun fetch(sources: List<AnswerSource>, maxSources: Int = 5): List<AnswerSource> =
         withContext(Dispatchers.Main) {
             val gate = Semaphore(effectiveConcurrency())
 
@@ -36,7 +36,9 @@ class PageFetcher(
                 sources.take(maxSources).map { source ->
                     async {
                         gate.withPermit {
-                            try {
+                            if (!isSafePublicWebUrl(source.url)) {
+                                source.copy(fetched = true, extracted = null)
+                            } else try {
                                 val webView = createWebView()
                                 try {
                                     val extracted = reader.extract(
