@@ -67,4 +67,34 @@ class ExtractionJsonParserTest {
         assertTrue(ExtractionJsonParser.parse("not-json", fallbackUrl).isJunk)
         assertTrue(ExtractionJsonParser.parse("{}", fallbackUrl).isJunk)
     }
+    @Test
+    fun fallsBackToArticleBodyInPageSuppliedJsonLdWhenVisibleTextIsThin() {
+        val articleBody = (1..110).joinToString(" ") { "structuredword$it" }
+        val structured = """
+            {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": "Structured article",
+              "author": { "@type": "Person", "name": "Example Author" },
+              "articleBody": "$articleBody"
+            }
+        """.trimIndent()
+        val payload = """
+            {
+              "url": "https://example.com/story",
+              "title": "Example",
+              "text": "Short visible shell",
+              "wordCount": 3,
+              "structuredData": [${JsonPrimitive(structured)}]
+            }
+        """.trimIndent()
+
+        val result = ExtractionJsonParser.parse(payload, fallbackUrl)
+
+        assertTrue(result.text.contains("Structured article"))
+        assertTrue(result.text.contains("structuredword110"))
+        assertTrue(result.wordCount >= 110)
+        assertFalse(result.isJunk)
+    }
+
 }

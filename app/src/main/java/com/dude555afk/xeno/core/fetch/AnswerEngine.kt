@@ -64,7 +64,7 @@ class AnswerEngine(
         budget.claimQuery(query)
 
         val allHits = ArrayList<SearchHit>(MAX_SOURCES)
-        val initial = search.search(query, limit = MAX_SOURCES)
+        val initial = search.search(query, limit = INITIAL_RESULTS)
         allHits += budget.accept(initial)
         if (allHits.isEmpty()) {
             emit(AnswerResult(query, emptyList(), markdown = NO_SOURCES))
@@ -212,12 +212,19 @@ class AnswerEngine(
                         "Propose up to two targeted queries to verify important claims or cover missing angles."
                 )
             ),
-            stream = false,
+            stream = true,
             temperature = 0.0,
             maxTokens = 150
         )
-        val response = withTimeoutOrNull(PLANNER_TIMEOUT_MS) { ai.complete(config, request) }
-            ?: return emptyList()
+        val response = withTimeoutOrNull(PLANNER_TIMEOUT_MS) {
+            val output = StringBuilder()
+            ai.stream(config, request).collect { delta ->
+                if (output.length < PLANNER_MAX_RESPONSE_CHARS) {
+                    output.append(delta.take(PLANNER_MAX_RESPONSE_CHARS - output.length))
+                }
+            }
+            output.toString()
+        } ?: return emptyList()
         return parseFollowUpQueries(response, query)
     }
 
@@ -234,11 +241,13 @@ class AnswerEngine(
         private const val MAX_SEARCH_QUERIES = 3
         private const val MAX_FOLLOW_UP_QUERIES = 2
         private const val MAX_SOURCES = 8
+        private const val INITIAL_RESULTS = 5
         private const val MAX_PAGE_READS = 5
         private const val MAX_PER_HOST = 3
         private const val CHARS_PER_SOURCE = 1_800
         private const val MAX_SNIPPET_CHARS = 520
         private const val PLANNER_TIMEOUT_MS = 12_000L
+        private const val PLANNER_MAX_RESPONSE_CHARS = 500
 
         const val NO_SOURCES = "No sources found for that query."
         const val UNREADABLE = "Found sources, but Xeno couldn't extract enough readable page text. Open a source directly or retry; this does not necessarily mean the page is paywalled."
@@ -263,7 +272,7 @@ class AnswerEngine(
                         .trim()
                 }
                 .filter { it.length in 5..140 }
-                .filterNot { it.equals("NONE", ignoreCase = true) || it.equals(originalQuery.trim(), ignoreCase = true) }
+                .filterNot { it.equals(originalQuery.trim(), ignoreCase = true) }
                 .filter { seen.add(it.lowercase()) }
                 .take(MAX_FOLLOW_UP_QUERIES)
                 .toList()

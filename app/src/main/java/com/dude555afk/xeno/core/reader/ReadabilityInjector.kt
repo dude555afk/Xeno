@@ -12,6 +12,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
@@ -69,7 +70,9 @@ class ReadabilityInjector(
                   byline: author ? (author.content || '') : '',
                   text: t,
                   excerpt: description ? (description.content || '') : '',
-                  wordCount: t.trim() ? t.trim().split(/\s+/).length : 0
+                  wordCount: t.trim() ? t.trim().split(/\s+/).length : 0,
+                  structuredData: Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+                    .slice(0, 16).map(function(node) { return (node.textContent || '').slice(0, 50000); })
                 });
               } catch(e) {
                 return JSON.stringify({url: location.href, title: document.title || '', text: '', excerpt: '', wordCount: 0});
@@ -249,8 +252,19 @@ internal object ExtractionJsonParser {
             fun num(key: String): Int =
                 (obj[key] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
 
-            val text = str("text")
-            val explicitCount = num("wordCount")
+            val plainText = str("text")
+            val structuredScripts = (obj["structuredData"] as? JsonArray)
+                ?.mapNotNull { (it as? JsonPrimitive)?.takeIf { value -> value.isString }?.content }
+                .orEmpty()
+            // Structured data is a fallback only when the normal reader produced
+            // too little text. This avoids duplicating the full article body.
+            val structured = if (plainText.length < 400) {
+                StructuredDataExtractor.extract(structuredScripts)
+            } else null
+            val text = if (!structured.isNullOrBlank()) {
+                listOf(plainText, structured).filter { it.isNotBlank() }.joinToString("\n\n")
+            } else plainText
+            val explicitCount = if (text == plainText) num("wordCount") else 0
             ExtractedContent(
                 url = str("url").ifBlank { fallbackUrl },
                 title = str("title"),

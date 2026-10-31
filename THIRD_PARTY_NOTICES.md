@@ -1,23 +1,36 @@
 # Third-party notices
 
-## Mozilla Readability
-
-Xeno bundles [Mozilla Readability](https://github.com/mozilla/readability), the article extraction library used by Firefox Reader View, in `app/src/main/assets/readability.js`. The file includes a small Xeno-specific wrapper that extracts text from a cloned DOM and falls back to text already exposed by the page. It does not bypass access controls or paywalls.
-
-Copyright (c) 2010 Arc90 Inc and Mozilla Readability contributors. Licensed under the Apache License, Version 2.0. See `LICENSES/Apache-2.0.txt` for the license text and the bundled file's copyright header.
-
-Upstream source: https://github.com/mozilla/readability/blob/main/Readability.js
-
 ## AndroidHarness
 
-Selected keyless-search and bounded-research patterns in Xeno's search/research path are adapted from:
+Xeno's keyless multi-engine search strategy, bounded source/read budgets, and
+structured-page extraction approach are adapted from ideas and implementation
+patterns in AndroidHarness:
 
-- Project: https://github.com/Sanuu7/AndroidHarness
-- Files reviewed: `app/src/main/java/com/androidharness/app/tools/SearchBackends.kt` and `SearchBudget.kt`
-- License: MIT. The original license text is preserved in `third_party/AndroidHarness-LICENSE.txt`.
+https://github.com/Sanuu7/AndroidHarness
 
-Xeno's implementation is a focused Kotlin adaptation using its existing OkHttp and coroutine dependencies. The AndroidHarness application, UI, model runtime, and unrelated tools are not included.
+Copyright (c) 2026 Sanuu7
 
-## Vane
+AndroidHarness is licensed under the MIT License. The adapted portions in Xeno
+are independently integrated with Xeno's existing OkHttp, Kotlin coroutines,
+and kotlinx.serialization dependencies. The AndroidHarness application,
+agent runtime, UI, and external service integrations are not included.
 
-Vane (https://github.com/ItzCrazyKns/Vane) was reviewed as an architectural reference for iterative planning, focused follow-up searches, and source-grounded synthesis. No Vane source files or runtime dependencies are included in Xeno.
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
