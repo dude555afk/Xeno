@@ -7,6 +7,7 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +38,8 @@ class SearchEngine(
         Engine("duckduckgo") { "https://html.duckduckgo.com/html/?q=" + encode(it) },
         Engine("bing") { "https://www.bing.com/search?q=" + encode(it) },
         Engine("brave") { "https://search.brave.com/search?q=" + encode(it) },
-        Engine("google") { "https://www.google.com/search?q=" + encode(it) + "&num=10" }
+        Engine("google") { "https://www.google.com/search?q=" + encode(it) + "&num=10" },
+        Engine("startpage") { "https://www.startpage.com/sp/search?query=" + encode(it) }
     )
 
     suspend fun search(query: String, limit: Int = 8): List<SearchHit> = withContext(Dispatchers.IO) {
@@ -50,9 +52,15 @@ class SearchEngine(
 
         withTimeoutOrNull(SEARCH_TOTAL_TIMEOUT_MS) {
             for (engine in orderedEngines(preferred)) {
-                val html = withTimeoutOrNull(REQUEST_TIMEOUT_MS) {
-                    fetchHtml(engine.searchUrl(cleanQuery))
-                }.orEmpty()
+                val html = try {
+                    withTimeoutOrNull(REQUEST_TIMEOUT_MS) {
+                        fetchHtml(engine.searchUrl(cleanQuery))
+                    }.orEmpty()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    ""
+                }
                 if (html.isBlank()) continue
 
                 val results = parseHtml(engine.id, html)
@@ -131,6 +139,7 @@ class SearchEngine(
         "bing" -> parseBing(html)
         "brave" -> parseBrave(html)
         "google" -> parseGoogle(html)
+        "startpage" -> parseExternalAnchors(html)
         else -> emptyList()
     }
 
@@ -255,7 +264,8 @@ class SearchEngine(
         val host = uri.host?.lowercase().orEmpty()
         if (host == "duckduckgo.com" || host.endsWith(".duckduckgo.com") ||
             host == "bing.com" || host.endsWith(".bing.com") ||
-            host == "search.brave.com" || host == "google.com" || host.endsWith(".google.com")
+            host == "search.brave.com" || host == "google.com" || host.endsWith(".google.com") ||
+            host == "startpage.com" || host.endsWith(".startpage.com")
         ) return null
         return uri.toASCIIString()
     }
@@ -290,6 +300,7 @@ class SearchEngine(
             "ddg", "duckduckgo", "duck duck go" -> "duckduckgo"
             "bing" -> "bing"
             "google" -> "google"
+            "startpage" -> "startpage"
             else -> "brave"
         }
 
