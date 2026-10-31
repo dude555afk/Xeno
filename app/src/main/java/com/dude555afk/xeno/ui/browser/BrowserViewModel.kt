@@ -182,7 +182,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val ai = AiClient()
     private val summarizer = Summarizer(ai)
     private val fetcher = PageFetcher(app, injector)
-    private val engine = AnswerEngine(SearchEngine { settings.searchEngineId }, fetcher, ai)
+    private val engine = AnswerEngine(SearchEngine(preferredEngine = { settings.searchEngineId }), fetcher, ai)
 
     private val _state = MutableStateFlow(
         BrowserUiState(
