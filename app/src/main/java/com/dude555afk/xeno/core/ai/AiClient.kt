@@ -183,13 +183,21 @@ class AiClient(
                 }
                 .build()
 
-            http.newCall(call).execute().use { response ->
-                val text = response.body?.string().orEmpty()
-                if (!response.isSuccessful) throw AiException(response.code, text)
-                runCatching {
-                    json.decodeFromString(ChatResponse.serializer(), text).text
-                }.getOrElse { throw AiException(response.code, text.take(300)) }
-            }
+            // One-shot completions are used for bounded research planning.
+            // A call timeout also closes the underlying socket if the coroutine
+            // is cancelled, rather than leaving a blocked worker behind.
+            http.newBuilder()
+                .callTimeout(15, TimeUnit.SECONDS)
+                .build()
+                .newCall(call)
+                .execute()
+                .use { response ->
+                    val text = response.body?.string().orEmpty()
+                    if (!response.isSuccessful) throw AiException(response.code, text)
+                    runCatching {
+                        json.decodeFromString(ChatResponse.serializer(), text).text
+                    }.getOrElse { throw AiException(response.code, text.take(300)) }
+                }
         }
 
     private fun endpoint(config: ProviderConfig): String {
