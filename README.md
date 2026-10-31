@@ -1,90 +1,36 @@
-# Xeno
+# Xeno Browser
 
-**A lightweight, AI-powered browser for Android.**
+This branch resets the previous browser experiments and pins the complete Android browser source from [Candy Browser](https://github.com/sk2andy/candy-browser).
 
-An Android-first browser with an Arc-inspired interface, an answer-oriented address bar, and a deliberately privacy-restricted embedded engine. This migration branch uses GeckoView for full browser-engine control; it does not ship Firefox's browser UI, account system, Sync, or Mozilla app shell.
+## Pinned source
 
----
+- Upstream: https://github.com/sk2andy/candy-browser
+- Revision: `4d8a2277943b0524e08d86004b495525a074ee18`
+- Location after checkout: `vendor/candy-browser/`
 
-## What it is
+The upstream project is linked as a Git submodule for now. Its source, Android app, shared Kotlin modules, assets, and build scripts are preserved at that exact revision. This is not yet a vendored copy or an Xeno rebrand; those changes come after the upstream baseline builds.
 
-Xeno is a browser built around one idea: **the address bar should answer, not just navigate.**
+## Get the Android source
 
-Type a question, get a cited, synthesized answer sourced from the live web. Type a URL, get a page. One bar, two modes, one keystroke apart.
+From a fresh clone of this branch:
 
-```
-you:   "what's quantum entanglement?"
-xeno:  ┌─────────────────────────────┐
-       │ Entanglement is a quantum   │
-       │ correlation where measuring │
-       │ one particle fixes the      │
-       │ state of its partner        │
-       │ instantly, at any distance  │
-       │ [1][3]                      │
-       └─────────────────────────────┘
-         [1] Nature   [3] Physics.SE
+```bash
+git submodule update --init --depth 1 --filter=blob:none
+git -C vendor/candy-browser sparse-checkout init --cone
+git -C vendor/candy-browser sparse-checkout set app shared pocket-runtime gradle scripts distribution release-notes
 ```
 
-## Feature set
+Sparse checkout keeps the unrelated design-reference archive out of the working tree.
 
-| Feature | Status |
-|---|---|
-| GeckoView engine + bounded session pool | 🚧 migration in progress |
-| Readability.js page extraction | 🚧 planned |
-| Filter-list ad blocking (uBO lists, native) | 🚧 planned |
-| Spaces (accent-tinted workspaces) | 🚧 planned |
-| Peek bubble (Little Arc equivalent) | 🚧 planned |
-| Command palette + fuzzy search | 🚧 planned |
-| **AI answer engine (search → fetch → cite)** | 🎯 flagship |
-| Streaming page summarizer | 🚧 planned |
-| Semantic tab/history search (MiniLM) | 🚧 planned |
-| TextRank offline summarizer (fallback) | 🚧 planned |
+Open `vendor/candy-browser` in Android Studio, or build from a terminal:
 
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│                    UI                        │
-│   Spaces · Tab stack · Command bar · AI sheet │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               AI LAYER                        │
-│   summarizer · answer engine · embeddings     │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│               CORE                            │
-│   reader (Readability.js) · fetch/rank        │
-│   blocking (adblock-rust + uBO lists)         │
-└───────────────────┬──────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────┐
-│            ENGINE                             │
-│      Mozilla GeckoView (embedded engine)      │
-└──────────────────────────────────────────────┘
+```bash
+cd vendor/candy-browser
+./gradlew testFullDebugUnitTest lintFullDebug assembleFullDebug
 ```
 
-**See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the pipeline specs and
-[`docs/DESIGN.md`](docs/DESIGN.md) for the design tokens.**
+Requires JDK 17 and Android SDK 37.1. The upstream project targets Android 13 (API 33) and newer.
 
-## Stack
+## Licensing
 
-- Kotlin + Jetpack Compose (Material 3), `minSdk 26`, `targetSdk 35`
-- Mozilla GeckoView's standard `geckoview` artifact (not `geckoview-omni`, which includes the extra Glean telemetry library)
-- Gecko telemetry, telemetry uploads, crash-report uploads, experiment enrollment, and telemetry archives are disabled via an app-private runtime configuration
-- Remote debugging and debug logging are off in the runtime; App Zygote preloading is disabled to avoid unnecessary preloading on low-memory devices
-- GeckoView's core rendering engine is still a substantial bundled dependency; it cannot be reduced to WebView size without switching engines or maintaining a custom Gecko build
-- Readability.js injected in-page for clean text extraction
-- Kilo Gateway (OpenAI-compatible) as the default AI backend, BYOK for anything OpenAI-compatible
-- MiniLM ONNX via sherpa-onnx for on-device semantic search
-
-## Design language
-
-AMOLED black, frosted glass, everything is a pill, spring physics on every overlay. Design tokens live in [`docs/DESIGN.md`](docs/DESIGN.md).
-
-## Status
-
-Early scaffolding. First module going in: reader + summarizer pipeline.
+Candy Browser is distributed under the **PolyForm Noncommercial License 1.0.0**. The original license and licensing scope are retained in this repository. Third-party code, filter data, and bundled assets retain their own licenses and notices. This port is suitable only for permitted non-commercial use unless the upstream licensor grants additional rights.

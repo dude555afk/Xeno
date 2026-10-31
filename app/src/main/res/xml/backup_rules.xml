@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Only explicitly included preferences are backed up; provider credentials stay excluded. -->
-<full-backup-content>
-    <include domain="sharedpref" path="xeno_prefs.xml" />
-</full-backup-content>
