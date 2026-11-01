@@ -55,7 +55,7 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        uses: android-actions/setup-android@40fd30fb8d7440372e131f5d1809ec01dcd3699
         with:
           packages: platform-tools
 
@@ -68,16 +68,21 @@ jobs:
       - name: Run Android lint
         run: ./gradlew lintFullDebug --no-daemon --stacktrace
 
-      - name: Build installable Android APK
-        run: ./gradlew assembleFullDebug --no-daemon --stacktrace
+      - name: Build arm64-only installable APK
+        run: ./gradlew assembleFullDebug -Pcandy.releaseAbi=arm64-v8a -Pcandy.compressNativeLibs=true --no-daemon --stacktrace
 
-      - name: Verify APK output
-        run: test -s app/build/outputs/apk/full/debug/app-full-debug.apk
+      - name: Verify and report APK size
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/full/debug/app-full-debug.apk"
+          test -s "$APK"
+          stat --printf="APK_SIZE_BYTES=%s\n" "$APK"
+          sha256sum "$APK"
 
-      - name: Upload installable debug APK
+      - name: Upload arm64 installable debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: xeno-candy-full-debug
+          name: xeno-candy-arm64-debug
           path: app/build/outputs/apk/full/debug/app-full-debug.apk
           if-no-files-found: error
           retention-days: 7
