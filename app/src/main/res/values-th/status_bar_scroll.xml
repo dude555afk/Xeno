@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_bar_scroll_accessibility_service_label">การเลื่อนผ่านแถบสถานะของ Candy</string>
+    <string name="status_bar_scroll_accessibility_service_description">แตะตรงกลางแถบสถานะเพื่อเลื่อนหน้า Candy ปัจจุบันไปด้านบน Candy ไม่อ่านเนื้อหาหน้าต่าง</string>
+    <string name="status_bar_scroll_target_description">เลื่อนหน้าปัจจุบันไปด้านบน</string>
+    <string name="settings_status_bar_scroll_title">แตะแถบสถานะเพื่อเลื่อนไปด้านบน</string>
+    <string name="settings_status_bar_scroll_summary">เพิ่มพื้นที่แตะที่มองไม่เห็นตรงกลางแถบสถานะ Android ต้องให้สิทธิ์การช่วยเหลือพิเศษแก่ Candy</string>
+    <string name="settings_status_bar_scroll_width_title">ความกว้างของพื้นที่แตะ</string>
+    <string name="settings_status_bar_scroll_width_summary">%1$d%% ของความกว้างหน้าจอ</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_title">อนุญาตให้ Candy เข้าถึงการช่วยเหลือพิเศษไหม</string>
+    <string name="settings_status_bar_scroll_accessibility_dialog_message">Candy ใช้บริการการช่วยเหลือพิเศษของ Android เพื่อตรวจสอบชื่อแพ็กเกจจากเหตุการณ์ของหน้าต่างว่า Candy อยู่เบื้องหน้าหรือไม่ การแตะแถบสถานะจะเลื่อนหน้าไปด้านบน และการปัดจะเปิดการแจ้งเตือนหรือการตั้งค่าด่วน บริการนี้ไม่อ่านเนื้อหาหน้าต่างและไม่แชร์ข้อมูลดังกล่าว ดำเนินการต่อเพื่อเปิดบริการในการตั้งค่า Android</string>
+    <string name="settings_status_bar_scroll_accessibility_open">ยอมรับและเปิดการตั้งค่า</string>
+    <string name="settings_status_bar_scroll_enable_for_domain">เปิดการเลื่อนผ่านแถบสถานะสำหรับเว็บไซต์นี้</string>
+    <string name="settings_status_bar_scroll_disable_for_domain">ปิดการเลื่อนผ่านแถบสถานะสำหรับเว็บไซต์นี้</string>
+</resources>

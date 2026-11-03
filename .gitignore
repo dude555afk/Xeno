@@ -1,21 +1,28 @@
-*.iml
 .gradle/
-/local.properties
-/.idea/
-.DS_Store
-/build/
-/captures/
-.externalNativeBuild/
-.cxx/
+.idea/
 local.properties
+**/build/
+captures/
+*.iml
 *.apk
 *.aab
-*.keystore
+*.idsig
 *.jks
-key.properties
-
-# Release signing material. `key.properties` above is the Flutter convention;
-# this project is Kotlin, so the real file is `keystore.properties`. Without
-# this line the file is committable, and a keystore password that reaches a
-# public repository is the single worst accident this build can have.
+*.keystore
 keystore.properties
+__pycache__/
+*.pyc
+
+# Local Codex work logs and generated captures
+memory/
+task/
+tracking/
+output
+.kotlin
+
+# Xcode build caches and downloaded package checkouts
+/iosApp/derived-data/
+/iosApp/xcode-packages/
+
+# Native Android build caches
+**/.cxx/

@@ -1,9 +1,12 @@
-name: Android Build
+name: Xeno Android Build
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [feature/xeno-candy-browser-reset]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -12,178 +15,97 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out Xeno
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out pinned Candy sync protocol assets
+        uses: actions/checkout@v4
+        with:
+          repository: sk2andy/candy-browser
+          ref: 4d8a2277943b0524e08d86004b495525a074ee18
+          path: vendor/candy-protocol
+          sparse-checkout: sync/protocol
+          sparse-checkout-cone-mode: true
+
+      - name: Restore upstream sync protocol assets
+        run: |
+          set -euo pipefail
+          mkdir -p sync
+          cp -R vendor/candy-protocol/sync/protocol sync/
+          rm -rf vendor/candy-protocol
+          git add sync/protocol
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --cached --quiet; then
+            git commit -m "port: restore Candy sync protocol assets [skip ci]"
+            git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
+          cache: gradle
 
-      - name: Install Android SDK
-        run: |
-          set -eu
-          SDK_DIR="${ANDROID_HOME:-$HOME/android-sdk}"
-          mkdir -p "$SDK_DIR/cmdline-tools"
-          if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
-            curl -sSLo /tmp/cmdtools.zip \
-              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
-            mv /tmp/cmdtools/cmdline-tools "$SDK_DIR/cmdline-tools/latest"
-          fi
-          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
-          "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
-            "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
-          echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Gradle 8.9
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
         with:
-          gradle-version: '8.9'
+          packages: platform-tools
 
-      - name: Create Room schema directory
-        run: mkdir -p app/schemas
+      - name: Install Android SDK 37.1
+        run: sdkmanager "platforms;android-37.1"
 
-      # Plain `set -e` semantics. No continue-on-error, no EXIT_CODE dance,
-      # no hand-rolled pipefail. GitHub already runs `run:` blocks under
-      # `bash -eo pipefail`; adding to that only creates new ways to be wrong.
-      - name: Build debug APK
+      - name: Run upstream unit tests
+        run: ./gradlew testFullDebugUnitTest --no-daemon --stacktrace
+
+      - name: Run Android lint
+        run: ./gradlew lintFullDebug --no-daemon --stacktrace
+
+      - name: Build Xeno ARM64 debug APK
+        run: ./gradlew assembleFullDebug -Pcandy.releaseAbi=arm64-v8a -Pcandy.compressNativeLibs=true -Pcandy.debugApplicationIdSuffix= -Pcandy.debugAppLabel=Xeno --no-daemon --stacktrace
+
+      - name: Verify APK installability and report size
         run: |
-          set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-output.log
+          set -euo pipefail
+          APK="app/build/outputs/apk/full/debug/app-full-debug.apk"
+          test -s "$APK"
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$BUILD_TOOLS/apksigner"
+          test -x "$BUILD_TOOLS/aapt"
+          unzip -t "$APK" >/dev/null
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee apk-badging.txt
+          grep -F "package: name='dev.sk2andy.materialbrowser'" apk-badging.txt
+          grep -F "application-label:'Xeno'" apk-badging.txt
+          cp "$APK" Xeno-arm64-debug.apk
+          stat --printf="APK_SIZE_BYTES=%s\\n" Xeno-arm64-debug.apk
+          sha256sum Xeno-arm64-debug.apk
 
-      # ---------------------------------------------------------------------
-      # DiAGNOSTICS: dump everything into the *console* first.
-      #
-      # The ci-logs branch has been an unreliable diagnostic for three turns:
-      # `git push origin HEAD:ci-logs` is a non-fast-forward (ci-logs accumulates
-      # commits not in main's history) and was being swallowed by `|| echo`.
-      # The log branch went stale and I spent multiple turns reading a dead log.
-      #
-      # Console output is captured by GitHub in the job summary and is readable
-      # without admin rights. This step always runs, always prints, and is the
-      # primary diagnostic. The ci-logs push is now best-effort and clearly
-      # labelled as such — if it fails, the console has the same content.
-      # ---------------------------------------------------------------------
-      - name: Dump build result
-        if: always()
-        run: |
-          echo "=== build-output.log: errors ==="
-          grep -E "^e:|FAILED|BUILD FAILED|error:" build-output.log | head -100 || echo "(no error lines found — build succeeded)"
-          echo ""
-          echo "=== APK check ==="
-          find . -name "*.apk" -not -path "./.git/*" 2>/dev/null || echo "(no APK found)"
-          echo ""
-          echo "=== ci-logs push (best-effort, console has same content) ==="
-
-      - name: Stage APK for upload
-        if: success()
-        run: |
-          set -eu
-          mkdir -p artifacts
-          cp -v app/build/outputs/apk/debug/*.apk artifacts/
-          ls -la artifacts/
-
-      - name: Upload debug APK
-        if: success()
+      - name: Upload verified APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: xeno-debug
-          path: artifacts/*.apk
+          name: xeno-arm64-installable-apk
+          path: Xeno-arm64-debug.apk
           if-no-files-found: error
+          retention-days: 7
 
-      - name: Publish build log (best-effort)
-        if: always()
-        run: |
-          set -u
-          # Fetch first, then rebase our new commit on top of ci-logs so the
-          # push is a fast-forward. Without this it is rejected every run.
-          git fetch origin ci-logs || echo "no ci-logs branch yet"
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f build-output.log
-          git commit --allow-empty -m "ci: build log (run ${{ github.run_number }})" || true
-          if git push origin HEAD:ci-logs --force-with-lease=ci-logs:$(git rev-parse origin/ci-logs 2>/dev/null || echo true) ; then
-            echo "ci-logs pushed"
-          else
-            echo "ci-logs push failed — console output above has the same content"
-          fi
-
-      # ---------------------------------------------------------------------
-      # RELEASE SIGNING
-      #
-      # Placement matters: this runs after the debug build and upload so the
-      # debug path is byte-identical to what already works. The keystore is
-      # decoded here rather than fetched so no signing material ever needs to
-      # exist in the repository.
-      #
-      # The release APKs go to artifacts-release/, not artifacts/. The debug
-      # stage above copies from outputs/apk/debug/, and the release build writes
-      # to outputs/apk/release/ — pointing the release upload at artifacts/
-      # could only ever have failed with "no files found".
-      # ---------------------------------------------------------------------
-      - name: Decode release keystore
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish direct APK download for branch builds
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/xeno-candy-browser-reset'
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -eu
-          if [ -z "${KEYSTORE_BASE64}" ]; then
-            echo "::warning::KEYSTORE_BASE64 is not set — the release APK will be UNSIGNED and the verify step will fail. See docs/SIGNING.md."
-            exit 0
-          fi
-          printf '%s' "${KEYSTORE_BASE64}" | base64 -d > release.jks
-          {
-            echo "storeFile=release.jks"
-            echo "storePassword=${KEYSTORE_PASSWORD}"
-            echo "keyAlias=${KEY_ALIAS}"
-            echo "keyPassword=${KEY_PASSWORD}"
-          } > keystore.properties
-          echo "release.jks: $(wc -c < release.jks) bytes"
-          echo "keystore.properties: $(wc -c < keystore.properties) bytes (passwords not echoed)"
-
-      - name: Build release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          set -o pipefail
-          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release.log
-
-      - name: Stage release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          set -eu
-          mkdir -p artifacts-release
-          cp -v app/build/outputs/apk/release/*.apk artifacts-release/
-          ls -la artifacts-release/
-
-      - name: Verify release APK signature
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          set -eu
-          APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -name apksigner -type f | head -1)"
-          if [ -z "${APKSIGNER}" ]; then
-            echo "::error::apksigner not found under ${ANDROID_HOME}/build-tools"
-            exit 1
-          fi
-          set -o pipefail
-          # Hard gate on purpose. An unsigned APK installs on nothing, and a
-          # release that reports success while producing one is worse than no
-          # release at all.
-          "${APKSIGNER}" verify --print-certs --verbose artifacts-release/*.apk | head -40
-
-      - name: Upload release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: xeno-release
-          path: artifacts-release/*.apk
-          if-no-files-found: error
+          set -euo pipefail
+          TAG="xeno-install-test-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$TAG" Xeno-arm64-debug.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Xeno install test ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated ARM64 debug build. APK signature and package metadata were verified in CI. This is a test build, not a stable release." \
+            --prerelease

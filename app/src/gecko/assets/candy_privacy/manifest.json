@@ -1,0 +1,43 @@
+{
+  "manifest_version": 2,
+  "name": "Candy Privacy Host",
+  "version": "1.5.69",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "candy-privacy-host@sk2andy.dev"
+    }
+  },
+  "background": {
+    "scripts": ["rules.js", "privacy_signals.js", "animation_policy.js", "background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["web_text_operations.js", "web_text_bridge.js", "page_text.js", "form_drafts.js", "form_drafts_bridge.js", "content_top_inset_bridge.js", "text_input_occlusion.js", "content_top_inset.js", "content_safe_area_reddit.js", "content_safe_area_prototype.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["user_input.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["privacy_signals.js", "animation_policy.js", "dom_probe.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "permissions": [
+    "geckoViewAddons",
+    "nativeMessaging",
+    "privacy",
+    "webNavigation",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ]
+}
