@@ -68,21 +68,44 @@ jobs:
       - name: Run Android lint
         run: ./gradlew lintFullDebug --no-daemon --stacktrace
 
-      - name: Build arm64-only installable APK
-        run: ./gradlew assembleFullDebug -Pcandy.releaseAbi=arm64-v8a -Pcandy.compressNativeLibs=true --no-daemon --stacktrace
+      - name: Build Xeno ARM64 debug APK
+        run: ./gradlew assembleFullDebug -Pcandy.releaseAbi=arm64-v8a -Pcandy.compressNativeLibs=true -Pcandy.debugApplicationIdSuffix= -Pcandy.debugAppLabel=Xeno --no-daemon --stacktrace
 
-      - name: Verify and report APK size
+      - name: Verify APK installability and report size
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/full/debug/app-full-debug.apk"
           test -s "$APK"
-          stat --printf="APK_SIZE_BYTES=%s\n" "$APK"
-          sha256sum "$APK"
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$BUILD_TOOLS/apksigner"
+          test -x "$BUILD_TOOLS/aapt"
+          unzip -t "$APK" >/dev/null
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee apk-badging.txt
+          grep -F "package: name='dev.sk2andy.materialbrowser'" apk-badging.txt
+          grep -F "application-label:'Xeno'" apk-badging.txt
+          cp "$APK" Xeno-arm64-debug.apk
+          stat --printf="APK_SIZE_BYTES=%s\\n" Xeno-arm64-debug.apk
+          sha256sum Xeno-arm64-debug.apk
 
-      - name: Upload arm64 installable debug APK
+      - name: Upload verified APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: xeno-candy-arm64-debug
-          path: app/build/outputs/apk/full/debug/app-full-debug.apk
+          name: xeno-arm64-installable-apk
+          path: Xeno-arm64-debug.apk
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish direct APK download for branch builds
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/xeno-candy-browser-reset'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="xeno-install-test-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$TAG" Xeno-arm64-debug.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Xeno install test ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated ARM64 debug build. APK signature and package metadata were verified in CI. This is a test build, not a stable release." \
+            --prerelease
