@@ -1,12 +1,13 @@
 package com.dude555afk.xeno.ui.tabstack
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,11 +24,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,17 +43,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Tab
-import com.dude555afk.xeno.ui.theme.Dimens
 
 /**
- * The tab stack — Arc's vertical sidebar, translated for touch.
- *
- * Compact pill-cards, swipe-to-dismiss, generous negative space. On mobile the
- * horizontal tab strip is a lost cause; this is the honest equivalent.
+ * Arc Search-style Android tab switcher: a horizontal strip of large page
+ * cards. It deliberately uses LazyRow rather than a vertical sheet/list.
  */
 @Composable
 fun TabStackSheet(
@@ -63,84 +65,106 @@ fun TabStackSheet(
     onNewTab: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    BackHandler(enabled = visible, onBack = onDismiss)
+
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(180)) +
-            slideInVertically(
-                initialOffsetY = { it / 3 },
-                animationSpec = tween(240)
-            ),
-        exit = fadeOut(tween(140)) +
-            slideOutVertically(tween(180))
+        enter = fadeIn(tween(170)) + scaleIn(initialScale = 0.985f, animationSpec = tween(200)),
+        exit = fadeOut(tween(120)) + scaleOut(targetScale = 0.985f, animationSpec = tween(160))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Color(0xE6121020))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.Center
         ) {
-            Surface(
-                shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = Color(0xFF0A0A0A),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.72f)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { /* swallow */ }
+                    .fillMaxSize()
+                    .padding(top = 46.dp, bottom = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(vertical = Dimens.spaceM)
-                            .size(width = 36.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Color.White.copy(alpha = 0.2f))
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Your tabs",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "${tabs.size} open",
+                            color = Color.White.copy(alpha = 0.62f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Close tabs", tint = Color.White)
+                    }
+                }
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(
-                            horizontal = Dimens.spaceL,
-                            vertical = Dimens.spaceS
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(tabs, key = { it.id }) { tab ->
+                        ArcTabCard(
+                            tab = tab,
+                            active = tab.id == activeTabId,
+                            accent = accent,
+                            onSelect = { onSelect(tab) },
+                            onClose = { onClose(tab) }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 28.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Swipe sideways to switch tabs",
+                        color = Color.White.copy(alpha = 0.62f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Surface(
+                        onClick = onNewTab,
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFFF6F2FB)
                     ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                active = tab.id == activeTabId,
-                                accent = accent,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
+                        Row(
+                            modifier = Modifier.padding(horizontal = 17.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = Color(0xFF2A2334),
+                                modifier = Modifier.size(19.dp)
+                            )
+                            Text(
+                                "New tab",
+                                color = Color(0xFF2A2334),
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(start = 7.dp)
                             )
                         }
-                    }
-
-                    // New tab — a pill, exactly like everything else.
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = accent,
-                        onClick = onNewTab,
-                        modifier = Modifier
-                            .padding(Dimens.spaceL)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            text = "New tab",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.Black,
-                            modifier = Modifier.padding(horizontal = Dimens.spaceXl, vertical = Dimens.spaceM)
-                        )
                     }
                 }
             }
@@ -149,7 +173,7 @@ fun TabStackSheet(
 }
 
 @Composable
-private fun TabCard(
+private fun ArcTabCard(
     tab: Tab,
     active: Boolean,
     accent: Color,
@@ -157,49 +181,124 @@ private fun TabCard(
     onClose: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (active) 1f else 0.98f,
-        animationSpec = tween(160), label = "tabScale"
+        targetValue = if (active) 1f else 0.965f,
+        animationSpec = tween(180),
+        label = "arc-tab-card-scale"
     )
+    val palette = when ((tab.id % 4).toInt()) {
+        0 -> listOf(Color(0xFF34216F), Color(0xFF9D74C2))
+        1 -> listOf(Color(0xFF17465C), Color(0xFF8CC9C2))
+        2 -> listOf(Color(0xFF713D59), Color(0xFFE5A27F))
+        else -> listOf(Color(0xFF3B465F), Color(0xFF9AB5D1))
+    }
+    val host = remember(tab.url) {
+        runCatching { java.net.URI(tab.url).host?.removePrefix("www.") ?: tab.url }
+            .getOrDefault(tab.url)
+    }
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (active) accent.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.05f),
-        border = BorderStroke(
-            1.dp,
-            if (active) accent.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.06f)
-        ),
         onClick = onSelect,
-        modifier = Modifier.fillMaxWidth().scale(scale)
+        modifier = Modifier
+            .width(286.dp)
+            .fillMaxHeight(0.78f)
+            .scale(scale),
+        shape = RoundedCornerShape(27.dp),
+        color = Color(0xFFFAF8FC),
+        border = BorderStroke(
+            if (active) 2.dp else 1.dp,
+            if (active) accent else Color.White.copy(alpha = 0.35f)
+        ),
+        shadowElevation = if (active) 20.dp else 10.dp
     ) {
-        Row(
-            modifier = Modifier.padding(Dimens.spaceM),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = tab.displayTitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        Column(Modifier.fillMaxSize().padding(15.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Rounded.Layers,
+                    contentDescription = null,
+                    tint = Color(0xFF7C6A8D),
+                    modifier = Modifier.size(16.dp)
                 )
-                if (tab.url.isNotBlank()) {
-                    Text(
-                        text = tab.url,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                Text(
+                    host.ifBlank { "New tab" },
+                    color = Color(0xFF706879),
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 7.dp)
+                )
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = "Close tab",
+                        tint = Color(0xFF746B7D),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            IconButton(onClick = onClose) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(174.dp)
+                    .clip(RoundedCornerShape(19.dp))
+                    .background(Brush.linearGradient(palette)),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "Close tab",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icons.Rounded.Layers,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.28f),
+                    modifier = Modifier.size(60.dp)
                 )
+            }
+
+            Text(
+                tab.displayTitle.ifBlank { "New tab" },
+                color = Color(0xFF282231),
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 17.dp)
+            )
+            Text(
+                tab.url.ifBlank { "Search the web" },
+                color = Color(0xFF8B8292),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 5.dp)
+            )
+
+            Spacer(Modifier.height(17.dp))
+            repeat(3) { index ->
+                Box(
+                    Modifier
+                        .fillMaxWidth(if (index == 2) 0.62f else 0.92f)
+                        .padding(bottom = 8.dp)
+                        .height(7.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFEAE6EF))
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            if (active) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = accent.copy(alpha = 0.14f)
+                ) {
+                    Text(
+                        "CURRENT TAB",
+                        color = accent,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                    )
+                }
             }
         }
     }
