@@ -67,9 +67,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
@@ -264,9 +266,21 @@ fun ArcBottomDock(
     onNewTab: () -> Unit,
     onOpenControls: () -> Unit,
     homeMode: Boolean = false,
+    controlsExpanded: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (!homeMode && controlsExpanded && motionEnabled) 180f else 0f,
+        animationSpec = spring(stiffness = 420f, dampingRatio = 0.78f),
+        label = "arc-controls-chevron"
+    )
+    val darkSurface = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val plusGradient = if (darkSurface) {
+        listOf(Color(0xFF3A3346), Color(0xFF24202D))
+    } else {
+        listOf(Color(0xFFF9F7FC), Color(0xFFE7E1F2))
+    }
     val plusInteraction = remember { MutableInteractionSource() }
     val plusPressed by plusInteraction.collectIsPressedAsState()
     val plusScale by animateFloatAsState(
@@ -324,9 +338,7 @@ fun ArcBottomDock(
                 .height(52.dp)
                 .scale(plusScale)
                 .background(
-                    Brush.linearGradient(
-                        listOf(Color(0xFFF9F7FC), Color(0xFFE7E1F2))
-                    ),
+                    Brush.linearGradient(plusGradient),
                     RoundedCornerShape(22.dp)
                 )
         ) {
@@ -352,7 +364,7 @@ fun ArcBottomDock(
                     if (homeMode) Icons.Rounded.Settings else Icons.Rounded.ExpandMore,
                     contentDescription = if (homeMode) "Settings" else "Browser controls",
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(23.dp)
+                    modifier = Modifier.size(23.dp).rotate(chevronRotation)
                 )
             }
         }
@@ -909,7 +921,7 @@ private fun SmallTextControl(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
-        color = if (enabled) Color.White else MaterialTheme.colorScheme.surfaceVariant,
+        color = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Text(
