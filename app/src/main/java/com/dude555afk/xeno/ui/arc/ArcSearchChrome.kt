@@ -7,11 +7,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +66,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -265,6 +269,14 @@ fun ArcBottomDock(
     homeMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val plusInteraction = remember { MutableInteractionSource() }
+    val plusPressed by plusInteraction.collectIsPressedAsState()
+    val plusScale by animateFloatAsState(
+        targetValue = if (plusPressed) 0.92f else 1f,
+        animationSpec = spring(stiffness = 650f, dampingRatio = 0.62f),
+        label = "arc-plus-press"
+    )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -308,9 +320,11 @@ fun ArcBottomDock(
             shape = RoundedCornerShape(22.dp),
             color = Color.Transparent,
             shadowElevation = 10.dp,
+            interactionSource = plusInteraction,
             modifier = Modifier
                 .width(66.dp)
                 .height(52.dp)
+                .scale(plusScale)
                 .background(
                     Brush.linearGradient(
                         listOf(Color(0xFFF9F7FC), Color(0xFFE7E1F2))
