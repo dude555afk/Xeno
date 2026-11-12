@@ -1,6 +1,8 @@
 package com.dude555afk.xeno.ui.answersheet
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -54,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.AnswerSource
 import com.dude555afk.xeno.ui.render.AnswerText
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 
 private val BrowseInk = Color(0xFF282231)
 private val BrowseMuted = Color(0xFF827A8A)
@@ -75,6 +78,7 @@ fun AnswerSheet(
     onOpenSource: (AnswerSource) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val parsed = remember(result?.markdown) { AnswerText.parse(result?.markdown.orEmpty()) }
     val listState = rememberLazyListState()
     val sources = result?.sources.orEmpty()
@@ -82,13 +86,16 @@ fun AnswerSheet(
 
     LaunchedEffect(markdown.length) {
         val itemCount = 2 + sources.size + parsed.blocks.size
-        if (itemCount > 0) runCatching { listState.animateScrollToItem(itemCount - 1) }
+        if (itemCount > 0) runCatching {
+            if (motionEnabled) listState.animateScrollToItem(itemCount - 1)
+            else listState.scrollToItem(itemCount - 1)
+        }
     }
 
     AnimatedVisibility(
         visible = result != null,
-        enter = fadeIn(tween(180)),
-        exit = fadeOut(tween(140))
+        enter = if (motionEnabled) fadeIn(tween(180)) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(140)) else ExitTransition.None
     ) {
         Box(
             modifier = Modifier
