@@ -36,9 +36,9 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material.icons.rounded.Sliders
-import androidx.compose.material.icons.rounded.Sparkles
-import androidx.compose.material.icons.rounded.Zap
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -228,7 +228,7 @@ fun ArcSettingsScreen(
                     SettingsGroup(
                         title = "Search",
                         subtitle = "Control how a new session starts",
-                        icon = { Icon(Icons.Rounded.Sliders, contentDescription = null) }
+                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null) }
                     ) {
                         SettingsToggle(
                             title = "Open search on launch",
@@ -258,7 +258,7 @@ fun ArcSettingsScreen(
                     SettingsGroup(
                         title = "Motion",
                         subtitle = "Transitions and browser chrome",
-                        icon = { Icon(Icons.Rounded.Zap, contentDescription = null) }
+                        icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) }
                     ) {
                         SettingsToggle(
                             title = "Use animations",
@@ -271,7 +271,7 @@ fun ArcSettingsScreen(
                     SettingsGroup(
                         title = "About Xeno",
                         subtitle = "A Chromium-based browser with its own interface",
-                        icon = { Icon(Icons.Rounded.Sparkles, contentDescription = null) }
+                        icon = { Icon(Icons.Rounded.Info, contentDescription = null) }
                     ) {
                         SettingsInfoRow("Version", "0.1.0")
                         SettingsInfoRow("Rendering engine", "Android System WebView · Chromium")
