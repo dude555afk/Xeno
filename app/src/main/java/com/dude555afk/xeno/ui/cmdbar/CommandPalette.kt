@@ -2,6 +2,8 @@ package com.dude555afk.xeno.ui.cmdbar
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -56,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Tab
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import kotlinx.coroutines.delay
 
 /**
@@ -80,6 +83,7 @@ fun CommandPalette(
     onOpenTab: (Tab) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val ideas = remember {
@@ -108,8 +112,10 @@ fun CommandPalette(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn() + scaleIn(initialScale = 0.985f),
-        exit = fadeOut() + scaleOut(targetScale = 0.985f)
+        enter = if (motionEnabled) fadeIn() + scaleIn(initialScale = 0.985f)
+        else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut() + scaleOut(targetScale = 0.985f)
+        else ExitTransition.None
     ) {
         Box(
             modifier = Modifier
