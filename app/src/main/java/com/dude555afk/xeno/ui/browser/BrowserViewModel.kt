@@ -545,30 +545,30 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun captureTabPreview(tabId: Long) {
         val view = pool.peek(SESSION_KEY) ?: return
-        view.post {
-            val width = view.width
-            val height = view.height
-            if (width <= 0 || height <= 0) return@post
+        val width = view.width
+        val height = view.height
+        if (width <= 0 || height <= 0) return
 
-            runCatching {
-                val scale = minOf(360f / width, 720f / height, 1f)
-                val bitmap = Bitmap.createBitmap(
-                    (width * scale).toInt().coerceAtLeast(1),
-                    (height * scale).toInt().coerceAtLeast(1),
-                    Bitmap.Config.ARGB_8888
-                )
-                val canvas = Canvas(bitmap)
-                canvas.scale(scale, scale)
-                view.draw(canvas)
+        runCatching {
+            val scale = minOf(360f / width, 720f / height, 1f)
+            val bitmap = Bitmap.createBitmap(
+                (width * scale).toInt().coerceAtLeast(1),
+                (height * scale).toInt().coerceAtLeast(1),
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            canvas.scale(scale, scale)
+            // Called on the UI thread before tab selection navigates the shared
+            // WebView, so this snapshot belongs to the tab being left.
+            view.draw(canvas)
 
-                _state.update { current ->
-                    val previews = LinkedHashMap(current.tabPreviews)
-                    previews[tabId] = bitmap
-                    while (previews.size > 8) {
-                        previews.remove(previews.keys.first())
-                    }
-                    current.copy(tabPreviews = previews)
+            _state.update { current ->
+                val previews = LinkedHashMap(current.tabPreviews)
+                previews[tabId] = bitmap
+                while (previews.size > 8) {
+                    previews.remove(previews.keys.first())
                 }
+                current.copy(tabPreviews = previews)
             }
         }
     }
