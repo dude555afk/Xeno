@@ -265,7 +265,7 @@ private fun ArcTabCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(174.dp)
+                    .height(292.dp)
                     .clip(RoundedCornerShape(19.dp))
                     .background(Brush.linearGradient(palette)),
                 contentAlignment = Alignment.Center
@@ -305,16 +305,6 @@ private fun ArcTabCard(
             )
 
             Spacer(Modifier.height(17.dp))
-            repeat(3) { index ->
-                Box(
-                    Modifier
-                        .fillMaxWidth(if (index == 2) 0.62f else 0.92f)
-                        .padding(bottom = 8.dp)
-                        .height(7.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFFEAE6EF))
-                )
-            }
             Spacer(Modifier.weight(1f))
             if (active) {
                 Surface(
