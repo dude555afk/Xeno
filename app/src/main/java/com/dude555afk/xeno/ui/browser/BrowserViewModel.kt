@@ -226,7 +226,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val spaceId = _state.value.activeSpace?.id ?: 1L
             val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
             selectTab(Tab(id = id, spaceId = spaceId))
-            _state.update { it.copy(tabStackVisible = false, paletteVisible = true) }
+            _state.update {
+                it.copy(
+                    tabStackVisible = false,
+                    paletteVisible = true,
+                    query = "",
+                    isQuestion = false,
+                    historyHints = emptyList()
+                )
+            }
         }
     }
 
@@ -260,7 +268,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: palette
 
     fun openPalette() {
-        _state.update { it.copy(paletteVisible = true) }
+        _state.update {
+            it.copy(
+                paletteVisible = true,
+                query = "",
+                isQuestion = false,
+                historyHints = emptyList()
+            )
+        }
     }
 
     fun closePalette() {
