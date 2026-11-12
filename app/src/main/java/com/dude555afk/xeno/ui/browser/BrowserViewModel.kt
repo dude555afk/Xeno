@@ -76,6 +76,10 @@ data class BrowserUiState(
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
     val autoOpenKeyboard: Boolean = true,
+    val themeMode: String = "system",
+    val accentOverrideArgb: Int = 0,
+    val animationsEnabled: Boolean = true,
+    val chromeVisible: Boolean = true,
     val hasApiKey: Boolean = false
 )
 
@@ -114,6 +118,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
             autoOpenKeyboard = settings.autoOpenKeyboard,
+            themeMode = settings.themeMode,
+            accentOverrideArgb = settings.accentOverrideArgb,
+            animationsEnabled = settings.animationsEnabled,
             hasApiKey = settings.hasApiKey
         )
     )
@@ -198,6 +205,28 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setAutoOpenKeyboard(enabled: Boolean) {
         settings.autoOpenKeyboard = enabled
         _state.update { it.copy(autoOpenKeyboard = enabled) }
+    }
+
+    fun setThemeMode(mode: String) {
+        val safeMode = mode.takeIf { it in setOf("system", "dark", "light") } ?: "system"
+        settings.themeMode = safeMode
+        _state.update { it.copy(themeMode = safeMode) }
+    }
+
+    fun setAccentOverride(argb: Int) {
+        settings.accentOverrideArgb = argb
+        _state.update { it.copy(accentOverrideArgb = argb) }
+    }
+
+    fun setAnimationsEnabled(enabled: Boolean) {
+        settings.animationsEnabled = enabled
+        _state.update { it.copy(animationsEnabled = enabled) }
+    }
+
+    private fun setChromeVisible(visible: Boolean) {
+        if (_state.value.chromeVisible != visible) {
+            _state.update { it.copy(chromeVisible = visible) }
+        }
     }
 
     // MARK: spaces & tabs
@@ -512,6 +541,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun attachHost(host: ViewGroup) {
         val view = pool.acquire(SESSION_KEY, host)
+        view.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            val delta = scrollY - oldScrollY
+            if (scrollY <= 12) {
+                setChromeVisible(true)
+            } else if (kotlin.math.abs(delta) >= 7) {
+                setChromeVisible(delta < 0)
+            }
+        }
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
             blocker = { request ->
@@ -614,6 +651,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             if (tabId != null) {
                 _state.update { it.copy(tabPreviews = it.tabPreviews - tabId) }
             }
+            setChromeVisible(true)
             _state.update {
                 it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
             }
@@ -650,6 +688,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
+            setChromeVisible(true)
             _state.update {
                 it.copy(
                     load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
