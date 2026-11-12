@@ -549,6 +549,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 setChromeVisible(delta < 0)
             }
         }
+        view.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) setChromeVisible(true)
+            false
+        }
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
             blocker = { request ->
