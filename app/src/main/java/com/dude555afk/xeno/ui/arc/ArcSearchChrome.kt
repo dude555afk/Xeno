@@ -269,10 +269,11 @@ fun ArcBottomDock(
     homeMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val plusInteraction = remember { MutableInteractionSource() }
     val plusPressed by plusInteraction.collectIsPressedAsState()
     val plusScale by animateFloatAsState(
-        targetValue = if (plusPressed) 0.92f else 1f,
+        targetValue = if (motionEnabled && plusPressed) 0.92f else 1f,
         animationSpec = spring(stiffness = 650f, dampingRatio = 0.62f),
         label = "arc-plus-press"
     )
