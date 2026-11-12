@@ -2,7 +2,7 @@ name: Android Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'restart/**']
     tags: ['v*']
   pull_request:
     branches: [main]
