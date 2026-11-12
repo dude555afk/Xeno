@@ -225,7 +225,7 @@ fun SummarySheet(
                         }
 
                         if (streamText.isBlank()) {
-                            SummarySkeleton()
+                            SummarySkeleton(motionEnabled)
                         } else {
                             SelectionContainer {
                                 Column {
@@ -270,14 +270,15 @@ fun SummarySheet(
 }
 
 @Composable
-private fun SummarySkeleton() {
+private fun SummarySkeleton(animationsEnabled: Boolean) {
     val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
+    val animatedAlpha by transition.animateFloat(
         initialValue = 0.12f,
         targetValue = 0.35f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "alpha"
     )
+    val alpha = if (animationsEnabled) animatedAlpha else 0.2f
     Column {
         repeat(6) { i ->
             Box(
