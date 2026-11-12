@@ -755,7 +755,7 @@ fun ArcSiteActionsSheet(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    if (blockingEnabled) "Protection is on" else "Protection is paused",
+                                    if (blockingEnabled) "Global protection is on" else "Global protection is paused",
                                     color = ArcMuted,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -784,8 +784,8 @@ fun ArcSiteActionsSheet(
 
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        if (blockingEnabled) "Xeno protection is active on this page"
-                        else "Content protection is paused",
+                        if (blockingEnabled) "Xeno protection is active across sites"
+                        else "Global content protection is paused",
                         color = ArcMuted,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 4.dp)
