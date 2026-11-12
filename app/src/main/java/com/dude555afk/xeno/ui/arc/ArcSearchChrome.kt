@@ -76,7 +76,7 @@ fun ArcHomeScreen(
     onBrowseForMe: (String) -> Unit,
     onOpenTabs: () -> Unit,
     onNewTab: () -> Unit,
-    onOpenControls: () -> Unit,
+    onOpenSettings: () -> Unit,
     tabCount: Int,
     modifier: Modifier = Modifier
 ) {
@@ -232,7 +232,8 @@ fun ArcHomeScreen(
             tabCount = tabCount,
             onOpenTabs = onOpenTabs,
             onNewTab = onNewTab,
-            onOpenControls = onOpenControls,
+            onOpenControls = onOpenSettings,
+            homeMode = true,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -247,6 +248,7 @@ fun ArcBottomDock(
     onOpenTabs: () -> Unit,
     onNewTab: () -> Unit,
     onOpenControls: () -> Unit,
+    homeMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -321,10 +323,10 @@ fun ArcBottomDock(
         ) {
             Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
                 Icon(
-                    Icons.Rounded.ExpandMore,
-                    contentDescription = "Browser controls",
+                    if (homeMode) Icons.Rounded.Settings else Icons.Rounded.ExpandMore,
+                    contentDescription = if (homeMode) "Settings" else "Browser controls",
                     tint = ArcInk,
-                    modifier = Modifier.size(25.dp)
+                    modifier = Modifier.size(23.dp)
                 )
             }
         }
@@ -376,6 +378,131 @@ fun ArcPageAddress(
                 tint = ArcMuted,
                 modifier = Modifier.size(19.dp)
             )
+        }
+    }
+}
+
+/** Arc-style settings entry point from the start screen. */
+@Composable
+fun ArcHomeSettingsSheet(
+    visible: Boolean,
+    blockingEnabled: Boolean,
+    onBlockingChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(160)) + slideInVertically(
+            initialOffsetY = { it / 3 },
+            animationSpec = tween(220)
+        ),
+        exit = fadeOut(tween(120)) + slideOutVertically(tween(170))
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.48f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
+                color = Color(0xFFF9F7FB),
+                shadowElevation = 18.dp
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {}
+                        .navigationBarsPadding()
+                        .padding(horizontal = 22.dp, vertical = 18.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "App Settings",
+                                color = ArcInk,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Xeno Browser",
+                                color = ArcMuted,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Rounded.Close, contentDescription = "Close settings", tint = ArcInk)
+                        }
+                    }
+                    Spacer(Modifier.height(15.dp))
+                    Text(
+                        "PRIVACY",
+                        color = ArcViolet,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onBlockingChange(!blockingEnabled) }
+                            .padding(vertical = 15.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Block Ads & Trackers",
+                                color = ArcInk,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                if (blockingEnabled) "Enabled for pages you visit" else "Protection is paused",
+                                color = ArcMuted,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = if (blockingEnabled) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                        ) {
+                            Box(
+                                Modifier.width(44.dp).height(26.dp).padding(3.dp),
+                                contentAlignment = if (blockingEnabled) Alignment.CenterEnd else Alignment.CenterStart
+                            ) {
+                                Box(
+                                    Modifier.size(20.dp).clip(CircleShape).background(Color.White)
+                                )
+                            }
+                        }
+                    }
+                    Box(
+                        Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEAE5EF))
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "ABOUT",
+                        color = ArcViolet,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Chromium-based browsing with Xeno's own interface.",
+                        color = ArcInk,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "Version 0.1.0",
+                        color = ArcMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
