@@ -40,6 +40,16 @@ class SettingsStore(context: Context) {
         get() = prefs.getLong(KEY_SPACE, 1L)
         set(value) = prefs.edit { putLong(KEY_SPACE, value) }
 
+    fun isPinned(url: String): Boolean =
+        url.isNotBlank() && url in (prefs.getStringSet(KEY_PINNED_URLS, emptySet()) ?: emptySet())
+
+    fun togglePinned(url: String): Boolean {
+        val current = (prefs.getStringSet(KEY_PINNED_URLS, emptySet()) ?: emptySet()).toSet()
+        val updated = if (url in current) current - url else current + url
+        prefs.edit { putStringSet(KEY_PINNED_URLS, updated) }
+        return url in updated
+    }
+
     val providerConfig: ProviderConfig
         get() = ProviderConfig(
             id = providerId,
@@ -69,5 +79,6 @@ class SettingsStore(context: Context) {
         const val KEY_MODEL = "model"
         const val KEY_BLOCKING = "blocking_enabled"
         const val KEY_SPACE = "active_space"
+        const val KEY_PINNED_URLS = "pinned_urls"
     }
 }
