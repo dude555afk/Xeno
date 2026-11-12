@@ -214,11 +214,13 @@ private fun ArcTabCard(
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
-    val scale by animateFloatAsState(
+    val motionEnabled = LocalArcMotionEnabled.current
+    val animatedScale by animateFloatAsState(
         targetValue = if (active) 1f else 0.965f,
         animationSpec = tween(180),
         label = "arc-tab-card-scale"
     )
+    val scale = if (motionEnabled) animatedScale else if (active) 1f else 0.965f
     val palette = when ((tab.id % 4).toInt()) {
         0 -> listOf(Color(0xFF34216F), Color(0xFF9D74C2))
         1 -> listOf(Color(0xFF17465C), Color(0xFF8CC9C2))
