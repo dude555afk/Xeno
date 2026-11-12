@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -45,6 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +63,7 @@ fun TabStackSheet(
     visible: Boolean,
     tabs: List<Tab>,
     activeTabId: Long?,
+    previews: Map<Long, android.graphics.Bitmap> = emptyMap(),
     accent: Color,
     onSelect: (Tab) -> Unit,
     onClose: (Tab) -> Unit,
@@ -125,6 +129,7 @@ fun TabStackSheet(
                         ArcTabCard(
                             tab = tab,
                             active = tab.id == activeTabId,
+                            preview = previews[tab.id],
                             accent = accent,
                             onSelect = { onSelect(tab) },
                             onClose = { onClose(tab) }
@@ -177,6 +182,7 @@ fun TabStackSheet(
 private fun ArcTabCard(
     tab: Tab,
     active: Boolean,
+    preview: android.graphics.Bitmap?,
     accent: Color,
     onSelect: () -> Unit,
     onClose: () -> Unit
@@ -250,12 +256,21 @@ private fun ArcTabCard(
                     .background(Brush.linearGradient(palette)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Rounded.Layers,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.28f),
-                    modifier = Modifier.size(60.dp)
-                )
+                if (preview != null && !preview.isRecycled) {
+                    Image(
+                        bitmap = preview.asImageBitmap(),
+                        contentDescription = "Preview of ${tab.displayTitle}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        Icons.Rounded.Layers,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.28f),
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
             }
 
             Text(
