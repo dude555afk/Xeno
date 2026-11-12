@@ -1,5 +1,7 @@
 package com.dude555afk.xeno.ui.arc
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -403,13 +405,15 @@ fun ArcHomeSettingsSheet(
     onAutoOpenKeyboardChange: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(160)) + slideInVertically(
+        enter = if (motionEnabled) fadeIn(tween(160)) + slideInVertically(
             initialOffsetY = { it / 3 },
             animationSpec = tween(220)
-        ),
-        exit = fadeOut(tween(120)) + slideOutVertically(tween(170))
+        ) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(120)) + slideOutVertically(tween(170))
+        else ExitTransition.None
     ) {
         Box(
             Modifier
@@ -585,18 +589,21 @@ fun ArcSiteActionsSheet(
     onTogglePin: () -> Unit,
     onShare: () -> Unit,
     onBlockingChange: (Boolean) -> Unit,
-    onZoomChange: (Int) -> Unit
+    onZoomChange: (Int) -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     var displayOptionsOpen by remember { mutableStateOf(false) }
     var siteSettingsOpen by remember { mutableStateOf(false) }
 
+    val motionEnabled = LocalArcMotionEnabled.current
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(160)) + slideInVertically(
+        enter = if (motionEnabled) fadeIn(tween(160)) + slideInVertically(
             initialOffsetY = { it / 3 },
             animationSpec = tween(220)
-        ),
-        exit = fadeOut(tween(120)) + slideOutVertically(tween(170))
+        ) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(120)) + slideOutVertically(tween(170))
+        else ExitTransition.None
     ) {
         Box(
             Modifier
@@ -781,6 +788,13 @@ fun ArcSiteActionsSheet(
                             }
                         }
                     }
+
+                    MenuSectionRow(
+                        title = "App Settings",
+                        subtitle = "Appearance, search and browser behaviour",
+                        expanded = false,
+                        onClick = onOpenAppSettings
+                    )
 
                     Spacer(Modifier.height(8.dp))
                     Text(
