@@ -163,6 +163,7 @@ fun BrowserScreen(
                         onOpenTabs = viewModel::toggleTabStack,
                         onNewTab = viewModel::newTab,
                         onOpenControls = { controlsVisible = true },
+                        controlsExpanded = controlsVisible,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
