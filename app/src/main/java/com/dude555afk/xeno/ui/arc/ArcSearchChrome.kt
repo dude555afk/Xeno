@@ -77,9 +77,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import com.dude555afk.xeno.core.model.Tab
 
-private val ArcInk = Color(0xFF211A2B)
-private val ArcMuted = Color(0xFF827A8A)
-private val ArcPaper = Color(0xFFFAF8FC)
 
 /**
  * Xeno's Arc Search-inspired new-tab surface.
@@ -162,7 +159,7 @@ fun ArcHomeScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(28.dp),
-                color = ArcPaper,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 18.dp,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.55f))
             ) {
@@ -177,13 +174,13 @@ fun ArcHomeScreen(
                         Icon(
                             Icons.Rounded.Search,
                             contentDescription = null,
-                            tint = ArcMuted,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(21.dp)
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             "Search or ask anything",
-                            color = ArcMuted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f)
                         )
@@ -201,7 +198,7 @@ fun ArcHomeScreen(
                                     .fillMaxWidth()
                                     .padding(start = 18.dp, end = 18.dp)
                                     .height(1.dp)
-                                    .background(Color(0xFFEDE9F1))
+                                    .background(MaterialTheme.colorScheme.outlineVariant)
                             )
                         }
                         Row(
@@ -214,13 +211,13 @@ fun ArcHomeScreen(
                             Icon(
                                 Icons.Rounded.Search,
                                 contentDescription = null,
-                                tint = ArcMuted,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(Modifier.width(12.dp))
                             Text(
                                 text = idea,
-                                color = ArcInk,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -288,15 +285,15 @@ fun ArcBottomDock(
         Surface(
             onClick = onOpenTabs,
             shape = CircleShape,
-            color = Color(0xDDF7F4FA),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shadowElevation = 8.dp
         ) {
             Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Rounded.Layers,
                     contentDescription = "Open tabs",
-                    tint = ArcInk,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(22.dp)
                 )
                 Surface(
@@ -308,7 +305,7 @@ fun ArcBottomDock(
                 ) {
                     Text(
                         tabCount.toString(),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                     )
@@ -337,7 +334,7 @@ fun ArcBottomDock(
                 Icon(
                     Icons.Rounded.Add,
                     contentDescription = "New search",
-                    tint = ArcInk,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -346,15 +343,15 @@ fun ArcBottomDock(
         Surface(
             onClick = onOpenControls,
             shape = CircleShape,
-            color = Color(0xDDF7F4FA),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shadowElevation = 8.dp
         ) {
             Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     if (homeMode) Icons.Rounded.Settings else Icons.Rounded.ExpandMore,
                     contentDescription = if (homeMode) "Settings" else "Browser controls",
-                    tint = ArcInk,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(23.dp)
                 )
             }
@@ -378,9 +375,9 @@ fun ArcPageAddress(
         onClick = onClick,
         modifier = modifier.padding(horizontal = 26.dp),
         shape = CircleShape,
-        color = Color(0xEFFFFFFF),
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 17.dp, vertical = 12.dp),
@@ -389,13 +386,13 @@ fun ArcPageAddress(
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = null,
-                tint = ArcMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(17.dp)
             )
             Spacer(Modifier.width(10.dp))
             Text(
                 host.ifBlank { "Search or enter address" },
-                color = ArcInk,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -404,7 +401,7 @@ fun ArcPageAddress(
             Icon(
                 Icons.Rounded.ExpandMore,
                 contentDescription = "Open address controls",
-                tint = ArcMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(19.dp)
             )
         }
@@ -441,7 +438,7 @@ fun ArcHomeSettingsSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = Color(0xFFF9F7FB),
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 18.dp
             ) {
                 Column(
@@ -458,18 +455,18 @@ fun ArcHomeSettingsSheet(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 "App Settings",
-                                color = ArcInk,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 "Xeno Browser",
-                                color = ArcMuted,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Close settings", tint = ArcInk)
+                            Icon(Icons.Rounded.Close, contentDescription = "Close settings", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Spacer(Modifier.height(15.dp))
@@ -489,18 +486,18 @@ fun ArcHomeSettingsSheet(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 "Auto-Open Keyboard",
-                                color = ArcInk,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
                                 "Start a new search when Xeno opens",
-                                color = ArcMuted,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         Surface(
                             shape = CircleShape,
-                            color = if (autoOpenKeyboard) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                            color = if (autoOpenKeyboard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         ) {
                             Box(
                                 Modifier.width(44.dp).height(26.dp).padding(3.dp),
@@ -511,7 +508,7 @@ fun ArcHomeSettingsSheet(
                         }
                     }
                     Box(
-                        Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEAE5EF))
+                        Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant)
                     )
                     Spacer(Modifier.height(14.dp))
                     Text(
@@ -530,18 +527,18 @@ fun ArcHomeSettingsSheet(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 "Block Ads & Trackers",
-                                color = ArcInk,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
                                 if (blockingEnabled) "Enabled for pages you visit" else "Protection is paused",
-                                color = ArcMuted,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         Surface(
                             shape = CircleShape,
-                            color = if (blockingEnabled) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                            color = if (blockingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         ) {
                             Box(
                                 Modifier.width(44.dp).height(26.dp).padding(3.dp),
@@ -554,7 +551,7 @@ fun ArcHomeSettingsSheet(
                         }
                     }
                     Box(
-                        Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEAE5EF))
+                        Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant)
                     )
                     Spacer(Modifier.height(14.dp))
                     Text(
@@ -566,12 +563,12 @@ fun ArcHomeSettingsSheet(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Chromium-based browsing with Xeno's own interface.",
-                        color = ArcInk,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
                         "Version 0.1.0",
-                        color = ArcMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -632,7 +629,7 @@ fun ArcSiteActionsSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = Color(0xFFF9F7FB),
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 18.dp
             ) {
                 Column(
@@ -669,7 +666,7 @@ fun ArcSiteActionsSheet(
                                 .width(38.dp)
                                 .height(4.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFD5D0DA))
+                                .background(MaterialTheme.colorScheme.outline)
                         )
                     }
                     Spacer(Modifier.height(12.dp))
@@ -685,8 +682,8 @@ fun ArcSiteActionsSheet(
                             onClick = onCopyUrl,
                             modifier = Modifier.weight(1f),
                             shape = CircleShape,
-                            color = Color.White,
-                            border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
@@ -695,7 +692,7 @@ fun ArcSiteActionsSheet(
                                 Text(
                                     runCatching { java.net.URI(url).host?.removePrefix("www.") }
                                         .getOrNull().orEmpty().ifBlank { title.ifBlank { "Search" } },
-                                    color = ArcInk,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodySmall,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -704,7 +701,7 @@ fun ArcSiteActionsSheet(
                                 Icon(
                                     Icons.Rounded.Search,
                                     contentDescription = "Copy current address",
-                                    tint = ArcMuted,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -758,12 +755,12 @@ fun ArcSiteActionsSheet(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     "Text size",
-                                    color = ArcInk,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
                                     "$pageTextZoom%",
-                                    color = ArcMuted,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -794,18 +791,18 @@ fun ArcSiteActionsSheet(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     "Block ads and trackers",
-                                    color = ArcInk,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
                                     if (blockingEnabled) "Global protection is on" else "Global protection is paused",
-                                    color = ArcMuted,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
                             Surface(
                                 shape = CircleShape,
-                                color = if (blockingEnabled) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                                color = if (blockingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                             ) {
                                 Box(
                                     Modifier
@@ -836,7 +833,7 @@ fun ArcSiteActionsSheet(
                     Text(
                         if (blockingEnabled) "Xeno protection is active across sites"
                         else "Global content protection is paused",
-                        color = ArcMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
@@ -857,13 +854,13 @@ private fun RoundControl(
         onClick = onClick,
         enabled = enabled,
         shape = CircleShape,
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Icon(
             icon,
             contentDescription = description,
-            tint = if (enabled) ArcInk else ArcMuted.copy(alpha = 0.35f),
+            tint = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
             modifier = Modifier.padding(10.dp).size(18.dp)
         )
     }
@@ -879,7 +876,7 @@ private fun MenuSectionRow(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(15.dp),
-        color = Color(0xFFF0EDF4),
+        color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 7.dp)
@@ -889,13 +886,13 @@ private fun MenuSectionRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(title, color = ArcInk, style = MaterialTheme.typography.bodyMedium)
-                Text(subtitle, color = ArcMuted, style = MaterialTheme.typography.labelSmall)
+                Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
             Icon(
                 if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ArrowForward,
                 contentDescription = null,
-                tint = ArcMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -912,12 +909,12 @@ private fun SmallTextControl(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
-        color = if (enabled) Color.White else Color(0xFFF0EDF4),
-        border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+        color = if (enabled) Color.White else MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Text(
             label,
-            color = if (enabled) ArcInk else ArcMuted.copy(alpha = 0.5f),
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
         )
@@ -935,8 +932,8 @@ private fun ActionTile(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 13.dp, horizontal = 3.dp),
@@ -946,7 +943,7 @@ private fun ActionTile(
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
             Text(
                 label,
-                color = ArcInk,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1
             )
@@ -978,7 +975,7 @@ fun ArcFindInPageBar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         shape = RoundedCornerShape(22.dp),
-        color = Color(0xFFF9F7FB),
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 14.dp,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f))
     ) {
@@ -989,7 +986,7 @@ fun ArcFindInPageBar(
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = null,
-                tint = ArcMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(19.dp)
             )
             Spacer(Modifier.width(10.dp))
@@ -998,7 +995,7 @@ fun ArcFindInPageBar(
                 onValueChange = onQueryChange,
                 modifier = Modifier.weight(1f).focusRequester(requester),
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = ArcInk),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onNext() }),
@@ -1007,7 +1004,7 @@ fun ArcFindInPageBar(
                         if (query.isBlank()) {
                             Text(
                                 "Find on page",
-                                color = ArcMuted,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -1019,21 +1016,21 @@ fun ArcFindInPageBar(
                 Icon(
                     Icons.Rounded.ArrowUpward,
                     contentDescription = "Previous match",
-                    tint = if (query.isNotBlank()) ArcInk else ArcMuted.copy(alpha = 0.35f)
+                    tint = if (query.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
                 )
             }
             IconButton(onClick = onNext, enabled = query.isNotBlank()) {
                 Icon(
                     Icons.Rounded.ArrowDownward,
                     contentDescription = "Next match",
-                    tint = if (query.isNotBlank()) ArcInk else ArcMuted.copy(alpha = 0.35f)
+                    tint = if (query.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
                 )
             }
             IconButton(onClick = {
                 keyboard?.hide()
                 onClose()
             }) {
-                Icon(Icons.Rounded.Close, contentDescription = "Close find", tint = ArcInk)
+                Icon(Icons.Rounded.Close, contentDescription = "Close find", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
