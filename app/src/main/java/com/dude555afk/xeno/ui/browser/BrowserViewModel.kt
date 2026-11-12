@@ -57,6 +57,9 @@ data class BrowserUiState(
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
     val canGoBack: Boolean = false,
+    val canGoForward: Boolean = false,
+    val isCurrentPagePinned: Boolean = false,
+    val pageTextZoom: Int = 100,
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
@@ -194,7 +197,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (loadedTabId != null && loadedTabId != tab.id) {
             captureTabPreview(loadedTabId!!)
         }
-        _state.update { it.copy(activeTab = tab, load = PageLoadState(url = tab.url)) }
+        _state.update {
+            it.copy(
+                activeTab = tab,
+                load = PageLoadState(url = tab.url),
+                isCurrentPagePinned = settings.isPinned(tab.url)
+            )
+        }
         syncSessionToTab(tab)
     }
 
@@ -562,9 +571,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Mirror the session's history depth into state so the bar can show it. */
     private fun refreshBackState() {
-        val back = pool.peek(SESSION_KEY)?.canGoBack() == true
-        if (_state.value.canGoBack != back) {
-            _state.update { it.copy(canGoBack = back) }
+        val view = pool.peek(SESSION_KEY)
+        val back = view?.canGoBack() == true
+        val forward = view?.canGoForward() == true
+        if (_state.value.canGoBack != back || _state.value.canGoForward != forward) {
+            _state.update { it.copy(canGoBack = back, canGoForward = forward) }
         }
     }
 
@@ -632,6 +643,45 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun goBack() {
         pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
+    }
+
+    fun goForward() {
+        pool.peek(SESSION_KEY)?.takeIf { it.canGoForward() }?.goForward()
+    }
+
+    fun reloadPage() {
+        pool.peek(SESSION_KEY)?.reload()
+    }
+
+    fun findInPage(query: String) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        if (query.isBlank()) view.clearMatches() else view.findAllAsync(query)
+    }
+
+    fun findNext(forward: Boolean) {
+        pool.peek(SESSION_KEY)?.findNext(forward)
+    }
+
+    fun clearFindInPage() {
+        pool.peek(SESSION_KEY)?.clearMatches()
+    }
+
+    fun togglePinCurrentPage() {
+        val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
+        if (url.isBlank()) return
+        val pinned = settings.togglePinned(url)
+        _state.update { it.copy(isCurrentPagePinned = pinned) }
+    }
+
+    fun setBlockingEnabled(enabled: Boolean) {
+        settings.blockingEnabled = enabled
+        _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    fun changePageTextZoom(delta: Int) {
+        val zoom = (_state.value.pageTextZoom + delta).coerceIn(50, 200)
+        pool.peek(SESSION_KEY)?.settings?.textZoom = zoom
+        _state.update { it.copy(pageTextZoom = zoom) }
     }
 
     /**
