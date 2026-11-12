@@ -1,6 +1,10 @@
 package com.dude555afk.xeno.ui.browser
 
 import android.view.ViewGroup
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcBottomDock
+import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArcHomeScreen
 import com.dude555afk.xeno.ui.arc.ArcPageAddress
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
@@ -40,6 +46,9 @@ fun BrowserScreen(
     accent: Color
 ) {
     var controlsVisible by remember { mutableStateOf(false) }
+    var findInPageVisible by remember { mutableStateOf(false) }
+    var findQuery by remember { mutableStateOf("") }
+    val context = LocalContext.current
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
     val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
 
@@ -139,24 +148,58 @@ fun BrowserScreen(
             visible = controlsVisible,
             title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
             url = displayUrl,
+            canGoBack = state.canGoBack,
+            canGoForward = state.canGoForward,
+            isPinned = state.isCurrentPagePinned,
+            blockingEnabled = state.blockingEnabled,
+            pageTextZoom = state.pageTextZoom,
             onDismiss = { controlsVisible = false },
-            onBack = {
+            onBack = viewModel::goBack,
+            onForward = viewModel::goForward,
+            onReload = viewModel::reloadPage,
+            onCopyUrl = {
+                val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                manager?.setPrimaryClip(ClipData.newPlainText("Xeno address", displayUrl))
+            },
+            onFindInPage = {
                 controlsVisible = false
-                viewModel.goBack()
+                findQuery = ""
+                findInPageVisible = true
             },
             onSummarize = {
                 controlsVisible = false
                 viewModel.summarizeCurrentPage()
             },
-            onNewTab = {
-                controlsVisible = false
-                viewModel.newTab()
+            onTogglePin = viewModel::togglePinCurrentPage,
+            onShare = {
+                val share = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() })
+                    putExtra(Intent.EXTRA_TEXT, displayUrl)
+                }
+                context.startActivity(Intent.createChooser(share, "Share page"))
             },
-            onShowTabs = {
-                controlsVisible = false
-                viewModel.toggleTabStack()
-            }
+            onBlockingChange = viewModel::setBlockingEnabled,
+            onZoomChange = viewModel::changePageTextZoom
         )
+
+        if (findInPageVisible) {
+            ArcFindInPageBar(
+                query = findQuery,
+                onQueryChange = { query ->
+                    findQuery = query
+                    viewModel.findInPage(query)
+                },
+                onPrevious = { viewModel.findNext(false) },
+                onNext = { viewModel.findNext(true) },
+                onClose = {
+                    findInPageVisible = false
+                    findQuery = ""
+                    viewModel.clearFindInPage()
+                },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
 
         AnswerSheet(
             result = state.answer,
