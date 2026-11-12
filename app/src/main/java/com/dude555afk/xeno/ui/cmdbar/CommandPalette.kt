@@ -211,13 +211,15 @@ fun CommandPalette(
                             )
                         }
                         if (tabHints.isEmpty() && historyHints.isEmpty()) {
-                            BrowseSuggestion(
-                                text = query.trim(),
-                                onClick = {
-                                    keyboard?.hide()
-                                    onAsk(query.trim())
-                                }
-                            )
+                            item {
+                                BrowseSuggestion(
+                                    text = query.trim(),
+                                    onClick = {
+                                        keyboard?.hide()
+                                        onAsk(query.trim())
+                                    }
+                                )
+                            }
                         }
                     }
                 }
