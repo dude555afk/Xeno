@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,9 @@ fun BrowserScreen(
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.showStartupSearchIfConfigured()
+    }
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
     val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
 
@@ -116,7 +120,9 @@ fun BrowserScreen(
         ArcHomeSettingsSheet(
             visible = homeSettingsVisible,
             blockingEnabled = state.blockingEnabled,
+            autoOpenKeyboard = state.autoOpenKeyboard,
             onBlockingChange = viewModel::setBlockingEnabled,
+            onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
             onDismiss = { homeSettingsVisible = false }
         )
 
