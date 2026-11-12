@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Box(Modifier.fillMaxSize().background(Color.Black)) {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                         BrowserScreen(state = state, viewModel = viewModel, accent = accent)
                     }
                 }
