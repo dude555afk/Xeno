@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
@@ -60,6 +62,7 @@ data class BrowserUiState(
     val isQuestion: Boolean = false,
     val historyHints: List<SearchHit> = emptyList(),
     val tabStackVisible: Boolean = false,
+    val tabPreviews: Map<Long, Bitmap> = emptyMap(),
     val answer: AnswerResult? = null,
     val answerStreaming: Boolean = false,
     val answerError: String? = null,
@@ -188,6 +191,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
+        if (loadedTabId != null && loadedTabId != tab.id) {
+            captureTabPreview(loadedTabId!!)
+        }
         _state.update { it.copy(activeTab = tab, load = PageLoadState(url = tab.url)) }
         syncSessionToTab(tab)
     }
@@ -204,6 +210,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun closeTab(tab: Tab) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
+            _state.update { current ->
+                current.copy(tabPreviews = current.tabPreviews - tab.id)
+            }
             pool.destroy("tab-${tab.id}")
             if (loadedTabId == tab.id) loadedTabId = null
 
@@ -216,6 +225,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleTabStack() {
+        if (!_state.value.tabStackVisible) {
+            loadedTabId?.let(::captureTabPreview)
+        }
         _state.update { it.copy(tabStackVisible = !it.tabStackVisible) }
     }
 
@@ -489,6 +501,41 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun detachHost() = pool.park(SESSION_KEY)
 
     /**
+     * Capture a small, in-memory snapshot for the horizontal tab carousel.
+     * The full-resolution page stays in Chromium; the preview is capped at
+     * 360×720 and eight tabs so this never becomes a second copy of web pages.
+     */
+    private fun captureTabPreview(tabId: Long) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        view.post {
+            val width = view.width
+            val height = view.height
+            if (width <= 0 || height <= 0) return@post
+
+            runCatching {
+                val scale = minOf(360f / width, 720f / height, 1f)
+                val bitmap = Bitmap.createBitmap(
+                    (width * scale).toInt().coerceAtLeast(1),
+                    (height * scale).toInt().coerceAtLeast(1),
+                    Bitmap.Config.ARGB_8888
+                )
+                val canvas = Canvas(bitmap)
+                canvas.scale(scale, scale)
+                view.draw(canvas)
+
+                _state.update { current ->
+                    val previews = LinkedHashMap(current.tabPreviews)
+                    previews[tabId] = bitmap
+                    while (previews.size > 8) {
+                        previews.remove(previews.keys.first())
+                    }
+                    current.copy(tabPreviews = previews)
+                }
+            }
+        }
+    }
+
+    /**
      * Point the live session at [tab] if it is not already showing it.
      *
      * Without this, selecting a tab from the stack updates the address bar and
@@ -523,6 +570,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
+            val tabId = loadedTabId ?: _state.value.activeTab?.id
+            if (tabId != null) {
+                _state.update { it.copy(tabPreviews = it.tabPreviews - tabId) }
+            }
             _state.update {
                 it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
             }
@@ -535,6 +586,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onPageFinished(url: String, title: String) {
             if (url.isBlank() || url == "about:blank") return
+            (loadedTabId ?: _state.value.activeTab?.id)?.let(::captureTabPreview)
 
             viewModelScope.launch {
                 val existing = db.historyDao().byUrl(url)
