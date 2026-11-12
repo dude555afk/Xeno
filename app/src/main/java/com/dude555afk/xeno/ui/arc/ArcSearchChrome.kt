@@ -29,6 +29,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -45,9 +48,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -56,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import com.dude555afk.xeno.core.model.Tab
 
 private val ArcInk = Color(0xFF211A2B)
@@ -861,6 +871,14 @@ fun ArcFindInPageBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val requester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        delay(100)
+        runCatching { requester.requestFocus() }
+        keyboard?.show()
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -884,7 +902,7 @@ fun ArcFindInPageBar(
             BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).focusRequester(requester),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = ArcInk),
                 cursorBrush = SolidColor(ArcViolet),
@@ -917,7 +935,10 @@ fun ArcFindInPageBar(
                     tint = if (query.isNotBlank()) ArcInk else ArcMuted.copy(alpha = 0.35f)
                 )
             }
-            IconButton(onClick = onClose) {
+            IconButton(onClick = {
+                keyboard?.hide()
+                onClose()
+            }) {
                 Icon(Icons.Rounded.Close, contentDescription = "Close find", tint = ArcInk)
             }
         }
