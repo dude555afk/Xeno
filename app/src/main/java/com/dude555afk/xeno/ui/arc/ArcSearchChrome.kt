@@ -398,7 +398,9 @@ fun ArcPageAddress(
 fun ArcHomeSettingsSheet(
     visible: Boolean,
     blockingEnabled: Boolean,
+    autoOpenKeyboard: Boolean,
     onBlockingChange: (Boolean) -> Unit,
+    onAutoOpenKeyboardChange: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     AnimatedVisibility(
@@ -451,6 +453,47 @@ fun ArcHomeSettingsSheet(
                         }
                     }
                     Spacer(Modifier.height(15.dp))
+                    Text(
+                        "STARTUP",
+                        color = ArcViolet,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAutoOpenKeyboardChange(!autoOpenKeyboard) }
+                            .padding(vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Auto-Open Keyboard",
+                                color = ArcInk,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "Start a new search when Xeno opens",
+                                color = ArcMuted,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = if (autoOpenKeyboard) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                        ) {
+                            Box(
+                                Modifier.width(44.dp).height(26.dp).padding(3.dp),
+                                contentAlignment = if (autoOpenKeyboard) Alignment.CenterEnd else Alignment.CenterStart
+                            ) {
+                                Box(Modifier.size(20.dp).clip(CircleShape).background(Color.White))
+                            }
+                        }
+                    }
+                    Box(
+                        Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEAE5EF))
+                    )
+                    Spacer(Modifier.height(14.dp))
                     Text(
                         "PRIVACY",
                         color = ArcViolet,
