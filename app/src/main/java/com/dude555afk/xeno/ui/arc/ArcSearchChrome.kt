@@ -30,6 +30,10 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -371,18 +375,35 @@ fun ArcPageAddress(
     }
 }
 
-/** A small native-feeling action sheet for the bottom chevron. */
+/**
+ * Arc Search Android's page-control surface: history controls, four primary
+ * actions, and expandable display/site settings.
+ */
 @Composable
 fun ArcSiteActionsSheet(
     visible: Boolean,
     title: String,
     url: String,
+    canGoBack: Boolean,
+    canGoForward: Boolean,
+    isPinned: Boolean,
+    blockingEnabled: Boolean,
+    pageTextZoom: Int,
     onDismiss: () -> Unit,
     onBack: () -> Unit,
+    onForward: () -> Unit,
+    onReload: () -> Unit,
+    onCopyUrl: () -> Unit,
+    onFindInPage: () -> Unit,
     onSummarize: () -> Unit,
-    onNewTab: () -> Unit,
-    onShowTabs: () -> Unit
+    onTogglePin: () -> Unit,
+    onShare: () -> Unit,
+    onBlockingChange: (Boolean) -> Unit,
+    onZoomChange: (Int) -> Unit
 ) {
+    var displayOptionsOpen by remember { mutableStateOf(false) }
+    var siteSettingsOpen by remember { mutableStateOf(false) }
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(tween(160)) + slideInVertically(
@@ -412,7 +433,7 @@ fun ArcSiteActionsSheet(
                             interactionSource = remember { MutableInteractionSource() }
                         ) {}
                         .navigationBarsPadding()
-                        .padding(start = 22.dp, end = 22.dp, top = 12.dp, bottom = 20.dp)
+                        .padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 17.dp)
                 ) {
                     Box(
                         Modifier
@@ -422,39 +443,248 @@ fun ArcSiteActionsSheet(
                             .clip(CircleShape)
                             .background(Color(0xFFD5D0DA))
                     )
-                    Spacer(Modifier.height(18.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                title.ifBlank { "Browser controls" },
-                                color = ArcInk,
-                                style = MaterialTheme.typography.titleLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                url,
-                                color = ArcMuted,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Close controls", tint = ArcInk)
-                        }
-                    }
-                    Spacer(Modifier.height(14.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ActionTile("Back", Icons.Rounded.ArrowBack, onBack, Modifier.weight(1f))
-                        ActionTile("Summarize", Icons.Rounded.AutoAwesome, onSummarize, Modifier.weight(1f))
-                        ActionTile("New tab", Icons.Rounded.Add, onNewTab, Modifier.weight(1f))
-                        ActionTile("Tabs", Icons.Rounded.Layers, onShowTabs, Modifier.weight(1f))
-                    }
                     Spacer(Modifier.height(12.dp))
+
+                    // Arc's compact navigation/address row.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        RoundControl(Icons.Rounded.ArrowBack, "Back", canGoBack, onBack)
+                        RoundControl(Icons.Rounded.ArrowForward, "Forward", canGoForward, onForward)
+                        Surface(
+                            onClick = onCopyUrl,
+                            modifier = Modifier.weight(1f),
+                            shape = CircleShape,
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    runCatching { java.net.URI(url).host?.removePrefix("www.") }
+                                        .getOrNull().orEmpty().ifBlank { title.ifBlank { "Search" } },
+                                    color = ArcInk,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    Icons.Rounded.Search,
+                                    contentDescription = "Copy current address",
+                                    tint = ArcMuted,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        RoundControl(Icons.Rounded.Refresh, "Reload", url.isNotBlank(), onReload)
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ActionTile(
+                            "Find on Page",
+                            Icons.Rounded.Search,
+                            onFindInPage,
+                            Modifier.weight(1f)
+                        )
+                        ActionTile(
+                            "Summarize",
+                            Icons.Rounded.AutoAwesome,
+                            onSummarize,
+                            Modifier.weight(1f)
+                        )
+                        ActionTile(
+                            if (isPinned) "Unpin" else "Pin",
+                            Icons.Rounded.PushPin,
+                            onTogglePin,
+                            Modifier.weight(1f)
+                        )
+                        ActionTile(
+                            "Share",
+                            Icons.Rounded.Share,
+                            onShare,
+                            Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    MenuSectionRow(
+                        title = "Display Options",
+                        subtitle = "Text size and page display",
+                        expanded = displayOptionsOpen,
+                        onClick = { displayOptionsOpen = !displayOptionsOpen }
+                    )
+                    if (displayOptionsOpen) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Text size",
+                                    color = ArcInk,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    "$pageTextZoom%",
+                                    color = ArcMuted,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            SmallTextControl("A−", enabled = pageTextZoom > 50) {
+                                onZoomChange(-10)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            SmallTextControl("A+", enabled = pageTextZoom < 200) {
+                                onZoomChange(10)
+                            }
+                        }
+                    }
+
+                    MenuSectionRow(
+                        title = "Site Settings",
+                        subtitle = "Privacy and content controls",
+                        expanded = siteSettingsOpen,
+                        onClick = { siteSettingsOpen = !siteSettingsOpen }
+                    )
+                    if (siteSettingsOpen) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onBlockingChange(!blockingEnabled) }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Block ads and trackers",
+                                    color = ArcInk,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    if (blockingEnabled) "Protection is on" else "Protection is paused",
+                                    color = ArcMuted,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blockingEnabled) Color(0xFF5B48C8) else Color(0xFFD9D4DE)
+                            ) {
+                                Box(
+                                    Modifier
+                                        .width(42.dp)
+                                        .height(25.dp)
+                                        .padding(3.dp),
+                                    contentAlignment = if (blockingEnabled) Alignment.CenterEnd else Alignment.CenterStart
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .size(19.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        if (blockingEnabled) "Xeno protection is active on this page"
+                        else "Content protection is paused",
+                        color = ArcMuted,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RoundControl(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = CircleShape,
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+    ) {
+        Icon(
+            icon,
+            contentDescription = description,
+            tint = if (enabled) ArcInk else ArcMuted.copy(alpha = 0.35f),
+            modifier = Modifier.padding(10.dp).size(18.dp)
+        )
+    }
+}
+
+@Composable
+private fun MenuSectionRow(
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(15.dp),
+        color = Color(0xFFF0EDF4),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 7.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = ArcInk, style = MaterialTheme.typography.bodyMedium)
+                Text(subtitle, color = ArcMuted, style = MaterialTheme.typography.labelSmall)
+            }
+            Icon(
+                if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ArrowForward,
+                contentDescription = null,
+                tint = ArcMuted,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SmallTextControl(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        color = if (enabled) Color.White else Color(0xFFF0EDF4),
+        border = BorderStroke(1.dp, Color(0xFFEAE5EF))
+    ) {
+        Text(
+            label,
+            color = if (enabled) ArcInk else ArcMuted.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
+        )
     }
 }
 
@@ -468,14 +698,14 @@ private fun ActionTile(
     Surface(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFEAE5EF))
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 14.dp, horizontal = 5.dp),
+            modifier = Modifier.padding(vertical = 13.dp, horizontal = 3.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Icon(icon, contentDescription = null, tint = ArcViolet, modifier = Modifier.size(21.dp))
             Text(
