@@ -36,6 +36,10 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_BLOCKING, true)
         set(value) = prefs.edit { putBoolean(KEY_BLOCKING, value) }
 
+    var autoOpenKeyboard: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_OPEN_KEYBOARD, true)
+        set(value) = prefs.edit { putBoolean(KEY_AUTO_OPEN_KEYBOARD, value) }
+
     var activeSpaceId: Long
         get() = prefs.getLong(KEY_SPACE, 1L)
         set(value) = prefs.edit { putLong(KEY_SPACE, value) }
@@ -78,6 +82,7 @@ class SettingsStore(context: Context) {
         const val KEY_BASE_URL = "base_url"
         const val KEY_MODEL = "model"
         const val KEY_BLOCKING = "blocking_enabled"
+        const val KEY_AUTO_OPEN_KEYBOARD = "auto_open_keyboard"
         const val KEY_SPACE = "active_space"
         const val KEY_PINNED_URLS = "pinned_urls"
     }
