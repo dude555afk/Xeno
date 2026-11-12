@@ -15,6 +15,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -452,15 +453,18 @@ fun ArcSiteActionsSheet(
             contentAlignment = Alignment.BottomCenter
         ) {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = false) {},
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
                 color = Color(0xFFF9F7FB),
                 shadowElevation = 18.dp
             ) {
                 Column(
                     Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {}
                         .navigationBarsPadding()
                         .padding(start = 22.dp, end = 22.dp, top = 12.dp, bottom = 20.dp)
                 ) {
