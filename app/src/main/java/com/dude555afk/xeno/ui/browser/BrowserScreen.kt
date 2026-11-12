@@ -124,6 +124,7 @@ fun BrowserScreen(
             visible = state.tabStackVisible,
             tabs = state.tabs,
             activeTabId = state.activeTab?.id,
+            previews = state.tabPreviews,
             accent = accent,
             onSelect = { tab ->
                 viewModel.selectTab(tab)
