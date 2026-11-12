@@ -75,6 +75,7 @@ data class BrowserUiState(
     val summaryError: String? = null,
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
+    val autoOpenKeyboard: Boolean = true,
     val hasApiKey: Boolean = false
 )
 
@@ -112,6 +113,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
+            autoOpenKeyboard = settings.autoOpenKeyboard,
             hasApiKey = settings.hasApiKey
         )
     )
@@ -120,6 +122,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
     private var hintsJob: Job? = null
+    private var startupSearchHandled = false
 
     /** The tab the WebView session is currently showing. */
     private var loadedTabId: Long? = null
@@ -184,6 +187,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    fun showStartupSearchIfConfigured() {
+        if (startupSearchHandled) return
+        startupSearchHandled = true
+        if (settings.autoOpenKeyboard) openPalette()
+    }
+
+    fun setAutoOpenKeyboard(enabled: Boolean) {
+        settings.autoOpenKeyboard = enabled
+        _state.update { it.copy(autoOpenKeyboard = enabled) }
     }
 
     // MARK: spaces & tabs
