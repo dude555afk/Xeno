@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -39,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -70,6 +72,15 @@ fun TabStackSheet(
     onNewTab: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = activeIndex)
+
+    LaunchedEffect(visible, activeTabId, tabs.size) {
+        if (visible && tabs.isNotEmpty()) {
+            runCatching { listState.animateScrollToItem(activeIndex) }
+        }
+    }
+
     BackHandler(enabled = visible, onBack = onDismiss)
 
     AnimatedVisibility(
@@ -118,6 +129,7 @@ fun TabStackSheet(
                 }
 
                 LazyRow(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
