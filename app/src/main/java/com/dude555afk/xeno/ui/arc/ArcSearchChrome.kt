@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,8 +51,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Tab
 
@@ -714,6 +719,80 @@ private fun ActionTile(
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1
             )
+        }
+    }
+}
+
+
+/** Compact page-find overlay shown from the Arc-style page controls. */
+@Composable
+fun ArcFindInPageBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = Color(0xFFF9F7FB),
+        shadowElevation = 14.dp,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f))
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 15.dp, end = 5.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Rounded.Search,
+                contentDescription = null,
+                tint = ArcMuted,
+                modifier = Modifier.size(19.dp)
+            )
+            Spacer(Modifier.width(10.dp))
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = ArcInk),
+                cursorBrush = SolidColor(ArcViolet),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onNext() }),
+                decorationBox = { inner ->
+                    Box {
+                        if (query.isBlank()) {
+                            Text(
+                                "Find on page",
+                                color = ArcMuted,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        inner()
+                    }
+                }
+            )
+            IconButton(onClick = onPrevious, enabled = query.isNotBlank()) {
+                Icon(
+                    Icons.Rounded.ArrowUpward,
+                    contentDescription = "Previous match",
+                    tint = if (query.isNotBlank()) ArcInk else ArcMuted.copy(alpha = 0.35f)
+                )
+            }
+            IconButton(onClick = onNext, enabled = query.isNotBlank()) {
+                Icon(
+                    Icons.Rounded.ArrowDownward,
+                    contentDescription = "Next match",
+                    tint = if (query.isNotBlank()) ArcInk else ArcMuted.copy(alpha = 0.35f)
+                )
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Rounded.Close, contentDescription = "Close find", tint = ArcInk)
+            }
         }
     }
 }
