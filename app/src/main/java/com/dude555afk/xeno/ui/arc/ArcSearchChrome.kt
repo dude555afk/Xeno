@@ -36,7 +36,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,9 +74,9 @@ fun ArcHomeScreen(
     val ideas = remember {
         listOf(
             "Summarize today's news",
-            "Find interesting places near me",
-            "Quick dinner ideas",
-            "Explain a topic in simple terms"
+            "museum shows near me",
+            "quick chicken recipes",
+            "fun things to do in NYC"
         )
     }
 
@@ -129,34 +127,8 @@ fun ArcHomeScreen(
                 .padding(bottom = 92.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.weight(0.8f))
-
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFF7B68E8), Color(0xFFE49ABF))
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = com.dude555afk.xeno.R.drawable.ic_launcher_foreground),
-                    contentDescription = "Xeno",
-                    modifier = Modifier.size(68.dp)
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "xeno",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.weight(0.55f))
+            // Arc's home screen leaves the upper gradient deliberately quiet.
+            Spacer(Modifier.weight(1.35f))
 
             Surface(
                 modifier = Modifier
@@ -244,7 +216,7 @@ fun ArcHomeScreen(
                     }
                 }
             }
-            Spacer(Modifier.weight(0.7f))
+            Spacer(Modifier.weight(1.15f))
         }
 
         ArcBottomDock(
