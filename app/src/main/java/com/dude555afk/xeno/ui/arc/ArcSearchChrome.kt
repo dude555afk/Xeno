@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +58,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -74,7 +76,6 @@ import com.dude555afk.xeno.core.model.Tab
 private val ArcInk = Color(0xFF211A2B)
 private val ArcMuted = Color(0xFF827A8A)
 private val ArcPaper = Color(0xFFFAF8FC)
-private val ArcViolet = Color(0xFF6D50D8)
 
 /**
  * Xeno's Arc Search-inspired new-tab surface.
@@ -185,7 +186,7 @@ fun ArcHomeScreen(
                         Icon(
                             Icons.Rounded.AutoAwesome,
                             contentDescription = "Browse for me",
-                            tint = ArcViolet,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -228,7 +229,7 @@ fun ArcHomeScreen(
                             ) {
                                 Text(
                                     "Browse for me",
-                                    color = ArcViolet,
+                                    color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp)
@@ -287,7 +288,7 @@ fun ArcBottomDock(
                 )
                 Surface(
                     shape = CircleShape,
-                    color = ArcViolet,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = 5.dp, end = 5.dp)
@@ -459,7 +460,7 @@ fun ArcHomeSettingsSheet(
                     Spacer(Modifier.height(15.dp))
                     Text(
                         "STARTUP",
-                        color = ArcViolet,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -500,7 +501,7 @@ fun ArcHomeSettingsSheet(
                     Spacer(Modifier.height(14.dp))
                     Text(
                         "PRIVACY",
-                        color = ArcViolet,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -543,7 +544,7 @@ fun ArcHomeSettingsSheet(
                     Spacer(Modifier.height(14.dp))
                     Text(
                         "ABOUT",
-                        color = ArcViolet,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -594,6 +595,7 @@ fun ArcSiteActionsSheet(
 ) {
     var displayOptionsOpen by remember { mutableStateOf(false) }
     var siteSettingsOpen by remember { mutableStateOf(false) }
+    var dismissDragDistance by remember { mutableStateOf(0f) }
 
     val motionEnabled = LocalArcMotionEnabled.current
     AnimatedVisibility(
@@ -631,11 +633,30 @@ fun ArcSiteActionsSheet(
                     Box(
                         Modifier
                             .align(Alignment.CenterHorizontally)
-                            .width(38.dp)
-                            .height(4.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFD5D0DA))
-                    )
+                            .width(54.dp)
+                            .height(18.dp)
+                            .pointerInput(visible) {
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { _, dragAmount ->
+                                        if (dragAmount > 0f) dismissDragDistance += dragAmount
+                                    },
+                                    onDragEnd = {
+                                        if (dismissDragDistance > 90f) onDismiss()
+                                        dismissDragDistance = 0f
+                                    },
+                                    onDragCancel = { dismissDragDistance = 0f }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier
+                                .width(38.dp)
+                                .height(4.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFD5D0DA))
+                        )
+                    }
                     Spacer(Modifier.height(12.dp))
 
                     // Arc's compact navigation/address row.
@@ -907,7 +928,7 @@ private fun ActionTile(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = ArcViolet, modifier = Modifier.size(21.dp))
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
             Text(
                 label,
                 color = ArcInk,
@@ -963,7 +984,7 @@ fun ArcFindInPageBar(
                 modifier = Modifier.weight(1f).focusRequester(requester),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = ArcInk),
-                cursorBrush = SolidColor(ArcViolet),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onNext() }),
                 decorationBox = { inner ->
