@@ -2,6 +2,8 @@ package com.dude555afk.xeno.ui.tabstack
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -56,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.Tab
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 
 /**
  * Arc Search-style Android tab switcher: a horizontal strip of large page
@@ -73,12 +76,16 @@ fun TabStackSheet(
     onNewTab: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = activeIndex)
 
     LaunchedEffect(visible, activeTabId, tabs.size) {
         if (visible && tabs.isNotEmpty()) {
-            runCatching { listState.animateScrollToItem(activeIndex) }
+            runCatching {
+                if (motionEnabled) listState.animateScrollToItem(activeIndex)
+                else listState.scrollToItem(activeIndex)
+            }
         }
     }
 
@@ -86,8 +93,14 @@ fun TabStackSheet(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(170)) + scaleIn(initialScale = 0.985f, animationSpec = tween(200)),
-        exit = fadeOut(tween(120)) + scaleOut(targetScale = 0.985f, animationSpec = tween(160))
+        enter = if (motionEnabled) fadeIn(tween(170)) + scaleIn(
+            initialScale = 0.985f,
+            animationSpec = tween(200)
+        ) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(120)) + scaleOut(
+            targetScale = 0.985f,
+            animationSpec = tween(160)
+        ) else ExitTransition.None
     ) {
         Box(
             modifier = Modifier
