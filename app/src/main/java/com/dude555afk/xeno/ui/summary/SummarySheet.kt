@@ -1,6 +1,8 @@
 package com.dude555afk.xeno.ui.summary
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.ui.render.AnswerText
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.XenoMotion
@@ -69,12 +72,13 @@ fun SummarySheet(
     onCopy: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val parsed = remember(streamText) { AnswerText.parse(streamText) }
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(XenoMotion.backdropFade()),
-        exit = fadeOut(tween(160))
+        enter = if (motionEnabled) fadeIn(XenoMotion.backdropFade()) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(160)) else ExitTransition.None
     ) {
         Box(
             modifier = Modifier
