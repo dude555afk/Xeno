@@ -221,7 +221,7 @@ private fun ArcTabCard(
         onClick = onSelect,
         modifier = Modifier
             .width(286.dp)
-            .fillMaxHeight(0.78f)
+            .fillMaxHeight(0.9f)
             .scale(scale),
         shape = RoundedCornerShape(27.dp),
         color = Color(0xFFFAF8FC),
@@ -275,6 +275,7 @@ private fun ArcTabCard(
                         bitmap = preview.asImageBitmap(),
                         contentDescription = "Preview of ${tab.displayTitle}",
                         contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
