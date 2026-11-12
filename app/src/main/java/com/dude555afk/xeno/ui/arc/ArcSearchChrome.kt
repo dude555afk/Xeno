@@ -81,6 +81,7 @@ fun ArcHomeScreen(
     onBrowseForMe: (String) -> Unit,
     onOpenTabs: () -> Unit,
     onNewTab: () -> Unit,
+    onOpenControls: () -> Unit,
     tabCount: Int,
     modifier: Modifier = Modifier
 ) {
@@ -275,7 +276,7 @@ fun ArcHomeScreen(
             tabCount = tabCount,
             onOpenTabs = onOpenTabs,
             onNewTab = onNewTab,
-            onOpenControls = onOpenSearch,
+            onOpenControls = onOpenControls,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
