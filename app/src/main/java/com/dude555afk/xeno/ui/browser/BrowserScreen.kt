@@ -2,51 +2,36 @@ package com.dude555afk.xeno.ui.browser
 
 import android.view.ViewGroup
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
+import com.dude555afk.xeno.ui.arc.ArcBottomDock
+import com.dude555afk.xeno.ui.arc.ArcHomeScreen
+import com.dude555afk.xeno.ui.arc.ArcPageAddress
+import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
-import com.dude555afk.xeno.ui.spaces.SpacesBar
 import com.dude555afk.xeno.ui.summary.SummarySheet
 import com.dude555afk.xeno.ui.tabstack.TabStackSheet
-import com.dude555afk.xeno.ui.theme.Dimens
-import com.dude555afk.xeno.ui.theme.PillShape
 
 /**
- * The browser screen.
+ * Arc Search-inspired browser shell.
  *
- * Chrome hides on scroll — rule 3 from docs/DESIGN.md, and it's what makes the
- * content feel like the app rather than the page feeling like a document
- * inside a shell.
+ * The WebView remains the page renderer. Compose owns the browser chrome:
+ * start page, search surface, bottom dock, tab carousel, and site actions.
  */
 @Composable
 fun BrowserScreen(
@@ -54,11 +39,13 @@ fun BrowserScreen(
     viewModel: BrowserViewModel,
     accent: Color
 ) {
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    var controlsVisible by remember { mutableStateOf(false) }
+    val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
+    val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
 
-        // The page. The factory returns a container so the session pool can do
-        // the actual WebView ownership — reusing a view across recompositions
-        // is the whole point.
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        // Keep the live Chromium WebView mounted beneath the Compose chrome.
+        // SessionPool owns the WebView instance and reuses it across recompositions.
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -73,38 +60,47 @@ fun BrowserScreen(
             }
         )
 
-        // Spaces — top left, always available.
-        SpacesBar(
-            spaces = state.spaces,
-            activeSpaceId = state.activeSpace?.id ?: 0L,
-            onSelect = viewModel::selectSpace,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = Dimens.spaceXl)
-        )
+        if (isHome) {
+            ArcHomeScreen(
+                onOpenSearch = viewModel::openPalette,
+                onBrowseForMe = viewModel::ask,
+                onOpenTabs = viewModel::toggleTabStack,
+                onNewTab = viewModel::newTab,
+                onOpenControls = { controlsVisible = true },
+                tabCount = state.tabs.size
+            )
+        } else {
+            if (state.load.loading) {
+                LinearProgressIndicator(
+                    progress = { state.load.progress },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(2.dp),
+                    color = accent,
+                    trackColor = Color.Transparent
+                )
+            }
 
-        // Tab stack — top right.
-        IconButton(
-            onClick = viewModel::toggleTabStack,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = Dimens.spaceM, end = Dimens.spaceM)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Layers,
-                contentDescription = "Tabs",
-                tint = Color.White.copy(alpha = 0.7f)
+            ArcPageAddress(
+                url = displayUrl,
+                title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
+                onClick = viewModel::openPalette,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 84.dp)
+            )
+
+            ArcBottomDock(
+                tabCount = state.tabs.size,
+                onOpenTabs = viewModel::toggleTabStack,
+                onNewTab = viewModel::newTab,
+                onOpenControls = { controlsVisible = true },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 2.dp)
             )
         }
-
-        // The floating bar.
-        FloatingBar(
-            loadProgress = state.load.progress,
-            loading = state.load.loading,
-            accent = accent,
-            canGoBack = state.canGoBack,
-            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
-            onOpenPalette = viewModel::openPalette,
-            onSummarize = { viewModel.summarizeCurrentPage() },
-            onBack = viewModel::goBack,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
 
         CommandPalette(
             visible = state.paletteVisible,
@@ -129,10 +125,36 @@ fun BrowserScreen(
             tabs = state.tabs,
             activeTabId = state.activeTab?.id,
             accent = accent,
-            onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
+            onSelect = { tab ->
+                viewModel.selectTab(tab)
+                viewModel.toggleTabStack()
+            },
             onClose = viewModel::closeTab,
             onNewTab = viewModel::newTab,
             onDismiss = viewModel::toggleTabStack
+        )
+
+        ArcSiteActionsSheet(
+            visible = controlsVisible,
+            title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
+            url = displayUrl,
+            onDismiss = { controlsVisible = false },
+            onBack = {
+                controlsVisible = false
+                viewModel.goBack()
+            },
+            onSummarize = {
+                controlsVisible = false
+                viewModel.summarizeCurrentPage()
+            },
+            onNewTab = {
+                controlsVisible = false
+                viewModel.newTab()
+            },
+            onShowTabs = {
+                controlsVisible = false
+                viewModel.toggleTabStack()
+            }
         )
 
         AnswerSheet(
@@ -155,111 +177,8 @@ fun BrowserScreen(
             error = state.summaryError,
             accent = accent,
             onToneChange = viewModel::setSummaryTone,
-            onCopy = { viewModel.copySummary() },
+            onCopy = viewModel::copySummary,
             onDismiss = viewModel::dismissSummary
         )
-    }
-}
-
-/**
- * The floating bar — back, address field, summarize. A pill, like everything.
- *
- * The address field shows the live page URL, not the palette's in-progress
- * query. Showing `state.query` here meant the bar kept whatever the user last
- * typed long after they had dismissed the palette and moved on.
- */
-@Composable
-private fun FloatingBar(
-    loadProgress: Float,
-    loading: Boolean,
-    accent: Color,
-    canGoBack: Boolean,
-    displayUrl: String,
-    onOpenPalette: () -> Unit,
-    onSummarize: () -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceL)) {
-        Surface(
-            shape = PillShape,
-            color = Color(0xF20A0A0A),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    // Only shown when there is somewhere to go back to. A
-                    // permanently-visible back arrow that does nothing is worse
-                    // than no arrow at all.
-                    if (canGoBack) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(PillShape)
-                            .clickable(onClick = onOpenPalette)
-                            .padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceM),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(Dimens.spaceS))
-                        Text(
-                            text = displayUrl.ifBlank { "Search or ask anything" },
-                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.4f)
-                            else Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // The summarize action — the flagship, one tap away.
-                    Surface(
-                        shape = PillShape,
-                        color = accent,
-                        onClick = onSummarize,
-                        modifier = Modifier.padding(end = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "Summarize",
-                            tint = Color.Black,
-                            modifier = Modifier.padding(Dimens.spaceS)
-                        )
-                    }
-                }
-
-                if (loading) {
-                    LinearProgressIndicator(
-                        progress = { loadProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .clip(PillShape),
-                        color = accent
-                    )
-                }
-            }
-        }
     }
 }
