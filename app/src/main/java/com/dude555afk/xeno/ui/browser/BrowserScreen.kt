@@ -27,6 +27,7 @@ import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcBottomDock
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArcHomeScreen
+import com.dude555afk.xeno.ui.arc.ArcHomeSettingsSheet
 import com.dude555afk.xeno.ui.arc.ArcPageAddress
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
@@ -46,6 +47,7 @@ fun BrowserScreen(
     accent: Color
 ) {
     var controlsVisible by remember { mutableStateOf(false) }
+    var homeSettingsVisible by remember { mutableStateOf(false) }
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -75,7 +77,7 @@ fun BrowserScreen(
                 onBrowseForMe = viewModel::ask,
                 onOpenTabs = viewModel::toggleTabStack,
                 onNewTab = viewModel::newTab,
-                onOpenControls = { controlsVisible = true },
+                onOpenSettings = { homeSettingsVisible = true },
                 tabCount = state.tabs.size
             )
         } else {
@@ -110,6 +112,13 @@ fun BrowserScreen(
                     .padding(bottom = 2.dp)
             )
         }
+
+        ArcHomeSettingsSheet(
+            visible = homeSettingsVisible,
+            blockingEnabled = state.blockingEnabled,
+            onBlockingChange = viewModel::setBlockingEnabled,
+            onDismiss = { homeSettingsVisible = false }
+        )
 
         CommandPalette(
             visible = state.paletteVisible,
