@@ -1,10 +1,19 @@
 package com.dude555afk.xeno.ui.browser
 
 import android.view.ViewGroup
+import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +24,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,13 +34,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcBottomDock
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArcHomeScreen
-import com.dude555afk.xeno.ui.arc.ArcHomeSettingsSheet
+import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.arc.ArcPageAddress
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
@@ -54,13 +66,34 @@ fun BrowserScreen(
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
+    BackHandler(
+        enabled = homeSettingsVisible || findInPageVisible || controlsVisible ||
+            state.summaryVisible || state.answer != null || state.paletteVisible ||
+            state.tabStackVisible || state.canGoBack
+    ) {
+        when {
+            homeSettingsVisible -> homeSettingsVisible = false
+            findInPageVisible -> {
+                findInPageVisible = false
+                findQuery = ""
+                viewModel.clearFindInPage()
+            }
+            controlsVisible -> controlsVisible = false
+            state.summaryVisible -> viewModel.dismissSummary()
+            state.answer != null -> viewModel.dismissAnswer()
+            state.paletteVisible -> viewModel.closePalette()
+            state.tabStackVisible -> viewModel.toggleTabStack()
+            state.canGoBack -> viewModel.goBack()
+        }
+    }
     LaunchedEffect(viewModel) {
         viewModel.showStartupSearchIfConfigured()
     }
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
     val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Keep the live Chromium WebView mounted beneath the Compose chrome.
         // SessionPool owns the WebView instance and reuses it across recompositions.
         AndroidView(
@@ -99,31 +132,56 @@ fun BrowserScreen(
                 )
             }
 
-            ArcPageAddress(
-                url = displayUrl,
-                title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
-                onClick = viewModel::openPalette,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 84.dp)
-            )
+            AnimatedVisibility(
+                visible = state.chromeVisible,
+                modifier = Modifier.fillMaxSize(),
+                enter = if (state.animationsEnabled) {
+                    fadeIn(tween(140)) + slideInVertically(
+                        initialOffsetY = { it / 3 },
+                        animationSpec = tween(220)
+                    )
+                } else EnterTransition.None,
+                exit = if (state.animationsEnabled) {
+                    fadeOut(tween(110)) + slideOutVertically(
+                        targetOffsetY = { it / 3 },
+                        animationSpec = tween(180)
+                    )
+                } else ExitTransition.None
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    ArcPageAddress(
+                        url = displayUrl,
+                        title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
+                        onClick = viewModel::openPalette,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 84.dp)
+                    )
 
-            ArcBottomDock(
-                tabCount = state.tabs.size,
-                onOpenTabs = viewModel::toggleTabStack,
-                onNewTab = viewModel::newTab,
-                onOpenControls = { controlsVisible = true },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 2.dp)
-            )
+                    ArcBottomDock(
+                        tabCount = state.tabs.size,
+                        onOpenTabs = viewModel::toggleTabStack,
+                        onNewTab = viewModel::newTab,
+                        onOpenControls = { controlsVisible = true },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = 2.dp)
+                    )
+                }
+            }
         }
 
-        ArcHomeSettingsSheet(
+        ArcSettingsScreen(
             visible = homeSettingsVisible,
+            themeMode = state.themeMode,
+            accentOverrideArgb = state.accentOverrideArgb,
+            animationsEnabled = state.animationsEnabled,
             blockingEnabled = state.blockingEnabled,
             autoOpenKeyboard = state.autoOpenKeyboard,
+            onThemeModeChange = viewModel::setThemeMode,
+            onAccentChange = viewModel::setAccentOverride,
+            onAnimationsChange = viewModel::setAnimationsEnabled,
             onBlockingChange = viewModel::setBlockingEnabled,
             onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
             onDismiss = { homeSettingsVisible = false }
@@ -198,7 +256,11 @@ fun BrowserScreen(
                 context.startActivity(Intent.createChooser(share, "Share page"))
             },
             onBlockingChange = viewModel::setBlockingEnabled,
-            onZoomChange = viewModel::changePageTextZoom
+            onZoomChange = viewModel::changePageTextZoom,
+            onOpenAppSettings = {
+                controlsVisible = false
+                homeSettingsVisible = true
+            }
         )
 
         if (findInPageVisible) {
@@ -242,5 +304,6 @@ fun BrowserScreen(
             onCopy = viewModel::copySummary,
             onDismiss = viewModel::dismissSummary
         )
+    }
     }
 }
