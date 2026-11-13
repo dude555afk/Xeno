@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +20,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +40,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -51,6 +55,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -62,11 +67,11 @@ import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import kotlinx.coroutines.delay
 
 /**
- * Arc Search-inspired command surface.
+ * Arc Search's compact search surface.
  *
- * Opening the field immediately requests focus and the software keyboard. The
- * suggestions remain above the keyboard instead of being hidden behind it.
- * Enter navigates; the explicit Browse for me action uses Xeno's answer flow.
+ * The input and suggested searches live in one light/dark panel at the bottom
+ * of the gradient canvas. There is deliberately no title header or stack of
+ * floating suggestion cards: Arc's search surface is visually quiet.
  */
 @Composable
 fun CommandPalette(
@@ -89,11 +94,16 @@ fun CommandPalette(
     val ideas = remember {
         listOf(
             "Summarize today's news",
-            "Best free Android browsers",
-            "Explain quantum computers",
-            "Quick dinner ideas"
+            "museum shows near me",
+            "quick chicken recipes",
+            "fun things to do in NYC"
         )
     }
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val panel = if (dark) Color(0xFF24222B) else Color(0xFFF8F7FA)
+    val ink = if (dark) Color(0xFFF5F3F8) else Color(0xFF24212A)
+    val muted = if (dark) Color(0xFFAAA5B3) else Color(0xFF85808D)
+    val arcBlue = Color(0xFF5046D8)
 
     BackHandler(enabled = visible) {
         keyboard?.hide()
@@ -102,7 +112,7 @@ fun CommandPalette(
 
     LaunchedEffect(visible) {
         if (visible) {
-            delay(120)
+            delay(100)
             runCatching { focusRequester.requestFocus() }
             keyboard?.show()
         } else {
@@ -112,214 +122,205 @@ fun CommandPalette(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (motionEnabled) fadeIn() + scaleIn(initialScale = 0.985f)
+        enter = if (motionEnabled) fadeIn() + scaleIn(initialScale = 0.99f)
         else EnterTransition.None,
-        exit = if (motionEnabled) fadeOut() + scaleOut(targetScale = 0.985f)
+        exit = if (motionEnabled) fadeOut() + scaleOut(targetScale = 0.99f)
         else ExitTransition.None
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xF51E1456),
-                            Color(0xF52B2169),
-                            Color(0xF5A36DAD)
+        Box(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF2914A2),
+                                Color(0xFF5A3CC7),
+                                Color(0xFFB978B9),
+                                Color(0xFFF09AA7)
+                            )
                         )
                     )
-                )
-        ) {
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .imePadding()
-                    .padding(start = 20.dp, end = 20.dp, top = 48.dp, bottom = 14.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
             ) {
-                Row(
+                Spacer(Modifier.weight(1f))
+
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(23.dp),
+                    color = panel,
+                    border = BorderStroke(1.dp, if (dark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.82f)),
+                    shadowElevation = 18.dp
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "Search",
-                            color = Color.White,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            "The web, without the noise.",
-                            color = Color.White.copy(alpha = 0.72f),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Surface(
-                        onClick = {
-                            keyboard?.hide()
-                            onDismiss()
-                        },
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.16f)
-                    ) {
-                        Icon(
-                            Icons.Rounded.Close,
-                            contentDescription = "Close search",
-                            tint = Color.White,
-                            modifier = Modifier.padding(11.dp).size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    if (query.isBlank()) "Try something" else "Suggestions",
-                    color = Color.White.copy(alpha = 0.78f),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Spacer(Modifier.height(9.dp))
-
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    if (query.isBlank()) {
-                        items(ideas, key = { it }) { idea ->
-                            BrowseSuggestion(
-                                text = idea,
-                                onClick = {
-                                    keyboard?.hide()
-                                    onAsk(idea)
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp)
+                                .padding(start = 17.dp, end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = muted,
+                                modifier = Modifier.size(19.dp)
+                            )
+                            Spacer(Modifier.width(11.dp))
+                            BasicTextField(
+                                value = query,
+                                onValueChange = onQueryChange,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .focusRequester(focusRequester),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = ink),
+                                cursorBrush = SolidColor(arcBlue),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = {
+                                        if (query.isNotBlank()) {
+                                            keyboard?.hide()
+                                            onNavigate(query.trim())
+                                        }
+                                    },
+                                    onGo = {
+                                        if (query.isNotBlank()) {
+                                            keyboard?.hide()
+                                            onNavigate(query.trim())
+                                        }
+                                    }
+                                ),
+                                decorationBox = { inner ->
+                                    Box {
+                                        if (query.isBlank()) {
+                                            Text(
+                                                "Search...",
+                                                color = muted,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        }
+                                        inner()
+                                    }
                                 }
                             )
-                        }
-                    } else {
-                        items(tabHints, key = { "tab-${it.id}" }) { tab ->
-                            HintRow(
-                                icon = Icons.Rounded.Article,
-                                title = tab.displayTitle,
-                                subtitle = tab.url,
-                                onClick = {
-                                    keyboard?.hide()
-                                    onOpenTab(tab)
+                            if (query.isNotBlank()) {
+                                IconButton(
+                                    onClick = { onQueryChange("") },
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Close,
+                                        contentDescription = "Clear search",
+                                        tint = muted,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
-                            )
-                        }
-                        items(historyHints, key = { "history-${it.url}" }) { item ->
-                            HintRow(
-                                icon = Icons.Rounded.History,
-                                title = item.title.ifBlank { item.url },
-                                subtitle = item.url,
-                                onClick = {
-                                    keyboard?.hide()
-                                    onNavigate(item.url)
-                                }
-                            )
-                        }
-                        if (tabHints.isEmpty() && historyHints.isEmpty()) {
-                            item {
-                                BrowseSuggestion(
-                                    text = query.trim(),
+                                Surface(
                                     onClick = {
                                         keyboard?.hide()
                                         onAsk(query.trim())
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (loading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                        color = Color.White,
-                        trackColor = Color.White.copy(alpha = 0.2f)
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(28.dp),
-                    color = Color(0xFFFBF9FD),
-                    shadowElevation = 16.dp,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.6f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 17.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = Color(0xFF817A8A),
-                            modifier = Modifier.size(21.dp)
-                        )
-                        Spacer(Modifier.width(11.dp))
-                        BasicTextField(
-                            value = query,
-                            onValueChange = onQueryChange,
-                            modifier = Modifier
-                                .weight(1f)
-                                .focusRequester(focusRequester),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color(0xFF211A2B)
-                            ),
-                            cursorBrush = SolidColor(accent),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                            keyboardActions = KeyboardActions(
-                                onGo = {
-                                    keyboard?.hide()
-                                    if (query.isNotBlank()) onNavigate(query.trim())
-                                },
-                                onSearch = {
-                                    keyboard?.hide()
-                                    if (query.isNotBlank()) onNavigate(query.trim())
-                                }
-                            ),
-                            decorationBox = { inner ->
-                                Box {
-                                    if (query.isBlank()) {
+                                    },
+                                    shape = CircleShape,
+                                    color = arcBlue.copy(alpha = if (dark) 0.24f else 0.10f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = if (dark) Color(0xFFB9B3FF) else arcBlue,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(5.dp))
                                         Text(
-                                            "Search or enter address",
-                                            color = Color(0xFF8A8292),
-                                            style = MaterialTheme.typography.bodyLarge
+                                            "Browse for me",
+                                            color = if (dark) Color(0xFFB9B3FF) else arcBlue,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
-                                    inner()
                                 }
                             }
-                        )
-                        if (query.isNotBlank()) {
-                            Surface(
-                                onClick = {
-                                    keyboard?.hide()
-                                    onAsk(query.trim())
-                                },
-                                shape = CircleShape,
-                                color = Color(0xFFEAE3FF)
+                        }
+
+                        if (query.isBlank()) {
+                            LazyColumn(
+                                modifier = Modifier.heightIn(max = 210.dp),
+                                contentPadding = PaddingValues(bottom = 7.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Rounded.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = Color(0xFF6548CA),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        "Browse for me",
-                                        color = Color(0xFF6548CA),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.SemiBold
+                                items(ideas, key = { it }) { idea ->
+                                    BrowseSuggestionRow(
+                                        text = idea,
+                                        ink = ink,
+                                        muted = muted,
+                                        arcBlue = arcBlue,
+                                        onNavigate = { onNavigate(idea) },
+                                        onBrowse = { onAsk(idea) }
                                     )
                                 }
                             }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.heightIn(max = 220.dp),
+                                contentPadding = PaddingValues(bottom = 7.dp)
+                            ) {
+                                items(tabHints, key = { it.id }) { tab ->
+                                    SearchHintRow(
+                                        icon = Icons.Rounded.Article,
+                                        title = tab.displayTitle,
+                                        subtitle = tab.url,
+                                        ink = ink,
+                                        muted = muted,
+                                        onClick = {
+                                            keyboard?.hide()
+                                            onOpenTab(tab)
+                                        }
+                                    )
+                                }
+                                items(historyHints, key = { it.url }) { hit ->
+                                    SearchHintRow(
+                                        icon = Icons.Rounded.History,
+                                        title = hit.title.ifBlank { hit.url },
+                                        subtitle = hit.url,
+                                        ink = ink,
+                                        muted = muted,
+                                        onClick = {
+                                            keyboard?.hide()
+                                            onNavigate(hit.url)
+                                        }
+                                    )
+                                }
+                                if (tabHints.isEmpty() && historyHints.isEmpty()) {
+                                    item {
+                                        BrowseSuggestionRow(
+                                            text = "Search the web",
+                                            ink = ink,
+                                            muted = muted,
+                                            arcBlue = arcBlue,
+                                            onNavigate = { onNavigate(query.trim()) },
+                                            onBrowse = { onAsk(query.trim()) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (loading) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().height(2.dp),
+                                color = arcBlue,
+                                trackColor = panel
+                            )
                         }
                     }
                 }
@@ -329,78 +330,93 @@ fun CommandPalette(
 }
 
 @Composable
-private fun BrowseSuggestion(
+private fun BrowseSuggestionRow(
     text: String,
-    onClick: () -> Unit
+    ink: Color,
+    muted: Color,
+    arcBlue: Color,
+    onNavigate: () -> Unit,
+    onBrowse: () -> Unit
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(19.dp),
-        color = Color.White.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(42.dp)
+            .padding(horizontal = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 13.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(42.dp)
+                .clickable(onClick = onNavigate),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.76f),
-                modifier = Modifier.size(17.dp)
+                tint = muted,
+                modifier = Modifier.size(16.dp)
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(11.dp))
             Text(
                 text,
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
+                color = ink,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+        }
+        Surface(
+            onClick = onBrowse,
+            shape = CircleShape,
+            color = arcBlue.copy(alpha = 0.09f)
+        ) {
             Text(
                 "Browse for me",
-                color = Color(0xFFE8DFFF),
+                color = arcBlue,
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
             )
         }
     }
 }
 
 @Composable
-private fun HintRow(
+private fun SearchHintRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    ink: Color,
+    muted: Color,
     onClick: () -> Unit
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(17.dp),
-        color = Color.White.copy(alpha = 0.12f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = Color.White.copy(alpha = 0.75f))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+        Icon(icon, contentDescription = null, tint = muted, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(11.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                title,
+                color = ink,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitle.isNotBlank()) {
                 Text(
-                    title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium,
+                    subtitle,
+                    color = muted,
+                    style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (subtitle.isNotBlank()) {
-                    Text(
-                        subtitle,
-                        color = Color.White.copy(alpha = 0.62f),
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
         }
     }

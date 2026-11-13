@@ -5,10 +5,6 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,17 +24,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,200 +78,105 @@ fun ArcSettingsScreen(
     val motion = LocalArcMotionEnabled.current
     AnimatedVisibility(
         visible = visible,
-        enter = if (motion) {
-            fadeIn() + slideInVertically(
-                initialOffsetY = { it / 14 },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            )
-        } else EnterTransition.None,
-        exit = if (motion) fadeOut() + slideOutVertically() else ExitTransition.None
+        enter = if (motion) fadeIn() else EnterTransition.None,
+        exit = if (motion) fadeOut() else ExitTransition.None
     ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
+                Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 20.dp, top = 8.dp, bottom = 14.dp),
+                    modifier = Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Rounded.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
+                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                     }
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "Settings",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            "Make Xeno feel like yours",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        "Settings",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
 
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 18.dp)
-                        .padding(bottom = 26.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    SettingsGroup(
-                        title = "Appearance",
-                        subtitle = "Theme and browser accent",
-                        icon = { Icon(Icons.Rounded.Palette, contentDescription = null) }
+                    SettingsSectionTitle("Appearance", Icons.Rounded.Palette)
+                    Text("Theme", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            "Theme",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            "Choose how Xeno should look.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf("system" to "System", "dark" to "Dark", "light" to "Light").forEach { (value, label) ->
-                                FilterChip(
-                                    selected = themeMode == value,
-                                    onClick = { onThemeModeChange(value) },
-                                    label = { Text(label) }
-                                )
-                            }
+                        listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { option ->
+                            FilterChip(
+                                selected = themeMode == option.first,
+                                onClick = { onThemeModeChange(option.first) },
+                                label = { Text(option.second) }
+                            )
                         }
+                    }
 
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            "Accent colour",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            "Use the active space colour or pin one across Xeno.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(top = 13.dp),
-                            horizontalArrangement = Arrangement.spacedBy(13.dp)
-                        ) {
-                            AccentOptions.forEach { (name, argb) ->
-                                val selected = accentOverrideArgb == argb
-                                val swatch = if (argb == 0) MaterialTheme.colorScheme.primary else Color(argb)
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Text("Accent colour", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 10.dp, bottom = 18.dp),
+                        horizontalArrangement = Arrangement.spacedBy(13.dp)
+                    ) {
+                        AccentOptions.forEach { (name, argb) ->
+                            val selected = accentOverrideArgb == argb
+                            val color = if (argb == 0) MaterialTheme.colorScheme.primary else Color(argb)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Surface(
+                                    onClick = { onAccentChange(argb) },
+                                    shape = CircleShape,
+                                    color = color,
+                                    border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant),
+                                    modifier = Modifier.size(34.dp)
                                 ) {
-                                    Surface(
-                                        onClick = { onAccentChange(argb) },
-                                        shape = CircleShape,
-                                        color = swatch,
-                                        border = BorderStroke(
-                                            if (selected) 3.dp else 1.dp,
-                                            if (selected) MaterialTheme.colorScheme.onSurface
-                                            else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
-                                        ),
-                                        modifier = Modifier.size(38.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            if (selected) {
-                                                Icon(
-                                                    Icons.Rounded.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = if (name == "Lime" || name == "Amber") Color.Black else Color.White,
-                                                    modifier = Modifier.size(19.dp)
-                                                )
-                                            }
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (selected) {
+                                            Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = if (name == "Lime" || name == "Amber") Color.Black else Color.White, modifier = Modifier.size(17.dp))
                                         }
                                     }
-                                    Text(
-                                        name,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
                                 }
+                                Text(name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
 
-                    SettingsGroup(
-                        title = "Search",
-                        subtitle = "Control how a new session starts",
-                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null) }
-                    ) {
-                        SettingsToggle(
-                            title = "Open search on launch",
-                            description = "Focus the search field and show the keyboard when Xeno opens.",
-                            checked = autoOpenKeyboard,
-                            onCheckedChange = onAutoOpenKeyboardChange
-                        )
-                    }
+                    SettingsDivider()
+                    SettingsSectionTitle("Search", Icons.Rounded.Search)
+                    PlainToggleRow(
+                        title = "Open search on launch",
+                        description = "Show the keyboard when Xeno opens.",
+                        checked = autoOpenKeyboard,
+                        onCheckedChange = onAutoOpenKeyboardChange
+                    )
 
-                    SettingsGroup(
-                        title = "Privacy",
-                        subtitle = "Protection across the pages you visit",
-                        icon = { Icon(Icons.Rounded.Security, contentDescription = null) }
-                    ) {
-                        SettingsToggle(
-                            title = "Block ads and trackers",
-                            description = if (blockingEnabled) {
-                                "Network requests matching Xeno's filter lists are blocked."
-                            } else {
-                                "Content protection is paused for every site."
-                            },
-                            checked = blockingEnabled,
-                            onCheckedChange = onBlockingChange
-                        )
-                    }
+                    SettingsDivider()
+                    SettingsSectionTitle("Site Settings", Icons.Rounded.Security)
+                    PlainToggleRow(
+                        title = "Block ads and trackers",
+                        description = "Apply Xeno's content filter across sites.",
+                        checked = blockingEnabled,
+                        onCheckedChange = onBlockingChange
+                    )
 
-                    SettingsGroup(
-                        title = "Motion",
-                        subtitle = "Transitions and browser chrome",
-                        icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) }
-                    ) {
-                        SettingsToggle(
-                            title = "Use animations",
-                            description = "Animate panels, chrome and settings transitions. Turn this off to reduce motion.",
-                            checked = animationsEnabled,
-                            onCheckedChange = onAnimationsChange
-                        )
-                    }
+                    SettingsDivider()
+                    SettingsSectionTitle("Motion", Icons.Rounded.Settings)
+                    PlainToggleRow(
+                        title = "Animations",
+                        description = "Reduce transitions and movement.",
+                        checked = animationsEnabled,
+                        onCheckedChange = onAnimationsChange
+                    )
 
-                    SettingsGroup(
-                        title = "About Xeno",
-                        subtitle = "A Chromium-based browser with its own interface",
-                        icon = { Icon(Icons.Rounded.Info, contentDescription = null) }
-                    ) {
-                        SettingsInfoRow("Version", "0.1.0")
-                        SettingsInfoRow("Rendering engine", "Android System WebView · Chromium")
-                        SettingsInfoRow("Interface", "Xeno Arc-style browser chrome")
-                    }
+                    SettingsDivider()
+                    SettingsSectionTitle("About", Icons.Rounded.Info)
+                    PlainInfoRow("Version", "0.1.0")
+                    PlainInfoRow("Engine", "Android System WebView · Chromium")
                 }
             }
         }
@@ -284,91 +184,49 @@ fun ArcSettingsScreen(
 }
 
 @Composable
-private fun SettingsGroup(
-    title: String,
-    subtitle: String,
-    icon: @Composable () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
-        modifier = Modifier.fillMaxWidth()
+private fun SettingsSectionTitle(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 15.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.padding(17.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.13f),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        icon()
-                    }
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            content()
-        }
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun SettingsToggle(
+private fun SettingsDivider() {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)))
+}
+
+@Composable
+private fun PlainToggleRow(
     title: String,
     description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.weight(1f).clickable { onCheckedChange(!checked) }.padding(vertical = 5.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Column(Modifier.weight(1f).clickable { onCheckedChange(!checked) }.padding(end = 12.dp)) {
+            Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
+            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
-        Spacer(Modifier.width(12.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
-private fun SettingsInfoRow(label: String, value: String) {
+private fun PlainInfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

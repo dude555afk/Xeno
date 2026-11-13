@@ -1,31 +1,29 @@
 package com.dude555afk.xeno.ui.answersheet
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,41 +33,43 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.AnswerSource
-import com.dude555afk.xeno.ui.render.AnswerText
 import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
+import com.dude555afk.xeno.ui.render.AnswerText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
-private val BrowseInk = Color(0xFF282231)
-private val BrowseMuted = Color(0xFF827A8A)
-private val BrowsePaper = Color(0xFFFBF9FD)
-private val BrowseAccent = Color(0xFF5944CE)
+private val ArcAnswerInk = Color(0xFF24212B)
+private val ArcAnswerMuted = Color(0xFF7C7884)
+private val ArcAnswerBlue = Color(0xFF5146D7)
+private val ArcAnswerPaper = Color(0xFFFCFBFD)
 
-/**
- * Arc-style Browse for Me reading surface.
- *
- * The answer engine and inline citation routing are unchanged. This component
- * only changes presentation: a full reading canvas, query pill, source carousel,
- * and clear editorial hierarchy.
- */
+/** Arc-style Browse for Me page with an image carousel and editorial answer. */
 @Composable
 fun AnswerSheet(
     result: AnswerResult?,
@@ -83,172 +83,99 @@ fun AnswerSheet(
     val listState = rememberLazyListState()
     val sources = result?.sources.orEmpty()
     val markdown = result?.markdown.orEmpty()
-
-    LaunchedEffect(markdown.length) {
-        val itemCount = 2 + sources.size + parsed.blocks.size
-        if (itemCount > 0) runCatching {
-            if (motionEnabled) listState.animateScrollToItem(itemCount - 1)
-            else listState.scrollToItem(itemCount - 1)
-        }
-    }
+    val imageSources = remember(sources) { sources.filter { !it.extracted?.imageUrl.isNullOrBlank() } }
 
     AnimatedVisibility(
         visible = result != null,
-        enter = if (motionEnabled) fadeIn(tween(180)) else EnterTransition.None,
-        exit = if (motionEnabled) fadeOut(tween(140)) else ExitTransition.None
+        enter = if (motionEnabled) fadeIn() else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut() else ExitTransition.None
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.46f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 20.dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = BrowsePaper,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f))
-            ) {
-                Column(Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 22.dp, end = 12.dp, top = 12.dp, bottom = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                "BROWSE FOR ME",
-                                color = BrowseAccent,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "A web-wide answer",
-                                color = BrowseMuted,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        Surface(
-                            onClick = onDismiss,
-                            shape = CircleShape,
-                            color = Color(0xFFF0EDF4)
-                        ) {
-                            Icon(
-                                Icons.Rounded.Close,
-                                contentDescription = "Close answer",
-                                tint = BrowseInk,
-                                modifier = Modifier.padding(10.dp).size(20.dp)
-                            )
-                        }
+        Surface(Modifier.fillMaxSize(), color = ArcAnswerPaper) {
+            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(58.dp).padding(start = 8.dp, end = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = ArcAnswerInk)
                     }
-
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
+                        modifier = Modifier.weight(1f),
                         shape = CircleShape,
                         color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFEAE6EF))
+                        border = BorderStroke(1.dp, Color(0xFFEAE8EF))
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Rounded.Search,
-                                contentDescription = null,
-                                tint = BrowseMuted,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                result?.query.orEmpty(),
-                                color = BrowseInk,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        Row(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Search, contentDescription = null, tint = ArcAnswerMuted, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(9.dp))
+                            Text(result?.query.orEmpty(), color = ArcAnswerInk, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    if (imageSources.isNotEmpty()) {
+                        item {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(11.dp)
+                            ) {
+                                items(imageSources, key = { it.index }) { source ->
+                                    BrowseImageCard(source) { onOpenSource(source) }
+                                }
+                            }
+                            Spacer(Modifier.height(24.dp))
                         }
                     }
 
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(
-                            start = 20.dp,
-                            end = 20.dp,
-                            top = 22.dp,
-                            bottom = 38.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        if (sources.isNotEmpty()) {
-                            item {
-                                Text(
-                                    "Sources from around the web",
-                                    color = BrowseInk,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(Modifier.height(12.dp))
-                            }
-                            item {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    contentPadding = PaddingValues(end = 4.dp)
-                                ) {
-                                    items(sources, key = { it.index }) { source ->
-                                        SourceCard(source, accent, onOpenSource)
-                                    }
-                                }
-                                Spacer(Modifier.height(24.dp))
-                            }
-                        }
+                    item {
+                        Text(
+                            result?.query.orEmpty(),
+                            color = ArcAnswerBlue,
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = if (imageSources.isEmpty()) 24.dp else 0.dp, bottom = 18.dp)
+                        )
+                    }
 
-                        itemsIndexed(parsed.blocks) { _, block ->
-                            when (block) {
-                                is AnswerText.Parsed.Block.Heading -> Text(
-                                    text = block.text,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = BrowseAccent,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 10.dp, top = 6.dp)
+                    itemsIndexed(parsed.blocks) { _, block ->
+                        when (block) {
+                            is AnswerText.Parsed.Block.Heading -> Text(
+                                block.text,
+                                color = ArcAnswerInk,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp)
+                            )
+                            is AnswerText.Parsed.Block.Paragraph -> CitationText(
+                                text = AnswerText.annotated(block.text, ArcAnswerBlue) { },
+                                color = ArcAnswerInk,
+                                onCitation = { index -> result?.sourceFor(index)?.let(onOpenSource) },
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp)
+                            )
+                            is AnswerText.Parsed.Block.Bullet -> Row(
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Box(Modifier.padding(top = 9.dp, end = 11.dp).size(6.dp).background(ArcAnswerBlue, CircleShape))
+                                CitationText(
+                                    text = AnswerText.annotated(block.text, ArcAnswerBlue) { },
+                                    color = ArcAnswerInk,
+                                    onCitation = { index -> result?.sourceFor(index)?.let(onOpenSource) }
                                 )
-
-                                is AnswerText.Parsed.Block.Paragraph -> Text(
-                                    text = AnswerText.annotated(block.text, accent) { index ->
-                                        result?.sourceFor(index)?.let(onOpenSource)
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = BrowseInk,
-                                    modifier = Modifier.padding(bottom = 17.dp)
-                                )
-
-                                is AnswerText.Parsed.Block.Bullet -> Row(
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                ) {
-                                    Box(
-                                        Modifier
-                                            .padding(top = 8.dp, end = 10.dp)
-                                            .size(7.dp)
-                                            .background(BrowseAccent, CircleShape)
-                                    )
-                                    Text(
-                                        text = AnswerText.annotated(block.text, accent) { index ->
-                                            result?.sourceFor(index)?.let(onOpenSource)
-                                        },
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = BrowseInk
-                                    )
-                                }
                             }
                         }
+                    }
 
-                        if (streaming && markdown.isEmpty()) {
-                            item { StreamingSkeleton() }
+                    if (streaming && markdown.isEmpty()) item { StreamingSkeleton() }
+                    if (streaming && markdown.isNotEmpty()) {
+                        item {
+                            Text("Writing…", color = ArcAnswerMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 22.dp, vertical = 12.dp))
                         }
                     }
                 }
@@ -258,99 +185,97 @@ fun AnswerSheet(
 }
 
 @Composable
-private fun SourceCard(
-    source: AnswerSource,
-    accent: Color,
-    onOpen: (AnswerSource) -> Unit
-) {
-    Surface(
-        onClick = { onOpen(source) },
-        shape = RoundedCornerShape(22.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE8E3ED)),
-        shadowElevation = 2.dp,
-        modifier = Modifier.width(248.dp)
+private fun BrowseImageCard(source: AnswerSource, onClick: () -> Unit) {
+    val bitmap by produceState<Bitmap?>(null, source.extracted?.imageUrl) {
+        value = loadBrowseImage(source.extracted?.imageUrl)
+    }
+    Box(
+        modifier = Modifier.width(244.dp).height(166.dp).clip(RoundedCornerShape(17.dp))
+            .background(Color(0xFFE6E1ED)).clickable(onClick = onClick)
     ) {
-        Column(Modifier.padding(15.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(22.dp)
-                        .background(accent.copy(alpha = 0.13f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        source.index.toString(),
-                        color = accent,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    source.host,
-                    color = BrowseMuted,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.weight(1f))
-                Icon(
-                    Icons.Rounded.OpenInNew,
-                    contentDescription = "Open source",
-                    tint = BrowseMuted,
-                    modifier = Modifier.size(15.dp)
-                )
+        if (bitmap != null) {
+            Image(bitmap!!.asImageBitmap(), contentDescription = source.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        } else {
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF4D4598), Color(0xFFB879AE)))))
+        }
+        Box(
+            Modifier.fillMaxWidth().align(Alignment.BottomCenter)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC171421))))
+                .padding(horizontal = 13.dp, vertical = 11.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(source.host, color = Color.White.copy(alpha = 0.82f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(source.title, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                source.title,
-                color = BrowseInk,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (source.snippet.isNotBlank()) {
-                Spacer(Modifier.height(7.dp))
-                Text(
-                    source.snippet,
-                    color = BrowseMuted,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "OPEN SOURCE",
-                color = BrowseAccent,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
 
-/** Quiet skeleton blocks while the generated answer is streaming. */
+@Composable
+private fun CitationText(
+    text: androidx.compose.ui.text.AnnotatedString,
+    color: Color,
+    onCitation: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ClickableText(
+        text = text,
+        modifier = modifier,
+        style = MaterialTheme.typography.bodyLarge.copy(color = color),
+        onClick = { offset ->
+            text.getStringAnnotations(
+                tag = AnswerText.CITE_TAG,
+                start = offset,
+                end = offset
+            ).firstOrNull()?.item?.toIntOrNull()?.let(onCitation)
+        }
+    )
+}
+
+private suspend fun loadBrowseImage(url: String?): Bitmap? = withContext(Dispatchers.IO) {
+    if (url.isNullOrBlank() || !(url.startsWith("https://") || url.startsWith("http://"))) return@withContext null
+    var connection: HttpURLConnection? = null
+    try {
+        connection = URL(url).openConnection() as? HttpURLConnection ?: return@withContext null
+        connection.connectTimeout = 4500
+        connection.readTimeout = 5500
+        connection.instanceFollowRedirects = true
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36")
+        connection.connect()
+        if (connection.contentLengthLong > 4L * 1024L * 1024L) return@withContext null
+        val bytes = connection.inputStream.use { input ->
+            val output = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(16 * 1024)
+            var total = 0
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > 4 * 1024 * 1024) return@withContext null
+                output.write(buffer, 0, read)
+            }
+            output.toByteArray()
+        }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        val sample = when {
+            bounds.outWidth > 1600 || bounds.outHeight > 1200 -> 4
+            bounds.outWidth > 1000 || bounds.outHeight > 800 -> 2
+            else -> 1
+        }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+    } catch (_: Exception) {
+        null
+    } finally {
+        connection?.disconnect()
+    }
+}
+
 @Composable
 private fun StreamingSkeleton() {
-    val transition = rememberInfiniteTransition(label = "browse-skeleton")
-    val alpha by transition.animateFloat(
-        initialValue = 0.12f,
-        targetValue = 0.34f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "browse-skeleton-alpha"
-    )
-    Column {
-        repeat(4) { index ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(if (index == 3) 0.58f else 0.94f)
-                    .height(13.dp)
-                    .background(Color(0xFFB8AFC4).copy(alpha = alpha), RoundedCornerShape(8.dp))
-            )
-            Spacer(Modifier.height(11.dp))
+    Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+        repeat(5) { index ->
+            Box(Modifier.fillMaxWidth(if (index == 4) 0.56f else 0.94f).height(13.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE8E5EC)))
         }
     }
 }
