@@ -17,6 +17,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.rounded.DesktopWindows
+import androidx.compose.material.icons.rounded.ZoomOutMap
+import androidx.compose.material.icons.rounded.Translate
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.foundation.layout.border
+import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -604,6 +613,7 @@ fun ArcSiteActionsSheet(
     isPinned: Boolean,
     blockingEnabled: Boolean,
     pageTextZoom: Int,
+    desktopSiteEnabled: Boolean,
     onDismiss: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
@@ -613,245 +623,196 @@ fun ArcSiteActionsSheet(
     onSummarize: () -> Unit,
     onTogglePin: () -> Unit,
     onShare: () -> Unit,
+    onTranslate: () -> Unit,
+    onDesktopSiteChange: (Boolean) -> Unit,
     onBlockingChange: (Boolean) -> Unit,
     onZoomChange: (Int) -> Unit,
     onOpenAppSettings: () -> Unit
 ) {
-    var displayOptionsOpen by remember { mutableStateOf(false) }
-    var siteSettingsOpen by remember { mutableStateOf(false) }
-    var dismissDragDistance by remember { mutableStateOf(0f) }
-
     val motionEnabled = LocalArcMotionEnabled.current
+    val host = remember(url) {
+        runCatching { java.net.URI(url).host?.removePrefix("www.") }.getOrNull()
+            .orEmpty().ifBlank { title.ifBlank { "Current page" } }
+    }
     AnimatedVisibility(
         visible = visible,
         enter = if (motionEnabled) fadeIn(tween(160)) + slideInVertically(
-            initialOffsetY = { it / 3 },
-            animationSpec = tween(220)
+            initialOffsetY = { it }, animationSpec = tween(260)
         ) else EnterTransition.None,
-        exit = if (motionEnabled) fadeOut(tween(120)) + slideOutVertically(tween(170))
-        else ExitTransition.None
+        exit = if (motionEnabled) fadeOut(tween(130)) + slideOutVertically(
+            targetOffsetY = { it }, animationSpec = tween(200)
+        ) else ExitTransition.None
     ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.48f))
-                .clickable(onClick = onDismiss),
+        BoxWithConstraints(
+            Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            Box(
+                Modifier.fillMaxSize()
+                    .background(Color(0xFF121315).copy(alpha = 0.35f))
+                    .clickable(onClick = onDismiss)
+            )
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 18.dp
+                modifier = Modifier.fillMaxWidth().height(minOf(660.dp, maxHeight)),
+                shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp),
+                color = Color(0xFF2D2E32),
+                shadowElevation = 0.dp
             ) {
                 Column(
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxSize()
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {}
-                        .navigationBarsPadding()
-                        .padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 17.dp)
+                        .padding(horizontal = 22.dp)
                 ) {
-                    Box(
-                        Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .width(54.dp)
-                            .height(18.dp)
-                            .pointerInput(visible) {
-                                detectVerticalDragGestures(
-                                    onVerticalDrag = { _, dragAmount ->
-                                        if (dragAmount > 0f) dismissDragDistance += dragAmount
-                                    },
-                                    onDragEnd = {
-                                        if (dismissDragDistance > 90f) onDismiss()
-                                        dismissDragDistance = 0f
-                                    },
-                                    onDragCancel = { dismissDragDistance = 0f }
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            Modifier
-                                .width(38.dp)
-                                .height(4.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-
-                    // Arc's compact navigation/address row.
+                    Spacer(Modifier.height(22.dp))
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        Modifier.fillMaxWidth().height(58.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF4F5052)),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RoundControl(Icons.Rounded.ArrowBack, "Back", canGoBack, onBack)
-                        RoundControl(Icons.Rounded.ArrowForward, "Forward", canGoForward, onForward)
-                        Surface(
-                            onClick = onCopyUrl,
-                            modifier = Modifier.weight(1f),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    runCatching { java.net.URI(url).host?.removePrefix("www.") }
-                                        .getOrNull().orEmpty().ifBlank { title.ifBlank { "Search" } },
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Icon(
-                                    Icons.Rounded.Search,
-                                    contentDescription = "Copy current address",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                        IconButton(onClick = onBack, enabled = canGoBack, modifier = Modifier.weight(0.78f)) {
+                            Text("‹", color = Color(0xFFADAEB2), fontSize = 28.sp, fontWeight = FontWeight.Normal)
                         }
-                        RoundControl(Icons.Rounded.Refresh, "Reload", url.isNotBlank(), onReload)
+                        IconButton(onClick = onForward, enabled = canGoForward, modifier = Modifier.weight(0.78f)) {
+                            Text("›", color = Color(0xFFADAEB2), fontSize = 28.sp, fontWeight = FontWeight.Normal)
+                        }
+                        Text(
+                            host,
+                            color = Color(0xFFFAFCFB),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.weight(2.1f)
+                        )
+                        IconButton(onClick = onCopyUrl, modifier = Modifier.weight(0.9f)) {
+                            Icon(Icons.Rounded.Link, contentDescription = "Copy link", tint = Color.White, modifier = Modifier.size(24.dp))
+                        }
+                        IconButton(onClick = onReload, modifier = Modifier.weight(0.9f)) {
+                            Icon(Icons.Rounded.Refresh, contentDescription = "Reload", tint = Color.White, modifier = Modifier.size(22.dp))
+                        }
                     }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionTile(
-                            "Find on Page",
-                            Icons.Rounded.Search,
-                            onFindInPage,
-                            Modifier.weight(1f)
-                        )
-                        ActionTile(
-                            "Summarize",
-                            Icons.Rounded.AutoAwesome,
-                            onSummarize,
-                            Modifier.weight(1f)
-                        )
-                        ActionTile(
-                            if (isPinned) "Unpin" else "Pin",
-                            Icons.Rounded.PushPin,
-                            onTogglePin,
-                            Modifier.weight(1f)
-                        )
-                        ActionTile(
-                            "Share",
-                            Icons.Rounded.Share,
-                            onShare,
-                            Modifier.weight(1f)
-                        )
+                    Spacer(Modifier.height(24.dp))
+                    Row(
+                        Modifier.fillMaxWidth().height(97.dp)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(Color(0xFF2D2E32)),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        PageActionTile("Summarize", Icons.Rounded.AutoAwesome, onSummarize, Modifier.weight(1f))
+                        PageActionTile("Pin", Icons.Rounded.PushPin, onTogglePin, Modifier.weight(1f), selected = isPinned)
+                        PageActionTile("Find", Icons.Rounded.Search, onFindInPage, Modifier.weight(1f))
+                        PageActionTile("Share", Icons.Rounded.Share, onShare, Modifier.weight(1f))
                     }
-
-                    Spacer(Modifier.height(12.dp))
-                    MenuSectionRow(
-                        title = "Display Options",
-                        subtitle = "Text size and page display",
-                        expanded = displayOptionsOpen,
-                        onClick = { displayOptionsOpen = !displayOptionsOpen }
+                    Spacer(Modifier.height(30.dp))
+                    PageMenuRow(
+                        title = "Translate",
+                        icon = Icons.Rounded.Translate,
+                        onClick = onTranslate,
+                        height = 62.dp
                     )
-                    if (displayOptionsOpen) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    "Text size",
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    "$pageTextZoom%",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            SmallTextControl("A−", enabled = pageTextZoom > 50) {
-                                onZoomChange(-10)
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            SmallTextControl("A+", enabled = pageTextZoom < 200) {
-                                onZoomChange(10)
-                            }
+                    Row(
+                        Modifier.fillMaxWidth().height(72.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.ZoomOutMap, contentDescription = null, tint = Color.White, modifier = Modifier.size(25.dp))
+                        Spacer(Modifier.width(28.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Zoom", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text("$pageTextZoom%", color = Color(0xFFE2E3E5), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        TextButton(onClick = { onZoomChange(10) }, enabled = pageTextZoom < 200) {
+                            Text("+", color = Color.White, fontSize = 23.sp)
+                        }
+                        TextButton(onClick = { onZoomChange(-10) }, enabled = pageTextZoom > 50) {
+                            Text("−", color = Color.White, fontSize = 23.sp)
                         }
                     }
-
-                    MenuSectionRow(
+                    Row(
+                        Modifier.fillMaxWidth().height(66.dp).clickable { onDesktopSiteChange(!desktopSiteEnabled) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.DesktopWindows, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                        Spacer(Modifier.width(28.dp))
+                        Text("Desktop Site", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Box(
+                            Modifier.size(24.dp).clip(RoundedCornerShape(3.dp))
+                                .background(if (desktopSiteEnabled) Color.White else Color.Transparent)
+                                .then(if (!desktopSiteEnabled) Modifier.background(Color.Transparent) else Modifier),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (desktopSiteEnabled) Text("✓", color = Color(0xFF2D2E32), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            else Box(Modifier.fillMaxSize().background(Color.Transparent).border(2.dp, Color(0xFF96979B), RoundedCornerShape(3.dp)))
+                        }
+                    }
+                    PageMenuRow(
                         title = "Site Settings",
-                        subtitle = "Privacy and content controls",
-                        expanded = siteSettingsOpen,
-                        onClick = { siteSettingsOpen = !siteSettingsOpen }
+                        icon = Icons.Rounded.Settings,
+                        onClick = onOpenAppSettings,
+                        height = 64.dp
                     )
-                    if (siteSettingsOpen) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onBlockingChange(!blockingEnabled) }
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    "Block ads and trackers",
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    if (blockingEnabled) "Global protection is on" else "Global protection is paused",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            Surface(
-                                shape = CircleShape,
-                                color = if (blockingEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                            ) {
-                                Box(
-                                    Modifier
-                                        .width(42.dp)
-                                        .height(25.dp)
-                                        .padding(3.dp),
-                                    contentAlignment = if (blockingEnabled) Alignment.CenterEnd else Alignment.CenterStart
-                                ) {
-                                    Box(
-                                        Modifier
-                                            .size(19.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    MenuSectionRow(
-                        title = "App Settings",
-                        subtitle = "Appearance, search and browser behaviour",
-                        expanded = false,
-                        onClick = onOpenAppSettings
-                    )
-
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.weight(1f))
+                    Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF323337)))
+                    Spacer(Modifier.height(26.dp))
+                    Text("Blocked 1 ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(7.dp))
                     Text(
-                        if (blockingEnabled) "Xeno protection is active across sites"
-                        else "Global content protection is paused",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        "Problems? Disable in site settings",
+                        color = Color(0xFF95969A),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable { onBlockingChange(!blockingEnabled) }
                     )
+                    Spacer(Modifier.height(18.dp))
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PageActionTile(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxSize(),
+        shape = RoundedCornerShape(15.dp),
+        color = if (selected) Color(0xFF505158) else Color(0xFF3D3E42)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(14.dp))
+            Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun PageMenuRow(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    height: androidx.compose.ui.unit.Dp
+) {
+    Row(
+        Modifier.fillMaxWidth().height(height).clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(27.dp))
+        Spacer(Modifier.width(28.dp))
+        Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 

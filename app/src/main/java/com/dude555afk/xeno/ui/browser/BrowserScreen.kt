@@ -58,6 +58,7 @@ fun BrowserScreen(
     var homeSettingsVisible by remember { mutableStateOf(false) }
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
+    var desktopSiteEnabled by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     BackHandler(
@@ -231,6 +232,7 @@ fun BrowserScreen(
                 isPinned = state.isCurrentPagePinned,
                 blockingEnabled = state.blockingEnabled,
                 pageTextZoom = state.pageTextZoom,
+                desktopSiteEnabled = desktopSiteEnabled,
                 onDismiss = { controlsVisible = false },
                 onBack = viewModel::goBack,
                 onForward = viewModel::goForward,
@@ -256,6 +258,16 @@ fun BrowserScreen(
                         putExtra(Intent.EXTRA_TEXT, displayUrl)
                     }
                     context.startActivity(Intent.createChooser(share, "Share page"))
+                },
+                onTranslate = {
+                    val target = "https://translate.google.com/translate?sl=auto&tl=en&u=" +
+                        android.net.Uri.encode(displayUrl)
+                    viewModel.navigate(target)
+                    controlsVisible = false
+                },
+                onDesktopSiteChange = { enabled ->
+                    desktopSiteEnabled = enabled
+                    viewModel.setDesktopSite(enabled)
                 },
                 onBlockingChange = viewModel::setBlockingEnabled,
                 onZoomChange = viewModel::changePageTextZoom,

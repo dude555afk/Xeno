@@ -766,6 +766,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(pageTextZoom = zoom) }
     }
 
+    fun setDesktopSite(enabled: Boolean) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        view.settings.apply {
+            useWideViewPort = enabled
+            loadWithOverviewMode = enabled
+            userAgentString = if (enabled) {
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            } else {
+                android.webkit.WebSettings.getDefaultUserAgent(getApplication())
+            }
+        }
+        view.reload()
+    }
+
     /**
      * Pull the real uBO lists from the network and merge them in.
      *
