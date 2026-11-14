@@ -145,7 +145,7 @@ fun PixelArcMark(modifier: Modifier = Modifier) {
                             var elapsed = 0
                             while (elapsed < 3800 && abs(velocity) > 0.008f) {
                                 delay(16)
-                                val decay = exp(-0.0012f * 16f)
+                                val decay = exp((-0.0012f * 16f).toDouble()).toFloat()
                                 rotation += velocity * (1f - decay) / 0.0012f
                                 velocity *= decay
                                 elapsed += 16

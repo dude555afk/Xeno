@@ -200,7 +200,7 @@ fun AnswerSheet(
                             Text(
                                 domain,
                                 color = Color(0xFF313E6A).copy(
-                                    alpha = 0.62f + 0.3f * abs(sin(shimmerPhase + index * 0.55f))
+                                    alpha = 0.62f + 0.3f * abs(sin((shimmerPhase + index * 0.55f).toDouble())).toFloat()
                                 ),
                                 fontSize = 19.sp,
                                 fontWeight = FontWeight.SemiBold,

@@ -248,7 +248,7 @@ fun VoiceSearchOverlay(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         repeat(8) { index ->
-                            val level = abs(sin(wave + index * 0.72f)).toFloat()
+                            val level = abs(sin((wave + index * 0.72f).toDouble())).toFloat()
                             val height = (9f + level * (11f + amplitude * 28f) + amplitude * 8f).coerceIn(7f, 48f)
                             Box(
                                 Modifier.padding(horizontal = 4.dp).width(4.dp).height(height.dp)

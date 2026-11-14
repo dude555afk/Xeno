@@ -173,11 +173,16 @@ fun TabStackSheet(
                                             }
                                         },
                                         onDragEnd = {
-                                            if (cardOffset.value < -120f) {
-                                                showUndo = true
-                                                onClose(tab)
-                                            } else {
-                                                gestureScope.launch {
+                                            when {
+                                                cardOffset.value < -120f -> {
+                                                    showUndo = true
+                                                    onClose(tab)
+                                                }
+                                                cardOffset.value > 120f && showUndo -> {
+                                                    showUndo = false
+                                                    onUndoClose()
+                                                }
+                                                else -> gestureScope.launch {
                                                     cardOffset.animateTo(
                                                         0f,
                                                         spring(stiffness = 350f, dampingRatio = 0.82f)
