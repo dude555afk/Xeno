@@ -1,6 +1,8 @@
 package com.dude555afk.xeno.ui.summary
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.dude555afk.xeno.core.summarize.Prompts
 import com.dude555afk.xeno.ui.render.AnswerText
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.XenoMotion
@@ -69,12 +72,13 @@ fun SummarySheet(
     onCopy: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
     val parsed = remember(streamText) { AnswerText.parse(streamText) }
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(XenoMotion.backdropFade()),
-        exit = fadeOut(tween(160))
+        enter = if (motionEnabled) fadeIn(XenoMotion.backdropFade()) else EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(tween(160)) else ExitTransition.None
     ) {
         Box(
             modifier = Modifier
@@ -221,7 +225,7 @@ fun SummarySheet(
                         }
 
                         if (streamText.isBlank()) {
-                            SummarySkeleton()
+                            SummarySkeleton(motionEnabled)
                         } else {
                             SelectionContainer {
                                 Column {
@@ -266,14 +270,15 @@ fun SummarySheet(
 }
 
 @Composable
-private fun SummarySkeleton() {
+private fun SummarySkeleton(animationsEnabled: Boolean) {
     val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
+    val animatedAlpha by transition.animateFloat(
         initialValue = 0.12f,
         targetValue = 0.35f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "alpha"
     )
+    val alpha = if (animationsEnabled) animatedAlpha else 0.2f
     Column {
         repeat(6) { i ->
             Box(

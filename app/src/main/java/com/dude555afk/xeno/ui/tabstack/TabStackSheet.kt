@@ -1,206 +1,196 @@
 package com.dude555afk.xeno.ui.tabstack
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.dude555afk.xeno.core.model.Tab
-import com.dude555afk.xeno.ui.theme.Dimens
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
+import com.dude555afk.xeno.ui.arc.PixelArcAmbientBackground
+import com.dude555afk.xeno.ui.arc.PixelBottomDock
 
-/**
- * The tab stack — Arc's vertical sidebar, translated for touch.
- *
- * Compact pill-cards, swipe-to-dismiss, generous negative space. On mobile the
- * horizontal tab strip is a lost cause; this is the honest equivalent.
- */
+private val HeaderTint = Color(0xFF998795)
+private val CardStroke = Color(0xFF3E3F43)
+
+/** Full-screen Arc-style tab carousel with live captured WebView previews. */
 @Composable
 fun TabStackSheet(
     visible: Boolean,
     tabs: List<Tab>,
     activeTabId: Long?,
+    previews: Map<Long, android.graphics.Bitmap>,
     accent: Color,
     onSelect: (Tab) -> Unit,
     onClose: (Tab) -> Unit,
     onNewTab: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenSettings: () -> Unit = onDismiss
 ) {
+    val motion = LocalArcMotionEnabled.current
+    val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (activeIndex - 1).coerceAtLeast(0))
+    val density = LocalDensity.current
+    val activeTab = tabs.getOrNull(activeIndex)
+
+    BackHandler(enabled = visible, onBack = onDismiss)
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(180)) +
-            slideInVertically(
-                initialOffsetY = { it / 3 },
-                animationSpec = tween(240)
-            ),
-        exit = fadeOut(tween(140)) +
-            slideOutVertically(tween(180))
+        enter = if (motion) fadeIn() + scaleIn(initialScale = 0.985f) else EnterTransition.None,
+        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.985f) else ExitTransition.None
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { onDismiss() },
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Surface(
-                shape = RoundedCornerShape(topStart = Dimens.cardRadius, topEnd = Dimens.cardRadius),
-                color = Color(0xFF0A0A0A),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.72f)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { /* swallow */ }
-            ) {
-                Column(Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(vertical = Dimens.spaceM)
-                            .size(width = 36.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Color.White.copy(alpha = 0.2f))
-                    )
+        Box(Modifier.fillMaxSize()) {
+            PixelArcAmbientBackground()
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(
-                            horizontal = Dimens.spaceL,
-                            vertical = Dimens.spaceS
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)
-                    ) {
-                        items(tabs, key = { it.id }) { tab ->
-                            TabCard(
-                                tab = tab,
-                                active = tab.id == activeTabId,
-                                accent = accent,
-                                onSelect = { onSelect(tab) },
-                                onClose = { onClose(tab) }
-                            )
+            if (activeTab != null) {
+                val title = remember(activeTab.url, activeTab.displayTitle) {
+                    runCatching { java.net.URI(activeTab.url).host?.removePrefix("www.") }
+                        .getOrNull()
+                        .orEmpty()
+                        .ifBlank { activeTab.displayTitle }
+                }
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 145.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val isAi = activeTab.url.startsWith("xeno://answer", ignoreCase = true)
+                    Icon(
+                        if (isAi) Icons.Rounded.AutoAwesome else Icons.Rounded.Language,
+                        contentDescription = null,
+                        tint = HeaderTint,
+                        modifier = Modifier.width(25.dp).height(24.dp)
+                    )
+                    Text(
+                        title,
+                        color = HeaderTint,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 10.dp).widthInCompat(196.dp)
+                    )
+                }
+            }
+
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth().align(Alignment.Center)
+            ) {
+                val cardWidth = minOf(250.dp, maxWidth * 0.64f)
+                val cardHeight = minOf(471.dp, maxHeight * 0.56f)
+                val sideInset = ((maxWidth - cardWidth) / 2).coerceAtLeast(12.dp)
+                LaunchedEffect(visible, activeTabId, tabs.size, cardWidth) {
+                    if (visible && tabs.isNotEmpty()) {
+                        val firstIndex = (activeIndex - 1).coerceAtLeast(0)
+                        val offset = if (activeIndex > 0) with(density) { (cardWidth + 17.dp).roundToPx() } else 0
+                        runCatching {
+                            if (motion) listState.animateScrollToItem(firstIndex, offset)
+                            else listState.scrollToItem(firstIndex, offset)
                         }
                     }
-
-                    // New tab — a pill, exactly like everything else.
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = accent,
-                        onClick = onNewTab,
-                        modifier = Modifier
-                            .padding(Dimens.spaceL)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            text = "New tab",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.Black,
-                            modifier = Modifier.padding(horizontal = Dimens.spaceXl, vertical = Dimens.spaceM)
-                        )
+                }
+                LazyRow(
+                    state = listState,
+                    modifier = Modifier.fillMaxWidth().height(cardHeight),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = sideInset),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(17.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(tabs, key = { it.id }) { tab ->
+                        val preview = previews[tab.id]
+                        Surface(
+                            onClick = { onSelect(tab) },
+                            modifier = Modifier.width(cardWidth).height(cardHeight),
+                            shape = RoundedCornerShape(13.dp),
+                            color = Color(0xFF202126),
+                            border = BorderStroke(1.dp, CardStroke)
+                        ) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp))) {
+                                if (preview != null && !preview.isRecycled) {
+                                    Image(
+                                        bitmap = preview.asImageBitmap(),
+                                        contentDescription = tab.displayTitle,
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.TopCenter,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
+                                        Modifier.fillMaxSize().background(Color(0xFF202126)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            tab.displayTitle.ifBlank { "New tab" },
+                                            color = Color.White.copy(alpha = 0.82f),
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(20.dp)
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { onClose(tab) },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(30.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Close, contentDescription = "Close tab", tint = Color.White, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }
+
+            PixelBottomDock(
+                tabCount = tabs.size,
+                homeMode = true,
+                onOpenTabs = onDismiss,
+                onNewTab = onNewTab,
+                onOpenControls = onOpenSettings,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
 
-@Composable
-private fun TabCard(
-    tab: Tab,
-    active: Boolean,
-    accent: Color,
-    onSelect: () -> Unit,
-    onClose: () -> Unit
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (active) 1f else 0.98f,
-        animationSpec = tween(160), label = "tabScale"
-    )
-
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (active) accent.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.05f),
-        border = BorderStroke(
-            1.dp,
-            if (active) accent.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.06f)
-        ),
-        onClick = onSelect,
-        modifier = Modifier.fillMaxWidth().scale(scale)
-    ) {
-        Row(
-            modifier = Modifier.padding(Dimens.spaceM),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = tab.displayTitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (tab.url.isNotBlank()) {
-                    Text(
-                        text = tab.url,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "Close tab",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
+/** Keeps the measured single-line tab header from expanding with long page titles. */
+private fun Modifier.widthInCompat(max: androidx.compose.ui.unit.Dp): Modifier =
+    this.then(Modifier.width(max))

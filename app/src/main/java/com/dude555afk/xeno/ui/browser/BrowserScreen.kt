@@ -1,265 +1,332 @@
 package com.dude555afk.xeno.ui.browser
 
-import android.view.ViewGroup
+import android.app.DownloadManager
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import android.webkit.CookieManager
+import android.webkit.WebStorage
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
+import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
+import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
+import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
+import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
+import com.dude555afk.xeno.ui.arc.PixelArcHomeScreen
+import com.dude555afk.xeno.ui.arc.PixelBottomDock
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
-import com.dude555afk.xeno.ui.spaces.SpacesBar
 import com.dude555afk.xeno.ui.summary.SummarySheet
 import com.dude555afk.xeno.ui.tabstack.TabStackSheet
-import com.dude555afk.xeno.ui.theme.Dimens
-import com.dude555afk.xeno.ui.theme.PillShape
 
-/**
- * The browser screen.
- *
- * Chrome hides on scroll — rule 3 from docs/DESIGN.md, and it's what makes the
- * content feel like the app rather than the page feeling like a document
- * inside a shell.
- */
 @Composable
 fun BrowserScreen(
     state: BrowserUiState,
     viewModel: BrowserViewModel,
     accent: Color
 ) {
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    var controlsVisible by remember { mutableStateOf(false) }
+    var homeSettingsVisible by remember { mutableStateOf(false) }
+    var findInPageVisible by remember { mutableStateOf(false) }
+    var findQuery by remember { mutableStateOf("") }
+    var desktopSiteEnabled by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-        // The page. The factory returns a container so the session pool can do
-        // the actual WebView ownership — reusing a view across recompositions
-        // is the whole point.
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                val container = android.widget.FrameLayout(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                }
-                container.post { viewModel.attachHost(container) }
-                container
+    BackHandler(
+        enabled = homeSettingsVisible || findInPageVisible || controlsVisible ||
+            state.summaryVisible || state.answer != null || state.paletteVisible ||
+            state.tabStackVisible || state.canGoBack
+    ) {
+        when {
+            homeSettingsVisible -> homeSettingsVisible = false
+            findInPageVisible -> {
+                findInPageVisible = false
+                findQuery = ""
+                viewModel.clearFindInPage()
             }
-        )
-
-        // Spaces — top left, always available.
-        SpacesBar(
-            spaces = state.spaces,
-            activeSpaceId = state.activeSpace?.id ?: 0L,
-            onSelect = viewModel::selectSpace,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = Dimens.spaceXl)
-        )
-
-        // Tab stack — top right.
-        IconButton(
-            onClick = viewModel::toggleTabStack,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = Dimens.spaceM, end = Dimens.spaceM)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Layers,
-                contentDescription = "Tabs",
-                tint = Color.White.copy(alpha = 0.7f)
-            )
+            controlsVisible -> controlsVisible = false
+            state.summaryVisible -> viewModel.dismissSummary()
+            state.answer != null -> viewModel.dismissAnswer()
+            state.paletteVisible -> viewModel.closePalette()
+            state.tabStackVisible -> viewModel.toggleTabStack()
+            state.canGoBack -> viewModel.goBack()
         }
-
-        // The floating bar.
-        FloatingBar(
-            loadProgress = state.load.progress,
-            loading = state.load.loading,
-            accent = accent,
-            canGoBack = state.canGoBack,
-            displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() },
-            onOpenPalette = viewModel::openPalette,
-            onSummarize = { viewModel.summarizeCurrentPage() },
-            onBack = viewModel::goBack,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-
-        CommandPalette(
-            visible = state.paletteVisible,
-            query = state.query,
-            onQueryChange = viewModel::onQueryChange,
-            tabHints = state.tabs.filter { it.hasContent },
-            historyHints = state.historyHints,
-            loading = state.answerStreaming,
-            isQuestion = state.isQuestion,
-            accent = accent,
-            onNavigate = viewModel::navigate,
-            onAsk = viewModel::ask,
-            onOpenTab = { tab ->
-                viewModel.selectTab(tab)
-                viewModel.closePalette()
-            },
-            onDismiss = viewModel::closePalette
-        )
-
-        TabStackSheet(
-            visible = state.tabStackVisible,
-            tabs = state.tabs,
-            activeTabId = state.activeTab?.id,
-            accent = accent,
-            onSelect = { viewModel.selectTab(it); viewModel.toggleTabStack() },
-            onClose = viewModel::closeTab,
-            onNewTab = viewModel::newTab,
-            onDismiss = viewModel::toggleTabStack
-        )
-
-        AnswerSheet(
-            result = state.answer,
-            streaming = state.answerStreaming,
-            accent = accent,
-            onOpenSource = { source ->
-                viewModel.navigate(source.url)
-                viewModel.dismissAnswer()
-            },
-            onDismiss = viewModel::dismissAnswer
-        )
-
-        SummarySheet(
-            visible = state.summaryVisible,
-            pageTitle = state.activeTab?.displayTitle.orEmpty(),
-            streamText = state.summaryText,
-            tone = state.summaryTone,
-            offline = state.summaryOffline,
-            error = state.summaryError,
-            accent = accent,
-            onToneChange = viewModel::setSummaryTone,
-            onCopy = { viewModel.copySummary() },
-            onDismiss = viewModel::dismissSummary
-        )
     }
-}
 
-/**
- * The floating bar — back, address field, summarize. A pill, like everything.
- *
- * The address field shows the live page URL, not the palette's in-progress
- * query. Showing `state.query` here meant the bar kept whatever the user last
- * typed long after they had dismissed the palette and moved on.
- */
-@Composable
-private fun FloatingBar(
-    loadProgress: Float,
-    loading: Boolean,
-    accent: Color,
-    canGoBack: Boolean,
-    displayUrl: String,
-    onOpenPalette: () -> Unit,
-    onSummarize: () -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceL)) {
-        Surface(
-            shape = PillShape,
-            color = Color(0xF20A0A0A),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    // Only shown when there is somewhere to go back to. A
-                    // permanently-visible back arrow that does nothing is worse
-                    // than no arrow at all.
-                    if (canGoBack) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
+    LaunchedEffect(viewModel) { viewModel.showStartupSearchIfConfigured() }
 
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(PillShape)
-                            .clickable(onClick = onOpenPalette)
-                            .padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceM),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(Dimens.spaceS))
-                        Text(
-                            text = displayUrl.ifBlank { "Search or ask anything" },
-                            color = if (displayUrl.isBlank()) Color.White.copy(alpha = 0.4f)
-                            else Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+    val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
+    val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
+
+    CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            // Keep the live Chromium WebView mounted beneath the Compose chrome.
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    val container = android.widget.FrameLayout(ctx).apply {
+                        layoutParams = android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
                         )
                     }
-
-                    // The summarize action — the flagship, one tap away.
-                    Surface(
-                        shape = PillShape,
-                        color = accent,
-                        onClick = onSummarize,
-                        modifier = Modifier.padding(end = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "Summarize",
-                            tint = Color.Black,
-                            modifier = Modifier.padding(Dimens.spaceS)
-                        )
-                    }
+                    container.post { viewModel.attachHost(container) }
+                    container
                 }
+            )
 
-                if (loading) {
-                    LinearProgressIndicator(
-                        progress = { loadProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .clip(PillShape),
-                        color = accent
+            if (isHome) {
+                PixelArcHomeScreen(
+                    onOpenSearch = viewModel::openPalette,
+                    onOpenTabs = viewModel::toggleTabStack,
+                    onOpenSettings = { homeSettingsVisible = true },
+                    tabCount = state.tabs.size
+                )
+            } else {
+                if (state.load.loading) {
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { state.load.progress },
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(2.dp),
+                        color = accent,
+                        trackColor = Color.Transparent
                     )
                 }
+
+                AnimatedVisibility(
+                    visible = state.chromeVisible,
+                    modifier = Modifier.fillMaxSize(),
+                    enter = if (state.animationsEnabled) fadeIn(tween(140)) + slideInVertically(
+                        initialOffsetY = { it / 3 },
+                        animationSpec = tween(220)
+                    ) else EnterTransition.None,
+                    exit = if (state.animationsEnabled) fadeOut(tween(110)) + slideOutVertically(
+                        targetOffsetY = { it / 3 },
+                        animationSpec = tween(180)
+                    ) else ExitTransition.None
+                ) {
+                    Box(Modifier.fillMaxSize()) {
+                        PixelBottomDock(
+                            tabCount = state.tabs.size,
+                            homeMode = false,
+                            onOpenTabs = viewModel::toggleTabStack,
+                            onNewTab = viewModel::newTab,
+                            onOpenControls = { controlsVisible = true },
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
+                }
             }
+
+            ArcSettingsScreen(
+                visible = homeSettingsVisible,
+                themeMode = state.themeMode,
+                accentOverrideArgb = state.accentOverrideArgb,
+                animationsEnabled = state.animationsEnabled,
+                blockingEnabled = state.blockingEnabled,
+                autoOpenKeyboard = state.autoOpenKeyboard,
+                onThemeModeChange = viewModel::setThemeMode,
+                onAccentChange = viewModel::setAccentOverride,
+                onAnimationsChange = viewModel::setAnimationsEnabled,
+                onBlockingChange = viewModel::setBlockingEnabled,
+                onAutoOpenKeyboardChange = viewModel::setAutoOpenKeyboard,
+                onDismiss = { homeSettingsVisible = false },
+                onShare = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, "Try Xeno Browser.")
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Share Xeno"))
+                },
+                onSetDefaultBrowser = {
+                    runCatching {
+                        context.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                    }
+                },
+                onClearBrowsingData = {
+                    viewModel.clearBrowsingData()
+                    CookieManager.getInstance().removeAllCookies(null)
+                    WebStorage.getInstance().deleteAllData()
+                },
+                onOpenDownloads = {
+                    runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
+                },
+                onExportData = {
+                    val urls = state.tabs.map { it.url }.filter { it.isNotBlank() }.distinct()
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, urls.joinToString("\n"))
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Export open tabs"))
+                }
+            )
+
+            CommandPalette(
+                visible = state.paletteVisible,
+                query = state.query,
+                onQueryChange = viewModel::onQueryChange,
+                tabHints = state.tabs.filter { it.hasContent },
+                historyHints = state.historyHints,
+                loading = state.answerStreaming,
+                isQuestion = state.isQuestion,
+                accent = accent,
+                onNavigate = viewModel::navigate,
+                onAsk = viewModel::ask,
+                onOpenTab = { tab ->
+                    viewModel.selectTab(tab)
+                    viewModel.closePalette()
+                },
+                onDismiss = viewModel::closePalette
+            )
+
+            TabStackSheet(
+                visible = state.tabStackVisible,
+                tabs = state.tabs,
+                activeTabId = state.activeTab?.id,
+                previews = state.tabPreviews,
+                accent = accent,
+                onSelect = { tab ->
+                    viewModel.selectTab(tab)
+                    viewModel.toggleTabStack()
+                },
+                onClose = viewModel::closeTab,
+                onNewTab = viewModel::newTab,
+                onDismiss = viewModel::toggleTabStack,
+                onOpenSettings = { homeSettingsVisible = true }
+            )
+
+            ArcSiteActionsSheet(
+                visible = controlsVisible,
+                title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
+                url = displayUrl,
+                canGoBack = state.canGoBack,
+                canGoForward = state.canGoForward,
+                isPinned = state.isCurrentPagePinned,
+                blockingEnabled = state.blockingEnabled,
+                pageTextZoom = state.pageTextZoom,
+                desktopSiteEnabled = desktopSiteEnabled,
+                onDismiss = { controlsVisible = false },
+                onBack = viewModel::goBack,
+                onForward = viewModel::goForward,
+                onReload = viewModel::reloadPage,
+                onCopyUrl = {
+                    val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    manager?.setPrimaryClip(ClipData.newPlainText("Xeno address", displayUrl))
+                },
+                onFindInPage = {
+                    controlsVisible = false
+                    findQuery = ""
+                    findInPageVisible = true
+                },
+                onSummarize = {
+                    controlsVisible = false
+                    viewModel.summarizeCurrentPage()
+                },
+                onTogglePin = viewModel::togglePinCurrentPage,
+                onShare = {
+                    val share = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() })
+                        putExtra(Intent.EXTRA_TEXT, displayUrl)
+                    }
+                    context.startActivity(Intent.createChooser(share, "Share page"))
+                },
+                onTranslate = {
+                    val target = "https://translate.google.com/translate?sl=auto&tl=en&u=" +
+                        android.net.Uri.encode(displayUrl)
+                    viewModel.navigate(target)
+                    controlsVisible = false
+                },
+                onDesktopSiteChange = { enabled ->
+                    desktopSiteEnabled = enabled
+                    viewModel.setDesktopSite(enabled)
+                },
+                onBlockingChange = viewModel::setBlockingEnabled,
+                onZoomChange = viewModel::changePageTextZoom,
+                onOpenAppSettings = {
+                    controlsVisible = false
+                    homeSettingsVisible = true
+                }
+            )
+
+            if (findInPageVisible) {
+                ArcFindInPageBar(
+                    query = findQuery,
+                    onQueryChange = { query ->
+                        findQuery = query
+                        viewModel.findInPage(query)
+                    },
+                    onPrevious = { viewModel.findNext(false) },
+                    onNext = { viewModel.findNext(true) },
+                    onClose = {
+                        findInPageVisible = false
+                        findQuery = ""
+                        viewModel.clearFindInPage()
+                    },
+                    modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()
+                )
+            }
+
+            AnswerSheet(
+                result = state.answer,
+                streaming = state.answerStreaming,
+                accent = accent,
+                onOpenSource = { source ->
+                    viewModel.navigate(source.url)
+                    viewModel.dismissAnswer()
+                },
+                onDismiss = viewModel::dismissAnswer,
+                onOpenWeb = {
+                    val query = state.answer?.query.orEmpty()
+                    viewModel.dismissAnswer()
+                    if (query.isNotBlank()) viewModel.navigate(query)
+                },
+                onOpenTabs = viewModel::toggleTabStack,
+                onNewTab = viewModel::newTab,
+                onOpenControls = { controlsVisible = true },
+                tabCount = state.tabs.size
+            )
+
+            SummarySheet(
+                visible = state.summaryVisible,
+                pageTitle = state.activeTab?.displayTitle.orEmpty(),
+                streamText = state.summaryText,
+                tone = state.summaryTone,
+                offline = state.summaryOffline,
+                error = state.summaryError,
+                accent = accent,
+                onToneChange = viewModel::setSummaryTone,
+                onCopy = viewModel::copySummary,
+                onDismiss = viewModel::dismissSummary
+            )
         }
     }
 }

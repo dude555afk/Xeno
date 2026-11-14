@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
@@ -55,11 +57,15 @@ data class BrowserUiState(
     val activeTab: Tab? = null,
     val load: PageLoadState = PageLoadState(),
     val canGoBack: Boolean = false,
+    val canGoForward: Boolean = false,
+    val isCurrentPagePinned: Boolean = false,
+    val pageTextZoom: Int = 100,
     val paletteVisible: Boolean = false,
     val query: String = "",
     val isQuestion: Boolean = false,
     val historyHints: List<SearchHit> = emptyList(),
     val tabStackVisible: Boolean = false,
+    val tabPreviews: Map<Long, Bitmap> = emptyMap(),
     val answer: AnswerResult? = null,
     val answerStreaming: Boolean = false,
     val answerError: String? = null,
@@ -69,6 +75,11 @@ data class BrowserUiState(
     val summaryError: String? = null,
     val summaryTone: Prompts.Tone = Prompts.Tone.Terse,
     val blockingEnabled: Boolean = true,
+    val autoOpenKeyboard: Boolean = true,
+    val themeMode: String = "system",
+    val accentOverrideArgb: Int = 0,
+    val animationsEnabled: Boolean = true,
+    val chromeVisible: Boolean = true,
     val hasApiKey: Boolean = false
 )
 
@@ -106,6 +117,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
+            autoOpenKeyboard = settings.autoOpenKeyboard,
+            themeMode = settings.themeMode,
+            accentOverrideArgb = settings.accentOverrideArgb,
+            animationsEnabled = settings.animationsEnabled,
             hasApiKey = settings.hasApiKey
         )
     )
@@ -114,6 +129,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private var answerJob: Job? = null
     private var summaryJob: Job? = null
     private var hintsJob: Job? = null
+    private var startupSearchHandled = false
 
     /** The tab the WebView session is currently showing. */
     private var loadedTabId: Long? = null
@@ -180,6 +196,39 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun showStartupSearchIfConfigured() {
+        if (startupSearchHandled) return
+        startupSearchHandled = true
+        if (settings.autoOpenKeyboard) openPalette()
+    }
+
+    fun setAutoOpenKeyboard(enabled: Boolean) {
+        settings.autoOpenKeyboard = enabled
+        _state.update { it.copy(autoOpenKeyboard = enabled) }
+    }
+
+    fun setThemeMode(mode: String) {
+        val safeMode = mode.takeIf { it in setOf("system", "dark", "light") } ?: "system"
+        settings.themeMode = safeMode
+        _state.update { it.copy(themeMode = safeMode) }
+    }
+
+    fun setAccentOverride(argb: Int) {
+        settings.accentOverrideArgb = argb
+        _state.update { it.copy(accentOverrideArgb = argb) }
+    }
+
+    fun setAnimationsEnabled(enabled: Boolean) {
+        settings.animationsEnabled = enabled
+        _state.update { it.copy(animationsEnabled = enabled) }
+    }
+
+    private fun setChromeVisible(visible: Boolean) {
+        if (_state.value.chromeVisible != visible) {
+            _state.update { it.copy(chromeVisible = visible) }
+        }
+    }
+
     // MARK: spaces & tabs
 
     fun selectSpace(space: Space) {
@@ -188,7 +237,16 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
-        _state.update { it.copy(activeTab = tab, load = PageLoadState(url = tab.url)) }
+        if (loadedTabId != null && loadedTabId != tab.id) {
+            captureTabPreview(loadedTabId!!)
+        }
+        _state.update {
+            it.copy(
+                activeTab = tab,
+                load = PageLoadState(url = tab.url),
+                isCurrentPagePinned = settings.isPinned(tab.url)
+            )
+        }
         syncSessionToTab(tab)
     }
 
@@ -197,13 +255,25 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val spaceId = _state.value.activeSpace?.id ?: 1L
             val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
             selectTab(Tab(id = id, spaceId = spaceId))
-            _state.update { it.copy(tabStackVisible = false, paletteVisible = true) }
+            _state.update {
+                it.copy(
+                    tabStackVisible = false,
+                    paletteVisible = true,
+                    query = "",
+                    isQuestion = false,
+                    historyHints = emptyList()
+                )
+            }
+            refreshHistoryHints("")
         }
     }
 
     fun closeTab(tab: Tab) {
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
+            _state.update { current ->
+                current.copy(tabPreviews = current.tabPreviews - tab.id)
+            }
             pool.destroy("tab-${tab.id}")
             if (loadedTabId == tab.id) loadedTabId = null
 
@@ -216,6 +286,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleTabStack() {
+        if (!_state.value.tabStackVisible) {
+            loadedTabId?.let(::captureTabPreview)
+        }
         _state.update { it.copy(tabStackVisible = !it.tabStackVisible) }
     }
 
@@ -225,7 +298,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     // MARK: palette
 
     fun openPalette() {
-        _state.update { it.copy(paletteVisible = true) }
+        _state.update {
+            it.copy(
+                paletteVisible = true,
+                query = "",
+                isQuestion = false,
+                historyHints = emptyList()
+            )
+        }
     }
 
     fun closePalette() {
@@ -462,6 +542,18 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun attachHost(host: ViewGroup) {
         val view = pool.acquire(SESSION_KEY, host)
+        view.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            val delta = scrollY - oldScrollY
+            if (scrollY <= 12) {
+                setChromeVisible(true)
+            } else if (kotlin.math.abs(delta) >= 7) {
+                setChromeVisible(delta < 0)
+            }
+        }
+        view.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) setChromeVisible(true)
+            false
+        }
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
             blocker = { request ->
@@ -487,6 +579,41 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun detachHost() = pool.park(SESSION_KEY)
+
+    /**
+     * Capture a small, in-memory snapshot for the horizontal tab carousel.
+     * The full-resolution page stays in Chromium; the preview is capped at
+     * 360×720 and eight tabs so this never becomes a second copy of web pages.
+     */
+    private fun captureTabPreview(tabId: Long) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        val width = view.width
+        val height = view.height
+        if (width <= 0 || height <= 0) return
+
+        runCatching {
+            val scale = minOf(360f / width, 720f / height, 1f)
+            val bitmap = Bitmap.createBitmap(
+                (width * scale).toInt().coerceAtLeast(1),
+                (height * scale).toInt().coerceAtLeast(1),
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            canvas.scale(scale, scale)
+            // Called on the UI thread before tab selection navigates the shared
+            // WebView, so this snapshot belongs to the tab being left.
+            view.draw(canvas)
+
+            _state.update { current ->
+                val previews = LinkedHashMap(current.tabPreviews)
+                previews[tabId] = bitmap
+                while (previews.size > 8) {
+                    previews.remove(previews.keys.first())
+                }
+                current.copy(tabPreviews = previews)
+            }
+        }
+    }
 
     /**
      * Point the live session at [tab] if it is not already showing it.
@@ -515,14 +642,21 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Mirror the session's history depth into state so the bar can show it. */
     private fun refreshBackState() {
-        val back = pool.peek(SESSION_KEY)?.canGoBack() == true
-        if (_state.value.canGoBack != back) {
-            _state.update { it.copy(canGoBack = back) }
+        val view = pool.peek(SESSION_KEY)
+        val back = view?.canGoBack() == true
+        val forward = view?.canGoForward() == true
+        if (_state.value.canGoBack != back || _state.value.canGoForward != forward) {
+            _state.update { it.copy(canGoBack = back, canGoForward = forward) }
         }
     }
 
     private fun sessionListener() = object : SessionListener {
         override fun onPageStarted(url: String) {
+            val tabId = loadedTabId ?: _state.value.activeTab?.id
+            if (tabId != null) {
+                _state.update { it.copy(tabPreviews = it.tabPreviews - tabId) }
+            }
+            setChromeVisible(true)
             _state.update {
                 it.copy(load = it.load.copy(loading = true, progress = 0.05f, url = url))
             }
@@ -535,6 +669,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onPageFinished(url: String, title: String) {
             if (url.isBlank() || url == "about:blank") return
+            (loadedTabId ?: _state.value.activeTab?.id)?.let(::captureTabPreview)
 
             viewModelScope.launch {
                 val existing = db.historyDao().byUrl(url)
@@ -558,6 +693,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
+            setChromeVisible(true)
             _state.update {
                 it.copy(
                     load = PageLoadState(progress = 1f, loading = false, url = url, title = title)
@@ -580,6 +716,68 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun goBack() {
         pool.peek(SESSION_KEY)?.takeIf { it.canGoBack() }?.goBack()
+    }
+
+    fun goForward() {
+        pool.peek(SESSION_KEY)?.takeIf { it.canGoForward() }?.goForward()
+    }
+
+    fun reloadPage() {
+        pool.peek(SESSION_KEY)?.reload()
+    }
+
+    fun findInPage(query: String) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        if (query.isBlank()) view.clearMatches() else view.findAllAsync(query)
+    }
+
+    fun findNext(forward: Boolean) {
+        pool.peek(SESSION_KEY)?.findNext(forward)
+    }
+
+    fun clearFindInPage() {
+        pool.peek(SESSION_KEY)?.clearMatches()
+    }
+
+    fun togglePinCurrentPage() {
+        val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
+        if (url.isBlank()) return
+        val pinned = settings.togglePinned(url)
+        _state.update { it.copy(isCurrentPagePinned = pinned) }
+    }
+
+    fun setBlockingEnabled(enabled: Boolean) {
+        settings.blockingEnabled = enabled
+        _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    /** Clear visit history while keeping open tabs alive. */
+    fun clearBrowsingData() {
+        hintsJob?.cancel()
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { db.historyDao().clear() }
+            _state.update { it.copy(historyHints = emptyList()) }
+        }
+    }
+
+    fun changePageTextZoom(delta: Int) {
+        val zoom = (_state.value.pageTextZoom + delta).coerceIn(50, 200)
+        pool.peek(SESSION_KEY)?.settings?.textZoom = zoom
+        _state.update { it.copy(pageTextZoom = zoom) }
+    }
+
+    fun setDesktopSite(enabled: Boolean) {
+        val view = pool.peek(SESSION_KEY) ?: return
+        view.settings.apply {
+            useWideViewPort = enabled
+            loadWithOverviewMode = enabled
+            userAgentString = if (enabled) {
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            } else {
+                android.webkit.WebSettings.getDefaultUserAgent(getApplication())
+            }
+        }
+        view.reload()
     }
 
     /**
