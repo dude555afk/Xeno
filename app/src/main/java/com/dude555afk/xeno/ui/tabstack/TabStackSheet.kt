@@ -24,8 +24,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -135,15 +137,13 @@ fun TabStackSheet(
                     items(tabs, key = { it.id }) { tab ->
                         val preview = previews[tab.id]
                         Surface(
+                            onClick = { onSelect(tab) },
                             modifier = Modifier.width(cardWidth).height(cardHeight),
                             shape = RoundedCornerShape(13.dp),
                             color = Color(0xFF202126),
                             border = BorderStroke(1.dp, CardStroke)
                         ) {
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp)).combinedClickable(
-                                onClick = { onSelect(tab) },
-                                onLongClick = { onClose(tab) }
-                            )) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp))) {
                                 if (preview != null && !preview.isRecycled) {
                                     Image(
                                         bitmap = preview.asImageBitmap(),
@@ -165,6 +165,12 @@ fun TabStackSheet(
                                             modifier = Modifier.padding(20.dp)
                                         )
                                     }
+                                }
+                                IconButton(
+                                    onClick = { onClose(tab) },
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(30.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Close, contentDescription = "Close tab", tint = Color.White, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
