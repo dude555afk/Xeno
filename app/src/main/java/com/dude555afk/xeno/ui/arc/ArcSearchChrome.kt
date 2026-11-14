@@ -23,8 +23,7 @@ import androidx.compose.material.icons.rounded.DesktopWindows
 import androidx.compose.material.icons.rounded.ZoomOutMap
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.foundation.layout.border
-import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
