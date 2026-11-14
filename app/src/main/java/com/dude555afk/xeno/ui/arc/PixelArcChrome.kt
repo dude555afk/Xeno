@@ -1,6 +1,8 @@
 package com.dude555afk.xeno.ui.arc
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import android.os.SystemClock
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -19,6 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -227,6 +230,7 @@ fun PixelArcHomeScreen(
 }
 
 /** Three fixed controls aligned to the audited bottom-dock coordinates. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PixelBottomDock(
     tabCount: Int,
@@ -298,7 +302,7 @@ fun PixelBottomDock(
                                 Surface(
                                     modifier = Modifier.offset(x = (-5).dp, y = 1.dp)
                                         .size(17.dp, 23.dp)
-                                        .graphicsLayer { rotationZ = leftCardTilt; translationZ = 0f },
+                                        .graphicsLayer { rotationZ = leftCardTilt }.zIndex(0f),
                                     shape = RoundedCornerShape(4.dp),
                                     color = Color(0xFF777B8D),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.78f))
@@ -306,7 +310,7 @@ fun PixelBottomDock(
                                 Surface(
                                     modifier = Modifier.offset(x = 5.dp, y = (-1).dp)
                                         .size(17.dp, 23.dp)
-                                        .graphicsLayer { rotationZ = rightCardTilt; translationZ = 1f },
+                                        .graphicsLayer { rotationZ = rightCardTilt }.zIndex(1f),
                                     shape = RoundedCornerShape(4.dp),
                                     color = Color(0xFF51596E),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.86f))
@@ -315,7 +319,7 @@ fun PixelBottomDock(
                                 Surface(
                                     modifier = Modifier.offset(x = 5.dp, y = (-1).dp)
                                         .size(17.dp, 23.dp)
-                                        .graphicsLayer { rotationZ = rightCardTilt; translationZ = 0f },
+                                        .graphicsLayer { rotationZ = rightCardTilt }.zIndex(0f),
                                     shape = RoundedCornerShape(4.dp),
                                     color = Color(0xFF51596E),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.86f))
@@ -323,7 +327,7 @@ fun PixelBottomDock(
                                 Surface(
                                     modifier = Modifier.offset(x = (-5).dp, y = 1.dp)
                                         .size(17.dp, 23.dp)
-                                        .graphicsLayer { rotationZ = leftCardTilt; translationZ = 1f },
+                                        .graphicsLayer { rotationZ = leftCardTilt }.zIndex(1f),
                                     shape = RoundedCornerShape(4.dp),
                                     color = Color(0xFF777B8D),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.78f))
