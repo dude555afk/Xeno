@@ -264,6 +264,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     historyHints = emptyList()
                 )
             }
+            refreshHistoryHints("")
         }
     }
 
@@ -748,6 +749,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setBlockingEnabled(enabled: Boolean) {
         settings.blockingEnabled = enabled
         _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    /** Clear visit history while keeping open tabs alive. */
+    fun clearBrowsingData() {
+        hintsJob?.cancel()
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { db.historyDao().clear() }
+            _state.update { it.copy(historyHints = emptyList()) }
+        }
     }
 
     fun changePageTextZoom(delta: Int) {

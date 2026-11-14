@@ -1,6 +1,11 @@
 package com.dude555afk.xeno.ui.cmdbar
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -8,7 +13,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,11 +24,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,15 +36,14 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,27 +53,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
+import com.dude555afk.xeno.ui.arc.PixelArcAmbientBackground
 import kotlinx.coroutines.delay
 
-/**
- * Arc Search's compact search surface.
- *
- * The input and suggested searches live in one light/dark panel at the bottom
- * of the gradient canvas. There is deliberately no title header or stack of
- * floating suggestion cards: Arc's search surface is visually quiet.
- */
+private val Sheet = Color(0xFF2D2E32)
+private val SearchPill = Color(0xFF4F5052)
+private val PrimaryText = Color.White
+private val SecondaryText = Color(0xFFA4A5A8)
+private val BrowseBlue = Color(0xFF4E5BCD)
+
+/** Arc Search's rising search drawer, with a real keyboard-aware input and recent history. */
 @Composable
 fun CommandPalette(
     visible: Boolean,
@@ -88,32 +90,27 @@ fun CommandPalette(
     onOpenTab: (Tab) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val motionEnabled = LocalArcMotionEnabled.current
+    val motion = LocalArcMotionEnabled.current
+    val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
-    val focusRequester = remember { FocusRequester() }
-    val ideas = remember {
-        listOf(
-            "Summarize today's news",
-            "museum shows near me",
-            "quick chicken recipes",
-            "fun things to do in NYC"
-        )
+    val requester = remember { FocusRequester() }
+    val voiceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val spoken = result.data
+            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()
+        if (!spoken.isNullOrBlank()) onQueryChange(spoken)
     }
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val panel = if (dark) Color(0xFF24222B) else Color(0xFFF8F7FA)
-    val ink = if (dark) Color(0xFFF5F3F8) else Color(0xFF24212A)
-    val muted = if (dark) Color(0xFFAAA5B3) else Color(0xFF85808D)
-    val arcBlue = Color(0xFF5046D8)
 
     BackHandler(enabled = visible) {
         keyboard?.hide()
         onDismiss()
     }
-
     LaunchedEffect(visible) {
         if (visible) {
-            delay(100)
-            runCatching { focusRequester.requestFocus() }
+            delay(110)
+            runCatching { requester.requestFocus() }
             keyboard?.show()
         } else {
             keyboard?.hide()
@@ -122,193 +119,180 @@ fun CommandPalette(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (motionEnabled) fadeIn() + scaleIn(initialScale = 0.99f)
-        else EnterTransition.None,
-        exit = if (motionEnabled) fadeOut() + scaleOut(targetScale = 0.99f)
-        else ExitTransition.None
+        enter = if (motion) fadeIn() + scaleIn(initialScale = 0.985f) else EnterTransition.None,
+        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.985f) else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize()) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                Color(0xFF2914A2),
-                                Color(0xFF5A3CC7),
-                                Color(0xFFB978B9),
-                                Color(0xFFF09AA7)
-                            )
-                        )
-                    )
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .imePadding()
-                    .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
-            ) {
-                Spacer(Modifier.weight(1f))
-
+            PixelArcAmbientBackground()
+            Column(Modifier.fillMaxSize().imePadding()) {
+                Spacer(Modifier.height(255.dp))
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(23.dp),
-                    color = panel,
-                    border = BorderStroke(1.dp, if (dark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.82f)),
-                    shadowElevation = 18.dp
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    color = Sheet,
+                    shape = RoundedCornerShape(topStart = 38.dp, topEnd = 38.dp)
                 ) {
-                    Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp)
-                                .padding(start = 17.dp, end = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    Column(Modifier.fillMaxSize()) {
+                        Spacer(Modifier.height(19.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 19.dp),
+                            shape = CircleShape,
+                            color = SearchPill
                         ) {
-                            Icon(
-                                Icons.Rounded.Search,
-                                contentDescription = null,
-                                tint = muted,
-                                modifier = Modifier.size(19.dp)
-                            )
-                            Spacer(Modifier.width(11.dp))
-                            BasicTextField(
-                                value = query,
-                                onValueChange = onQueryChange,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .focusRequester(focusRequester),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = ink),
-                                cursorBrush = SolidColor(arcBlue),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = KeyboardActions(
-                                    onSearch = {
-                                        if (query.isNotBlank()) {
-                                            keyboard?.hide()
-                                            onNavigate(query.trim())
+                            Row(
+                                modifier = Modifier.height(58.dp).padding(start = 25.dp, end = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                BasicTextField(
+                                    value = query,
+                                    onValueChange = onQueryChange,
+                                    modifier = Modifier.weight(1f).focusRequester(requester),
+                                    singleLine = true,
+                                    textStyle = androidx.compose.ui.text.TextStyle(
+                                        color = PrimaryText,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    cursorBrush = SolidColor(Color(0xFF4E66F8)),
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                    keyboardActions = KeyboardActions(
+                                        onSearch = {
+                                            val term = query.trim()
+                                            if (term.isNotEmpty()) {
+                                                keyboard?.hide()
+                                                if (isQuestion) onAsk(term) else onNavigate(term)
+                                            }
+                                        },
+                                        onGo = {
+                                            val term = query.trim()
+                                            if (term.isNotEmpty()) {
+                                                keyboard?.hide()
+                                                onNavigate(term)
+                                            }
                                         }
-                                    },
-                                    onGo = {
-                                        if (query.isNotBlank()) {
-                                            keyboard?.hide()
-                                            onNavigate(query.trim())
+                                    ),
+                                    decorationBox = { inner ->
+                                        Box {
+                                            if (query.isBlank()) {
+                                                Text("Search...", color = SecondaryText, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                                            }
+                                            inner()
                                         }
                                     }
-                                ),
-                                decorationBox = { inner ->
-                                    Box {
-                                        if (query.isBlank()) {
-                                            Text(
-                                                "Search...",
-                                                color = muted,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
+                                )
+                                if (query.isBlank()) {
+                                    IconButton(
+                                        onClick = {
+                                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to search")
+                                            }
+                                            try {
+                                                voiceLauncher.launch(intent)
+                                            } catch (_: ActivityNotFoundException) {
+                                                keyboard?.show()
+                                            }
+                                        },
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Icon(Icons.Rounded.Mic, contentDescription = "Voice search", tint = SecondaryText, modifier = Modifier.size(21.dp))
+                                    }
+                                    Icon(
+                                        Icons.Rounded.VisibilityOff,
+                                        contentDescription = null,
+                                        tint = SecondaryText,
+                                        modifier = Modifier.padding(start = 3.dp).size(23.dp)
+                                    )
+                                } else {
+                                    Surface(
+                                        onClick = { onQueryChange("") },
+                                        color = Color(0xFFA5A6A8),
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(22.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Rounded.Close, contentDescription = "Clear search", tint = SearchPill, modifier = Modifier.size(14.dp))
                                         }
-                                        inner()
                                     }
                                 }
-                            )
-                            if (query.isNotBlank()) {
-                                IconButton(
-                                    onClick = { onQueryChange("") },
-                                    modifier = Modifier.size(38.dp)
+                            }
+                        }
+
+                        Spacer(Modifier.height(if (query.isBlank()) 20.dp else 31.dp))
+                        if (query.isNotBlank()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 22.dp, end = 19.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f).height(48.dp).clickable {
+                                        keyboard?.hide()
+                                        onNavigate(query.trim())
+                                    },
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Rounded.Close,
-                                        contentDescription = "Clear search",
-                                        tint = muted,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    Icon(Icons.Rounded.Search, contentDescription = null, tint = Color(0xFF9A9B9F), modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(20.dp))
+                                    Text(query, color = PrimaryText, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Surface(
                                     onClick = {
                                         keyboard?.hide()
                                         onAsk(query.trim())
                                     },
+                                    color = BrowseBlue,
                                     shape = CircleShape,
-                                    color = arcBlue.copy(alpha = if (dark) 0.24f else 0.10f)
+                                    modifier = Modifier.width(110.dp).height(41.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Rounded.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = if (dark) Color(0xFFB9B3FF) else arcBlue,
-                                            modifier = Modifier.size(14.dp)
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("Browse for me", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+
+                            if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                                ) {
+                                    items(tabHints, key = { "tab-${it.id}" }) { tab ->
+                                        HistoryRow(
+                                            title = tab.displayTitle,
+                                            subtitle = tab.url,
+                                            isAi = false,
+                                            onClick = { keyboard?.hide(); onOpenTab(tab) }
                                         )
-                                        Spacer(Modifier.width(5.dp))
-                                        Text(
-                                            "Browse for me",
-                                            color = if (dark) Color(0xFFB9B3FF) else arcBlue,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.SemiBold
+                                    }
+                                    items(historyHints, key = { "history-${it.url}" }) { hit ->
+                                        HistoryRow(
+                                            title = hit.title.ifBlank { hit.url },
+                                            subtitle = hit.url,
+                                            isAi = false,
+                                            onClick = { keyboard?.hide(); onNavigate(hit.url) }
                                         )
                                     }
                                 }
                             }
-                        }
-
-                        if (query.isBlank()) {
-                            LazyColumn(
-                                modifier = Modifier.heightIn(max = 210.dp),
-                                contentPadding = PaddingValues(bottom = 7.dp)
-                            ) {
-                                items(ideas, key = { it }) { idea ->
-                                    BrowseSuggestionRow(
-                                        text = idea,
-                                        ink = ink,
-                                        muted = muted,
-                                        arcBlue = arcBlue,
-                                        onNavigate = { onNavigate(idea) },
-                                        onBrowse = { onAsk(idea) }
-                                    )
-                                }
-                            }
                         } else {
                             LazyColumn(
-                                modifier = Modifier.heightIn(max = 220.dp),
-                                contentPadding = PaddingValues(bottom = 7.dp)
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(top = 5.dp, bottom = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
                             ) {
-                                items(tabHints, key = { it.id }) { tab ->
-                                    SearchHintRow(
-                                        icon = Icons.Rounded.Article,
-                                        title = tab.displayTitle,
-                                        subtitle = tab.url,
-                                        ink = ink,
-                                        muted = muted,
-                                        onClick = {
-                                            keyboard?.hide()
-                                            onOpenTab(tab)
-                                        }
-                                    )
-                                }
                                 items(historyHints, key = { it.url }) { hit ->
-                                    SearchHintRow(
-                                        icon = Icons.Rounded.History,
+                                    HistoryRow(
                                         title = hit.title.ifBlank { hit.url },
                                         subtitle = hit.url,
-                                        ink = ink,
-                                        muted = muted,
-                                        onClick = {
-                                            keyboard?.hide()
-                                            onNavigate(hit.url)
-                                        }
+                                        isAi = false,
+                                        onClick = { keyboard?.hide(); onNavigate(hit.url) }
                                     )
                                 }
-                                if (tabHints.isEmpty() && historyHints.isEmpty()) {
+                                if (historyHints.isEmpty()) {
                                     item {
-                                        BrowseSuggestionRow(
-                                            text = "Search the web",
-                                            ink = ink,
-                                            muted = muted,
-                                            arcBlue = arcBlue,
-                                            onNavigate = { onNavigate(query.trim()) },
-                                            onBrowse = { onAsk(query.trim()) }
+                                        Text(
+                                            "Your recent pages will appear here",
+                                            color = SecondaryText,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.padding(horizontal = 22.dp, vertical = 16.dp)
                                         )
                                     }
                                 }
@@ -316,10 +300,10 @@ fun CommandPalette(
                         }
 
                         if (loading) {
-                            LinearProgressIndicator(
+                            androidx.compose.material3.LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth().height(2.dp),
-                                color = arcBlue,
-                                trackColor = panel
+                                color = BrowseBlue,
+                                trackColor = Sheet
                             )
                         }
                     }
@@ -330,93 +314,35 @@ fun CommandPalette(
 }
 
 @Composable
-private fun BrowseSuggestionRow(
-    text: String,
-    ink: Color,
-    muted: Color,
-    arcBlue: Color,
-    onNavigate: () -> Unit,
-    onBrowse: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(42.dp)
-            .padding(horizontal = 15.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .height(42.dp)
-                .clickable(onClick = onNavigate),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Rounded.Search,
-                contentDescription = null,
-                tint = muted,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(11.dp))
-            Text(
-                text,
-                color = ink,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Surface(
-            onClick = onBrowse,
-            shape = CircleShape,
-            color = arcBlue.copy(alpha = 0.09f)
-        ) {
-            Text(
-                "Browse for me",
-                color = arcBlue,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchHintRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun HistoryRow(
     title: String,
     subtitle: String,
-    ink: Color,
-    muted: Color,
+    isAi: Boolean,
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().height(58.dp).clickable(onClick = onClick).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = muted, modifier = Modifier.size(17.dp))
-        Spacer(Modifier.width(11.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                title,
-                color = ink,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (subtitle.isNotBlank()) {
-                Text(
-                    subtitle,
-                    color = muted,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        Surface(
+            shape = CircleShape,
+            color = if (isAi) Color(0xFF873EA7) else Color(0xFF44454A),
+            modifier = Modifier.size(25.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    if (isAi) Icons.Rounded.AutoAwesome else Icons.Rounded.History,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(15.dp)
                 )
+            }
+        }
+        Spacer(Modifier.width(17.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, color = PrimaryText, fontSize = 15.7.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle.isNotBlank()) {
+                Text(subtitle, color = SecondaryText.copy(alpha = 0.78f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
