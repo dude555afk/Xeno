@@ -14,6 +14,9 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
@@ -29,21 +32,30 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
+import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
 import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.arc.PixelArcHomeScreen
+import com.dude555afk.xeno.ui.arc.PixelArcAmbientBackground
 import com.dude555afk.xeno.ui.arc.PixelBottomDock
+import com.dude555afk.xeno.ui.arc.VoiceSearchOverlay
 import com.dude555afk.xeno.ui.cmdbar.CommandPalette
 import com.dude555afk.xeno.ui.summary.SummarySheet
 import com.dude555afk.xeno.ui.tabstack.TabStackSheet
@@ -59,14 +71,59 @@ fun BrowserScreen(
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
     var desktopSiteEnabled by remember { mutableStateOf(false) }
+    var voiceVisible by remember { mutableStateOf(false) }
+    var answerWebMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val interactionScope = rememberCoroutineScope()
+    val tabSwipeOffset = remember { Animatable(0f) }
+    val scrubTabs: (Int) -> Unit = { direction ->
+        interactionScope.launch {
+            val width = with(density) { 420.dp.toPx() }
+            tabSwipeOffset.animateTo(direction * width, animationSpec = tween(140))
+            viewModel.selectAdjacentTab(direction)
+            tabSwipeOffset.snapTo(-direction * width)
+            tabSwipeOffset.animateTo(
+                0f,
+                animationSpec = spring(stiffness = 350f, dampingRatio = 0.9f)
+            )
+        }
+    }
+    val compactPage = state.paletteVisible || state.tabStackVisible
+    val pageScale by animateFloatAsState(
+        targetValue = when {
+            compactPage -> 0.6364f
+            state.summaryVisible -> 0.62f
+            else -> 1f
+        },
+        animationSpec = spring(stiffness = 380f, dampingRatio = 1f),
+        label = "arc-shared-page-scale"
+    )
+    val pageOffsetY by animateFloatAsState(
+        targetValue = when {
+            state.paletteVisible -> 65f
+            state.summaryVisible -> -132f
+            else -> 0f
+        },
+        animationSpec = spring(stiffness = 380f, dampingRatio = 1f),
+        label = "arc-shared-page-offset"
+    )
+    val pageFoldRotation by animateFloatAsState(
+        targetValue = if (state.summaryVisible) -55f else 0f,
+        animationSpec = spring(stiffness = 320f, dampingRatio = 0.9f),
+        label = "arc-page-fold"
+    )
+    LaunchedEffect(state.answer) {
+        if (state.answer == null) answerWebMode = false
+    }
 
     BackHandler(
-        enabled = homeSettingsVisible || findInPageVisible || controlsVisible ||
+        enabled = voiceVisible || homeSettingsVisible || findInPageVisible || controlsVisible ||
             state.summaryVisible || state.answer != null || state.paletteVisible ||
             state.tabStackVisible || state.canGoBack
     ) {
         when {
+            voiceVisible -> voiceVisible = false
             homeSettingsVisible -> homeSettingsVisible = false
             findInPageVisible -> {
                 findInPageVisible = false
@@ -89,9 +146,30 @@ fun BrowserScreen(
 
     CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            // Keep the live Chromium WebView mounted beneath the Compose chrome.
+            // The live WebView stays mounted; Compose only transforms its surface.
+            if (state.summaryVisible) PixelArcAmbientBackground()
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    scaleX = pageScale
+                    scaleY = pageScale
+                    translationY = with(density) { pageOffsetY.dp.toPx() }
+                    translationX = tabSwipeOffset.value
+                    rotationX = pageFoldRotation
+                    cameraDistance = 900f * density.density
+                    transformOrigin = if (state.summaryVisible) {
+                        TransformOrigin(0.5f, 0.08f)
+                    } else {
+                        TransformOrigin(0.5f, 0.5f)
+                    }
+                    shape = RoundedCornerShape(
+                        when {
+                            state.summaryVisible -> 20.dp
+                            compactPage -> 15.dp
+                            else -> 0.dp
+                        }
+                    )
+                    clip = compactPage || state.summaryVisible
+                },
                 factory = { ctx ->
                     val container = android.widget.FrameLayout(ctx).apply {
                         layoutParams = android.view.ViewGroup.LayoutParams(
@@ -109,7 +187,9 @@ fun BrowserScreen(
                     onOpenSearch = viewModel::openPalette,
                     onOpenTabs = viewModel::toggleTabStack,
                     onOpenSettings = { homeSettingsVisible = true },
-                    tabCount = state.tabs.size
+                    tabCount = state.tabs.size,
+                    onVoiceStart = { voiceVisible = true },
+                    onSwipeTab = scrubTabs
                 )
             } else {
                 if (state.load.loading) {
@@ -125,12 +205,12 @@ fun BrowserScreen(
                     visible = state.chromeVisible,
                     modifier = Modifier.fillMaxSize(),
                     enter = if (state.animationsEnabled) fadeIn(tween(140)) + slideInVertically(
-                        initialOffsetY = { it / 3 },
+                        initialOffsetY = { with(density) { 85.dp.roundToPx() } },
                         animationSpec = tween(220)
                     ) else EnterTransition.None,
                     exit = if (state.animationsEnabled) fadeOut(tween(110)) + slideOutVertically(
-                        targetOffsetY = { it / 3 },
-                        animationSpec = tween(180)
+                        targetOffsetY = { with(density) { 85.dp.roundToPx() } },
+                        animationSpec = tween(220)
                     ) else ExitTransition.None
                 ) {
                     Box(Modifier.fillMaxSize()) {
@@ -140,6 +220,8 @@ fun BrowserScreen(
                             onOpenTabs = viewModel::toggleTabStack,
                             onNewTab = viewModel::newTab,
                             onOpenControls = { controlsVisible = true },
+                            onVoiceStart = { voiceVisible = true },
+                            onSwipeTab = scrubTabs,
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
                     }
@@ -220,7 +302,10 @@ fun BrowserScreen(
                 onClose = viewModel::closeTab,
                 onNewTab = viewModel::newTab,
                 onDismiss = viewModel::toggleTabStack,
-                onOpenSettings = { homeSettingsVisible = true }
+                onOpenSettings = { homeSettingsVisible = true },
+                onUndoClose = viewModel::undoCloseLastTab,
+                onVoiceStart = { voiceVisible = true },
+                onSwipeTab = scrubTabs
             )
 
             ArcSiteActionsSheet(
@@ -295,7 +380,7 @@ fun BrowserScreen(
                 )
             }
 
-            AnswerSheet(
+            if (state.answer != null && !answerWebMode) AnswerSheet(
                 result = state.answer,
                 streaming = state.answerStreaming,
                 accent = accent,
@@ -306,14 +391,27 @@ fun BrowserScreen(
                 onDismiss = viewModel::dismissAnswer,
                 onOpenWeb = {
                     val query = state.answer?.query.orEmpty()
-                    viewModel.dismissAnswer()
-                    if (query.isNotBlank()) viewModel.navigate(query)
+                    if (query.isNotBlank()) {
+                        answerWebMode = true
+                        viewModel.navigate(query)
+                    }
                 },
                 onOpenTabs = viewModel::toggleTabStack,
                 onNewTab = viewModel::newTab,
                 onOpenControls = { controlsVisible = true },
-                tabCount = state.tabs.size
+                tabCount = state.tabs.size,
+                onVoiceStart = { voiceVisible = true },
+                onSwipeTab = scrubTabs
             )
+
+            if (state.answer != null && answerWebMode) {
+                ArcAiWebTogglePill(
+                    webMode = true,
+                    onToggle = { answerWebMode = false },
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                        .padding(end = 17.dp, bottom = 90.dp)
+                )
+            }
 
             SummarySheet(
                 visible = state.summaryVisible,
@@ -326,6 +424,15 @@ fun BrowserScreen(
                 onToneChange = viewModel::setSummaryTone,
                 onCopy = viewModel::copySummary,
                 onDismiss = viewModel::dismissSummary
+            )
+
+            VoiceSearchOverlay(
+                visible = voiceVisible,
+                onDismiss = { voiceVisible = false },
+                onResult = { spoken ->
+                    viewModel.openPalette()
+                    viewModel.onQueryChange(spoken)
+                }
             )
         }
     }

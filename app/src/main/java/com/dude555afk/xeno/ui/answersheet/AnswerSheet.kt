@@ -6,8 +6,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,13 +47,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -57,10 +68,14 @@ import androidx.compose.ui.unit.sp
 import com.dude555afk.xeno.core.model.AnswerResult
 import com.dude555afk.xeno.core.model.AnswerSource
 import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
+import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.PixelBottomDock
 import com.dude555afk.xeno.ui.render.AnswerText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
+import kotlin.math.sin
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -81,10 +96,25 @@ fun AnswerSheet(
     onOpenTabs: () -> Unit,
     onNewTab: () -> Unit,
     onOpenControls: () -> Unit,
-    tabCount: Int
+    tabCount: Int,
+    onVoiceStart: () -> Unit = {},
+    onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
     val parsed = remember(result?.markdown) { AnswerText.parse(result?.markdown.orEmpty()) }
+    val loadingMotion = rememberInfiniteTransition(label = "browse-loading")
+    val shimmerPhase by loadingMotion.animateFloat(
+        initialValue = 0f,
+        targetValue = 6.28318f,
+        animationSpec = infiniteRepeatable(tween(1250), RepeatMode.Restart),
+        label = "browse-domain-shimmer"
+    )
+    val readingPulse by loadingMotion.animateFloat(
+        initialValue = 0.68f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(620), RepeatMode.Reverse),
+        label = "browse-reading-pulse"
+    )
     val sources = result?.sources.orEmpty()
     val markdownReady = result?.markdown?.isNotBlank() == true
     val listState = rememberLazyListState()
@@ -99,7 +129,7 @@ fun AnswerSheet(
             Column(Modifier.fillMaxSize().statusBarsPadding()) {
                 if (markdownReady) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(74.dp).padding(start = 18.dp, end = 18.dp, top = 16.dp),
+                        modifier = Modifier.fillMaxWidth().height(74.dp).padding(start = 18.dp, end = 18.dp, top = 38.dp),
                         verticalAlignment = Alignment.Top
                     ) {
                         Surface(
@@ -126,34 +156,57 @@ fun AnswerSheet(
                         }
                     }
                 } else {
-                    Column(Modifier.fillMaxWidth().padding(start = 19.dp, top = 28.dp)) {
-                        Text(result?.query.orEmpty(), color = Color(0xFF5C86FE), fontSize = 27.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Column(Modifier.fillMaxWidth().padding(start = 22.dp, top = 54.dp)) {
+                        Text(result?.query.orEmpty(), color = Color(0xFF5C86FE), fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
                 if (!markdownReady) {
                     Spacer(Modifier.height(180.dp))
-                    Text(
-                        "Reading 10 web pages",
-                        color = AnswerBlue,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 19.dp, bottom = 8.dp)
-                    )
-                    val domains = (sources.map { it.host.removePrefix("www.") } + listOf("... and more"))
-                        .distinct().take(6)
-                    domains.forEach { domain ->
+                    var readingVisible by remember(result?.query) { mutableStateOf(false) }
+                    LaunchedEffect(result?.query, markdownReady) {
+                        delay(250)
+                        readingVisible = true
+                    }
+                    AnimatedVisibility(
+                        visible = readingVisible,
+                        enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 12 })
+                    ) {
                         Text(
-                            domain,
-                            color = Color(0xFF313E6A),
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(start = 19.dp, top = 4.dp, bottom = 4.dp)
+                            "Reading 10 web pages",
+                            color = AnswerBlue.copy(alpha = readingPulse),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 22.dp, bottom = 8.dp)
                         )
                     }
-                    if (sources.isEmpty()) {
-                        listOf("Searching the web...", "Collecting useful sources...", "... and more").forEach {
-                            Text(it, color = Color(0xFF313E6A), fontSize = 19.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 19.dp, top = 4.dp, bottom = 4.dp))
+                    val domains = (
+                        if (sources.isEmpty()) {
+                            listOf("Searching the web...", "Collecting useful sources...", "Checking trusted pages...")
+                        } else {
+                            sources.map { it.host.removePrefix("www.") }
+                        } + listOf("... and more")
+                    ).distinct().take(6)
+                    domains.forEachIndexed { index, domain ->
+                        var rowVisible by remember(domain, result?.query) { mutableStateOf(false) }
+                        LaunchedEffect(domain, result?.query, markdownReady) {
+                            delay(250L + index * 60L)
+                            rowVisible = true
+                        }
+                        AnimatedVisibility(
+                            visible = rowVisible,
+                            enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 12 })
+                        ) {
+                            Text(
+                                domain,
+                                color = Color(0xFF313E6A).copy(
+                                    alpha = 0.62f + 0.3f * abs(sin(shimmerPhase + index * 0.55f))
+                                ),
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.fillMaxWidth().height(41.dp)
+                                    .padding(start = 22.dp, top = 9.dp)
+                            )
                         }
                     }
                 } else {
@@ -171,14 +224,16 @@ fun AnswerSheet(
                             ) {
                                 if (imageSources.isNotEmpty()) {
                                     items(imageSources, key = { "image-${it.index}" }) { source ->
-                                        AnswerImageCard(source, onClick = { onOpenSource(source) })
+                                        AnswerImageCard(source, shimmerPhase, onClick = { onOpenSource(source) })
                                     }
                                 } else {
                                     items(3) { index ->
                                         Box(
-                                            Modifier.width(136.dp).height(202.dp).clip(RoundedCornerShape(19.dp))
+                                            Modifier.width(160.dp).height(238.dp).clip(RoundedCornerShape(22.dp))
                                                 .background(Brush.linearGradient(listOf(Color(0xFF46464E), Color(0xFF2D3037), Color(0xFF292B31))))
-                                        )
+                                        ) {
+                                            MediaCardShimmer(shimmerPhase)
+                                        }
                                     }
                                 }
                             }
@@ -187,18 +242,32 @@ fun AnswerSheet(
 
                         val hero = parsed.blocks.firstOrNull() as? AnswerText.Parsed.Block.Heading
                         item {
-                            Text(
-                                hero?.text ?: result?.query.orEmpty(),
-                                color = AnswerBlue,
-                                fontSize = 27.sp,
-                                lineHeight = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.4).sp,
-                                modifier = Modifier.padding(start = 19.dp, end = 19.dp, bottom = 19.dp)
-                            )
+                            AnimatedVisibility(
+                                visible = true,
+                                enter = fadeIn(tween(250)) + slideInVertically(initialOffsetY = { 16 })
+                            ) {
+                                Text(
+                                    hero?.text ?: result?.query.orEmpty(),
+                                    color = AnswerBlue,
+                                    fontSize = 27.sp,
+                                    lineHeight = 32.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.4).sp,
+                                    modifier = Modifier.padding(start = 19.dp, end = 19.dp, bottom = 19.dp)
+                                )
+                            }
                         }
 
-                        itemsIndexed(parsed.blocks.drop(if (hero != null) 1 else 0)) { _, block ->
+                        itemsIndexed(parsed.blocks.drop(if (hero != null) 1 else 0)) { index, block ->
+                            var blockVisible by remember(block) { mutableStateOf(false) }
+                            LaunchedEffect(block, result?.query) {
+                                delay(240L + index * 70L)
+                                blockVisible = true
+                            }
+                            AnimatedVisibility(
+                                visible = blockVisible,
+                                enter = fadeIn(tween(230)) + slideInVertically(initialOffsetY = { 16 })
+                            ) {
                             when (block) {
                                 is AnswerText.Parsed.Block.Heading -> Text(
                                     block.text,
@@ -231,6 +300,7 @@ fun AnswerSheet(
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
+                            }
                             }
                         }
 
@@ -276,27 +346,11 @@ fun AnswerSheet(
                 }
             }
 
-            Surface(
+            ArcAiWebTogglePill(
+                webMode = false,
+                onToggle = onOpenWeb,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 17.dp, bottom = 90.dp)
-                    .width(91.dp).height(50.dp),
-                shape = CircleShape,
-                color = Color(0xFF3C404E)
-            ) {
-                Row(Modifier.fillMaxSize().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(42.dp).background(Color(0xFF873EA7), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.AutoAwesome, contentDescription = "Browse for me mode", tint = Color.White, modifier = Modifier.size(22.dp))
-                    }
-                    Box(
-                        Modifier.weight(1f).fillMaxSize().clickable(onClick = onOpenWeb),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.Search, contentDescription = "Switch to web search", tint = Color(0xFF7E8294), modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
+            )
 
             PixelBottomDock(
                 tabCount = tabCount,
@@ -304,6 +358,8 @@ fun AnswerSheet(
                 onOpenTabs = onOpenTabs,
                 onNewTab = onNewTab,
                 onOpenControls = onOpenControls,
+                onVoiceStart = onVoiceStart,
+                onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -353,7 +409,7 @@ private fun SourceMiniCard(source: AnswerSource, onClick: () -> Unit) {
 }
 
 @Composable
-private fun AnswerImageCard(source: AnswerSource, onClick: () -> Unit) {
+private fun AnswerImageCard(source: AnswerSource, shimmerPhase: Float, onClick: () -> Unit) {
     val imageUrl = source.extracted?.imageUrl.orEmpty()
     val bitmap by produceState<Bitmap?>(initialValue = null, imageUrl) {
         value = withContext(Dispatchers.IO) {
@@ -367,7 +423,7 @@ private fun AnswerImageCard(source: AnswerSource, onClick: () -> Unit) {
         }
     }
     Box(
-        Modifier.width(136.dp).height(202.dp).clip(RoundedCornerShape(19.dp))
+        Modifier.width(160.dp).height(238.dp).clip(RoundedCornerShape(22.dp))
             .background(Color(0xFF2D3037)).clickable(onClick = onClick)
     ) {
         if (bitmap != null) {
@@ -375,11 +431,31 @@ private fun AnswerImageCard(source: AnswerSource, onClick: () -> Unit) {
         } else {
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF46464E), Color(0xFF2D3037), Color(0xFF292B31)))))
         }
+        MediaCardShimmer(shimmerPhase)
         Text(
             source.host.removePrefix("www."),
             color = Color.White.copy(alpha = 0.78f),
             fontSize = 11.sp,
             modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
+        )
+    }
+}
+
+@Composable
+private fun MediaCardShimmer(phase: Float) {
+    Canvas(Modifier.fillMaxSize()) {
+        val progress = (phase / 6.28318f).coerceIn(0f, 1f)
+        val travel = progress * (size.width + size.height) - size.height
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    Color.White.copy(alpha = 0.16f),
+                    Color.Transparent
+                ),
+                start = Offset(travel, 0f),
+                end = Offset(travel + size.height * 0.42f, size.height)
+            )
         )
     }
 }

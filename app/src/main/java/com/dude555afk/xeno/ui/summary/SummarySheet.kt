@@ -8,8 +8,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,7 +42,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +58,7 @@ import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.theme.Dimens
 import com.dude555afk.xeno.ui.theme.PillShape
 import com.dude555afk.xeno.ui.theme.XenoMotion
+import kotlinx.coroutines.delay
 
 /**
  * The summarizer sheet.
@@ -74,10 +81,28 @@ fun SummarySheet(
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
     val parsed = remember(streamText) { AnswerText.parse(streamText) }
+    var introFinished by remember(visible, pageTitle) { mutableStateOf(false) }
+    val pulseTransition = rememberInfiniteTransition(label = "summary-intro-pulse")
+    val introPulse by pulseTransition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(560), RepeatMode.Reverse),
+        label = "summary-intro-alpha"
+    )
+    LaunchedEffect(visible, pageTitle) {
+        introFinished = false
+        if (visible) {
+            delay(1500)
+            introFinished = true
+        }
+    }
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (motionEnabled) fadeIn(XenoMotion.backdropFade()) else EnterTransition.None,
+        enter = if (motionEnabled) fadeIn(XenoMotion.backdropFade()) + scaleIn(
+            initialScale = 0.94f,
+            animationSpec = spring(stiffness = 350f, dampingRatio = 0.9f)
+        ) else EnterTransition.None,
         exit = if (motionEnabled) fadeOut(tween(160)) else ExitTransition.None
     ) {
         Box(
@@ -98,7 +123,7 @@ fun SummarySheet(
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.8f)
+                    .fillMaxHeight(0.64f)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
@@ -224,39 +249,57 @@ fun SummarySheet(
                             Spacer(Modifier.height(Dimens.spaceM))
                         }
 
-                        if (streamText.isBlank()) {
-                            SummarySkeleton(motionEnabled)
+                        if (!introFinished || streamText.isBlank()) {
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text(
+                                    "Summarizing for you…",
+                                    color = accent.copy(alpha = introPulse),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(Modifier.height(Dimens.spaceM))
+                                SummarySkeleton(motionEnabled)
+                            }
                         } else {
                             SelectionContainer {
                                 Column {
-                                    parsed.blocks.forEach { block ->
-                                        val text: AnnotatedString = when (block) {
-                                            is AnswerText.Parsed.Block.Heading ->
-                                                AnswerText.annotated(block.text, accent) { }
-                                            is AnswerText.Parsed.Block.Paragraph ->
-                                                AnswerText.annotated(block.text, accent) { }
-                                            is AnswerText.Parsed.Block.Bullet ->
-                                                AnswerText.annotated(block.text, accent) { }
+                                    parsed.blocks.forEachIndexed { index, block ->
+                                        var blockVisible by remember(block, visible) { mutableStateOf(false) }
+                                        LaunchedEffect(block, visible) {
+                                            delay(index * 65L)
+                                            blockVisible = true
                                         }
+                                        AnimatedVisibility(
+                                            visible = blockVisible,
+                                            enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 16 })
+                                        ) {
+                                            val text: AnnotatedString = when (block) {
+                                                is AnswerText.Parsed.Block.Heading ->
+                                                    AnswerText.annotated(block.text, accent) { }
+                                                is AnswerText.Parsed.Block.Paragraph ->
+                                                    AnswerText.annotated(block.text, accent) { }
+                                                is AnswerText.Parsed.Block.Bullet ->
+                                                    AnswerText.annotated(block.text, accent) { }
+                                            }
 
-                                        Row(Modifier.padding(bottom = Dimens.spaceM)) {
-                                            if (block is AnswerText.Parsed.Block.Bullet) {
+                                            Row(Modifier.padding(bottom = Dimens.spaceM)) {
+                                                if (block is AnswerText.Parsed.Block.Bullet) {
+                                                    Text(
+                                                        text = "•",
+                                                        style = MaterialTheme.typography.bodyLarge,
+                                                        color = accent,
+                                                        modifier = Modifier.padding(end = Dimens.spaceS)
+                                                    )
+                                                }
                                                 Text(
-                                                    text = "•",
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    color = accent,
-                                                    modifier = Modifier.padding(end = Dimens.spaceS)
+                                                    text = text,
+                                                    style = if (block is AnswerText.Parsed.Block.Heading) {
+                                                        MaterialTheme.typography.titleLarge
+                                                    } else {
+                                                        MaterialTheme.typography.bodyLarge
+                                                    },
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
                                             }
-                                            Text(
-                                                text = text,
-                                                style = if (block is AnswerText.Parsed.Block.Heading) {
-                                                    MaterialTheme.typography.titleLarge
-                                                } else {
-                                                    MaterialTheme.typography.bodyLarge
-                                                },
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
                                         }
                                     }
                                 }

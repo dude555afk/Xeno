@@ -2,6 +2,8 @@ package com.dude555afk.xeno.ui.tabstack
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
@@ -11,6 +13,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,17 +35,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
 import com.dude555afk.xeno.core.model.Tab
@@ -65,19 +76,27 @@ fun TabStackSheet(
     onClose: (Tab) -> Unit,
     onNewTab: () -> Unit,
     onDismiss: () -> Unit,
-    onOpenSettings: () -> Unit = onDismiss
+    onOpenSettings: () -> Unit = onDismiss,
+    onUndoClose: () -> Unit = {},
+    onVoiceStart: () -> Unit = {},
+    onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
     val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = (activeIndex - 1).coerceAtLeast(0))
     val density = LocalDensity.current
     val activeTab = tabs.getOrNull(activeIndex)
+    var showUndo by remember { mutableStateOf(false) }
+    val gestureScope = rememberCoroutineScope()
 
     BackHandler(enabled = visible, onBack = onDismiss)
     AnimatedVisibility(
         visible = visible,
-        enter = if (motion) fadeIn() + scaleIn(initialScale = 0.985f) else EnterTransition.None,
-        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.985f) else ExitTransition.None
+        enter = if (motion) fadeIn() + scaleIn(
+            initialScale = 0.6364f,
+            animationSpec = spring(stiffness = 350f, dampingRatio = 1f)
+        ) else EnterTransition.None,
+        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.98f) else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
@@ -137,9 +156,45 @@ fun TabStackSheet(
                 ) {
                     items(tabs, key = { it.id }) { tab ->
                         val preview = previews[tab.id]
+                        val cardOffset = remember(tab.id) { Animatable(0f) }
                         Surface(
                             onClick = { onSelect(tab) },
-                            modifier = Modifier.width(cardWidth).height(cardHeight),
+                            modifier = Modifier.width(cardWidth).height(cardHeight)
+                                .graphicsLayer {
+                                    translationY = cardOffset.value
+                                    alpha = (1f - abs(cardOffset.value) / 430f).coerceIn(0f, 1f)
+                                }
+                                .pointerInput(tab.id) {
+                                    detectVerticalDragGestures(
+                                        onVerticalDrag = { change, dragAmount ->
+                                            change.consume()
+                                            gestureScope.launch {
+                                                cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(-520f, 520f))
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            if (cardOffset.value < -120f) {
+                                                showUndo = true
+                                                onClose(tab)
+                                            } else {
+                                                gestureScope.launch {
+                                                    cardOffset.animateTo(
+                                                        0f,
+                                                        spring(stiffness = 350f, dampingRatio = 0.82f)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onDragCancel = {
+                                            gestureScope.launch {
+                                                cardOffset.animateTo(
+                                                    0f,
+                                                    spring(stiffness = 350f, dampingRatio = 0.82f)
+                                                )
+                                            }
+                                        }
+                                    )
+                                },
                             shape = RoundedCornerShape(13.dp),
                             color = Color(0xFF202126),
                             border = BorderStroke(1.dp, CardStroke)
@@ -168,7 +223,7 @@ fun TabStackSheet(
                                     }
                                 }
                                 IconButton(
-                                    onClick = { onClose(tab) },
+                                    onClick = { showUndo = true; onClose(tab) },
                                     modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(30.dp)
                                 ) {
                                     Icon(Icons.Rounded.Close, contentDescription = "Close tab", tint = Color.White, modifier = Modifier.size(18.dp))
@@ -179,12 +234,35 @@ fun TabStackSheet(
                 }
             }
 
+            if (showUndo) {
+                Surface(
+                    onClick = {
+                        showUndo = false
+                        onUndoClose()
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 92.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color(0xFF34363D),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    Text(
+                        "Tab closed   Undo",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                    )
+                }
+            }
+
             PixelBottomDock(
                 tabCount = tabs.size,
                 homeMode = true,
                 onOpenTabs = onDismiss,
                 onNewTab = onNewTab,
                 onOpenControls = onOpenSettings,
+                onVoiceStart = onVoiceStart,
+                onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

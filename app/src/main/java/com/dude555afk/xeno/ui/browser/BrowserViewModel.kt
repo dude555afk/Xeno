@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.ViewGroup
+import android.view.ScaleGestureDetector
 import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -269,6 +270,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closeTab(tab: Tab) {
+        recentlyClosedTab = tab
         viewModelScope.launch {
             db.tabDao().deleteById(tab.id)
             _state.update { current ->
@@ -290,6 +292,35 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             loadedTabId?.let(::captureTabPreview)
         }
         _state.update { it.copy(tabStackVisible = !it.tabStackVisible) }
+    }
+
+    /** Move one step through the open tabs from a horizontal dock scrub. */
+    fun selectAdjacentTab(direction: Int) {
+        val snapshot = _state.value
+        if (snapshot.tabs.size < 2 || direction == 0) return
+        val currentIndex = snapshot.tabs.indexOfFirst { it.id == snapshot.activeTab?.id }
+            .coerceAtLeast(0)
+        val nextIndex = (currentIndex + direction.compareTo(0)).coerceIn(0, snapshot.tabs.lastIndex)
+        if (nextIndex != currentIndex) selectTab(snapshot.tabs[nextIndex])
+    }
+
+    private var recentlyClosedTab: Tab? = null
+
+    /** Restore the most recently closed tab from the tab-stack Undo affordance. */
+    fun undoCloseLastTab() {
+        val tab = recentlyClosedTab ?: return
+        recentlyClosedTab = null
+        viewModelScope.launch {
+            val restoredId = db.tabDao().insert(
+                TabEntity(
+                    spaceId = tab.spaceId,
+                    url = tab.url,
+                    title = tab.title,
+                    position = tab.position
+                )
+            )
+            selectTab(tab.copy(id = restoredId))
+        }
     }
 
     /** Called from the Activity. See [SessionPool.onTrimMemory]. */
@@ -550,9 +581,36 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 setChromeVisible(delta < 0)
             }
         }
+        var pinchTriggered = false
+        val pinchDetector = ScaleGestureDetector(
+            getApplication(),
+            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    if (!pinchTriggered && detector.scaleFactor < 0.90f &&
+                        detector.currentSpan < detector.previousSpan
+                    ) {
+                        pinchTriggered = true
+                        summarizeCurrentPage()
+                    }
+                    return pinchTriggered
+                }
+            }
+        )
         view.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) setChromeVisible(true)
-            false
+            if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                setChromeVisible(true)
+                pinchTriggered = false
+            }
+            pinchDetector.onTouchEvent(event)
+            if (event.actionMasked == android.view.MotionEvent.ACTION_UP ||
+                event.actionMasked == android.view.MotionEvent.ACTION_CANCEL
+            ) {
+                val consumed = pinchTriggered
+                pinchTriggered = false
+                consumed
+            } else {
+                pinchTriggered
+            }
         }
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),

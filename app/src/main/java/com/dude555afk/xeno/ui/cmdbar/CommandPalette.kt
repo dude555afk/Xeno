@@ -11,6 +11,10 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
@@ -119,17 +123,23 @@ fun CommandPalette(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (motion) fadeIn() + scaleIn(initialScale = 0.985f) else EnterTransition.None,
-        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.985f) else ExitTransition.None
+        enter = if (motion) fadeIn(tween(140)) + slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = spring(stiffness = 380f, dampingRatio = 1f)
+        ) else EnterTransition.None,
+        exit = if (motion) fadeOut(tween(130)) + slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = spring(stiffness = 380f, dampingRatio = 1f)
+        ) else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
             Column(Modifier.fillMaxSize().imePadding()) {
-                Spacer(Modifier.height(255.dp))
+                Spacer(Modifier.height(300.dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     color = Sheet,
-                    shape = RoundedCornerShape(topStart = 38.dp, topEnd = 38.dp)
+                    shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp)
                 ) {
                     Column(Modifier.fillMaxSize()) {
                         Spacer(Modifier.height(19.dp))
