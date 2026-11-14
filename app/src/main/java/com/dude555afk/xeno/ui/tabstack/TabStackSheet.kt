@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.dude555afk.xeno.core.model.Tab
 import com.dude555afk.xeno.ui.arc.LocalArcMotionEnabled
 import com.dude555afk.xeno.ui.arc.PixelArcAmbientBackground
@@ -65,19 +66,11 @@ fun TabStackSheet(
 ) {
     val motion = LocalArcMotionEnabled.current
     val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = activeIndex)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (activeIndex - 1).coerceAtLeast(0))
+    val density = LocalDensity.current
     val activeTab = tabs.getOrNull(activeIndex)
 
     BackHandler(enabled = visible, onBack = onDismiss)
-    LaunchedEffect(visible, activeTabId, tabs.size) {
-        if (visible && tabs.isNotEmpty()) {
-            runCatching {
-                if (motion) listState.animateScrollToItem(activeIndex)
-                else listState.scrollToItem(activeIndex)
-            }
-        }
-    }
-
     AnimatedVisibility(
         visible = visible,
         enter = if (motion) fadeIn() + scaleIn(initialScale = 0.985f) else EnterTransition.None,
@@ -122,6 +115,16 @@ fun TabStackSheet(
                 val cardWidth = minOf(250.dp, maxWidth * 0.64f)
                 val cardHeight = minOf(471.dp, maxHeight * 0.56f)
                 val sideInset = ((maxWidth - cardWidth) / 2).coerceAtLeast(12.dp)
+                LaunchedEffect(visible, activeTabId, tabs.size, cardWidth) {
+                    if (visible && tabs.isNotEmpty()) {
+                        val firstIndex = (activeIndex - 1).coerceAtLeast(0)
+                        val offset = if (activeIndex > 0) with(density) { (cardWidth + 17.dp).roundToPx() } else 0
+                        runCatching {
+                            if (motion) listState.animateScrollToItem(firstIndex, offset)
+                            else listState.scrollToItem(firstIndex, offset)
+                        }
+                    }
+                }
                 LazyRow(
                     state = listState,
                     modifier = Modifier.fillMaxWidth().height(cardHeight),
@@ -132,13 +135,15 @@ fun TabStackSheet(
                     items(tabs, key = { it.id }) { tab ->
                         val preview = previews[tab.id]
                         Surface(
-                            onClick = { onSelect(tab) },
                             modifier = Modifier.width(cardWidth).height(cardHeight),
                             shape = RoundedCornerShape(13.dp),
                             color = Color(0xFF202126),
                             border = BorderStroke(1.dp, CardStroke)
                         ) {
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp))) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp)).combinedClickable(
+                                onClick = { onSelect(tab) },
+                                onLongClick = { onClose(tab) }
+                            )) {
                                 if (preview != null && !preview.isRecycled) {
                                     Image(
                                         bitmap = preview.asImageBitmap(),

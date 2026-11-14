@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -131,14 +132,16 @@ fun BrowserScreen(
                         animationSpec = tween(180)
                     ) else ExitTransition.None
                 ) {
-                    PixelBottomDock(
-                        tabCount = state.tabs.size,
-                        homeMode = false,
-                        onOpenTabs = viewModel::toggleTabStack,
-                        onNewTab = viewModel::newTab,
-                        onOpenControls = { controlsVisible = true },
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
+                    Box(Modifier.fillMaxSize()) {
+                        PixelBottomDock(
+                            tabCount = state.tabs.size,
+                            homeMode = false,
+                            onOpenTabs = viewModel::toggleTabStack,
+                            onNewTab = viewModel::newTab,
+                            onOpenControls = { controlsVisible = true },
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
                 }
             }
 
@@ -276,7 +279,7 @@ fun BrowserScreen(
                         findQuery = ""
                         viewModel.clearFindInPage()
                     },
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()
                 )
             }
 
