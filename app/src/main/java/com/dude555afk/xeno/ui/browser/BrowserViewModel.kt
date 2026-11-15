@@ -435,7 +435,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 privateTabs.removeAll { it.id == tab.id }
             } else {
                 val entity = db.tabDao().byId(tab.id)
-                if (entity != null && entity.url.isNotBlank()) {
+                if (entity != null && (entity.url.isNotBlank() || (entity.type == "ai" && entity.query.isNotBlank()))) {
                     recentlyClosedArchiveId = db.archiveDao().insert(
                         ArchivedTabEntity(
                             originalTabId = entity.id,
@@ -453,8 +453,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 db.tabDao().deleteById(tab.id)
             }
-            pool.destroy("tab-${tab.id}")
-            if (loadedTabId == tab.id) loadedTabId = null
+            if (loadedTabId == tab.id) {
+                pool.destroy(SESSION_KEY)
+                loadedTabId = null
+            }
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             _state.update { it.copy(tabs = remaining, tabPreviews = it.tabPreviews - tab.id) }
             if (_state.value.activeTab?.id == tab.id) {
@@ -477,7 +479,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (age <= 0L) return
         viewModelScope.launch(Dispatchers.IO) {
             val cutoff = System.currentTimeMillis() - age
-            db.tabDao().all().filter { it.url.isNotBlank() && it.lastActiveAt < cutoff }.forEach { entity ->
+            db.tabDao().all().filter { (it.url.isNotBlank() || (it.type == "ai" && it.query.isNotBlank())) && it.lastActiveAt < cutoff }.forEach { entity ->
                 db.archiveDao().insert(
                     ArchivedTabEntity(
                         originalTabId = entity.id,
@@ -670,11 +672,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val current = _state.value.activeTab
             val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
             val aiTab = when {
-                current?.isIncognito == true -> {
-                    val updated = current.copy(type = "ai", query = clean, url = "", title = clean)
-                    val index = privateTabs.indexOfFirst { it.id == current.id }
+                _state.value.incognitoMode || current?.isIncognito == true -> {
+                    val privateCurrent = current?.takeIf { it.isIncognito } ?: Tab(
+                        id = nextPrivateTabId--,
+                        spaceId = spaceId,
+                        isIncognito = true
+                    ).also { privateTabs += it }
+                    val updated = privateCurrent.copy(type = "ai", query = clean, url = "", title = clean)
+                    val index = privateTabs.indexOfFirst { it.id == privateCurrent.id }
                     if (index >= 0) privateTabs[index] = updated
-                    _state.update { it.copy(tabs = it.tabs.map { tab -> if (tab.id == updated.id) updated else tab }) }
+                    _state.update { currentState ->
+                        currentState.copy(
+                            tabs = if (currentState.tabs.any { it.id == updated.id }) {
+                                currentState.tabs.map { if (it.id == updated.id) updated else it }
+                            } else currentState.tabs + updated
+                        )
+                    }
                     updated
                 }
                 current != null && current.url.isBlank() -> {
@@ -771,18 +784,31 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val current = _state.value.activeTab
             val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
             val now = System.currentTimeMillis()
-            if (current?.isIncognito == true) {
-                val updated = current.copy(
-                    url = url, title = "", query = q, type = "web",
-                    lastActiveAt = now, blockedAdsCount = 0
+            if (_state.value.incognitoMode || current?.isIncognito == true) {
+                val privateCurrent = current?.takeIf { it.isIncognito } ?: Tab(
+                    id = nextPrivateTabId--,
+                    spaceId = spaceId,
+                    isIncognito = true
+                ).also { privateTabs += it }
+                val updated = privateCurrent.copy(
+                    url = url,
+                    title = "",
+                    query = q,
+                    type = "web",
+                    lastActiveAt = now,
+                    lastAccessedAt = now,
+                    blockedAdsCount = 0
                 )
-                val index = privateTabs.indexOfFirst { it.id == current.id }
+                val index = privateTabs.indexOfFirst { it.id == privateCurrent.id }
                 if (index >= 0) privateTabs[index] = updated
-                _state.update { state ->
-                    state.copy(
-                        tabs = state.tabs.map { if (it.id == updated.id) updated else it },
+                _state.update { currentState ->
+                    currentState.copy(
+                        tabs = if (currentState.tabs.any { it.id == updated.id }) {
+                            currentState.tabs.map { if (it.id == updated.id) updated else it }
+                        } else currentState.tabs + updated,
                         activeTab = updated,
-                        load = PageLoadState(url = url)
+                        load = PageLoadState(url = url),
+                        isCurrentPagePinned = false
                     )
                 }
                 syncSessionToTab(updated)
