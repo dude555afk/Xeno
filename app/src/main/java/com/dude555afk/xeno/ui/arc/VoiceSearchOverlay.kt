@@ -287,7 +287,7 @@ fun VoiceSearchOverlay(
                         radius = (279.1f + amplitude * 35.9f) * s,
                         center = Offset(
                             (231.1f + 8f * sin(phase)) * s,
-                            (930.1f + 6f * cos(phase)) * s
+                            (930.1f + 6f * cos(phase * 2f) - 14f * amplitude) * s
                         )
                     )
                     drawCircle(
