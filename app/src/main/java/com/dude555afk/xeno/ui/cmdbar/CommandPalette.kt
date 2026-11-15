@@ -97,7 +97,8 @@ fun CommandPalette(
     onOpenTab: (Tab) -> Unit,
     onDismiss: () -> Unit,
     incognitoMode: Boolean = false,
-    onIncognitoToggle: () -> Unit = {}
+    onIncognitoToggle: () -> Unit = {},
+    languageMode: String = "infer"
 ) {
     val motion = LocalArcMotionEnabled.current
     val context = LocalContext.current
@@ -200,6 +201,12 @@ fun CommandPalette(
                                         onClick = {
                                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                                val languageTag = when (languageMode) {
+                                                    "english" -> java.util.Locale.ENGLISH.toLanguageTag()
+                                                    "system" -> java.util.Locale.getDefault().toLanguageTag()
+                                                    else -> null
+                                                }
+                                                if (languageTag != null) putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
                                                 putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to search")
                                             }
                                             try {

@@ -323,7 +323,8 @@ fun BrowserScreen(
                 },
                 onDismiss = viewModel::closePalette,
                 incognitoMode = state.incognitoMode,
-                onIncognitoToggle = viewModel::toggleIncognitoMode
+                onIncognitoToggle = viewModel::toggleIncognitoMode,
+                languageMode = state.languageMode
             )
 
             TabStackSheet(
@@ -480,7 +481,8 @@ fun BrowserScreen(
             VoiceSearchOverlay(
                 visible = voiceVisible,
                 onDismiss = { voiceVisible = false },
-                onResult = viewModel::ask
+                onResult = viewModel::ask,
+                languageMode = state.languageMode
             )
         }
     }

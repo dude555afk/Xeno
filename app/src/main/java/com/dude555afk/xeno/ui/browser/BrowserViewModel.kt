@@ -202,6 +202,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             archiveExpiredTabs()
         }
 
+        // Re-check aging while the browser remains open. Startup also runs
+        // this once, so tabs that aged while the process was stopped are handled.
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(15L * 60L * 1000L)
+                archiveExpiredTabs()
+            }
+        }
+
         viewModelScope.launch {
             db.archiveDao().observeAll().collect { rows ->
                 _state.update { current ->
@@ -509,7 +518,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (age <= 0L) return
         viewModelScope.launch(Dispatchers.IO) {
             val cutoff = System.currentTimeMillis() - age
-            db.tabDao().all().filter { (it.url.isNotBlank() || (it.type == "ai" && it.query.isNotBlank())) && it.lastActiveAt < cutoff }.forEach { entity ->
+            val rows = db.tabDao().all()
+            val protectedActiveId = _state.value.activeTab?.id ?: rows.firstOrNull()?.id
+            rows.filter {
+                it.id != protectedActiveId &&
+                    (it.url.isNotBlank() || (it.type == "ai" && it.query.isNotBlank())) &&
+                    it.lastActiveAt < cutoff
+            }.forEach { entity ->
                 db.archiveDao().insert(
                     ArchivedTabEntity(
                         originalTabId = entity.id,
@@ -1174,9 +1189,30 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val tabId = loadedTabId ?: _state.value.activeTab?.id
             if (tabId != null && title.isNotBlank()) {
                 viewModelScope.launch {
-                    db.tabDao().byId(tabId)?.let { entity ->
-                        if (entity.title != title) {
-                            db.tabDao().update(entity.copy(title = title, lastActiveAt = System.currentTimeMillis()))
+                    val privateTab = _state.value.tabs.firstOrNull { it.id == tabId }?.takeIf { it.isIncognito }
+                    if (privateTab != null) {
+                        val updated = privateTab.copy(title = title, lastActiveAt = System.currentTimeMillis(), lastAccessedAt = System.currentTimeMillis())
+                        val index = privateTabs.indexOfFirst { it.id == tabId }
+                        if (index >= 0) privateTabs[index] = updated
+                        _state.update { current ->
+                            current.copy(
+                                activeTab = if (current.activeTab?.id == tabId) updated else current.activeTab,
+                                tabs = current.tabs.map { if (it.id == tabId) updated else it }
+                            )
+                        }
+                    } else {
+                        db.tabDao().byId(tabId)?.let { entity ->
+                            val blockedCount = _state.value.tabs.firstOrNull { it.id == tabId }?.blockedAdsCount
+                                ?: entity.blockedAdsCount
+                            val updated = entity.copy(
+                                title = title,
+                                lastActiveAt = System.currentTimeMillis(),
+                                blockedAdsCount = blockedCount
+                            )
+                            if (updated.title != entity.title ||
+                                updated.lastActiveAt != entity.lastActiveAt ||
+                                updated.blockedAdsCount != entity.blockedAdsCount
+                            ) db.tabDao().update(updated)
                         }
                     }
                 }
