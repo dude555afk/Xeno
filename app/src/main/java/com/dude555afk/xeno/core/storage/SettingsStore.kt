@@ -36,9 +36,36 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_BLOCKING, true)
         set(value) = prefs.edit { putBoolean(KEY_BLOCKING, value) }
 
+    var autoOpenKeyboard: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_OPEN_KEYBOARD, true)
+        set(value) = prefs.edit { putBoolean(KEY_AUTO_OPEN_KEYBOARD, value) }
+
+    var themeMode: String
+        get() = prefs.getString(KEY_THEME_MODE, "system") ?: "system"
+        set(value) = prefs.edit { putString(KEY_THEME_MODE, value) }
+
+    /** Zero means follow the active space accent. */
+    var accentOverrideArgb: Int
+        get() = prefs.getInt(KEY_ACCENT_OVERRIDE, 0)
+        set(value) = prefs.edit { putInt(KEY_ACCENT_OVERRIDE, value) }
+
+    var animationsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_ANIMATIONS_ENABLED, true)
+        set(value) = prefs.edit { putBoolean(KEY_ANIMATIONS_ENABLED, value) }
+
     var activeSpaceId: Long
         get() = prefs.getLong(KEY_SPACE, 1L)
         set(value) = prefs.edit { putLong(KEY_SPACE, value) }
+
+    fun isPinned(url: String): Boolean =
+        url.isNotBlank() && url in (prefs.getStringSet(KEY_PINNED_URLS, emptySet()) ?: emptySet())
+
+    fun togglePinned(url: String): Boolean {
+        val current = (prefs.getStringSet(KEY_PINNED_URLS, emptySet()) ?: emptySet()).toSet()
+        val updated = if (url in current) current - url else current + url
+        prefs.edit { putStringSet(KEY_PINNED_URLS, updated) }
+        return url in updated
+    }
 
     val providerConfig: ProviderConfig
         get() = ProviderConfig(
@@ -68,6 +95,11 @@ class SettingsStore(context: Context) {
         const val KEY_BASE_URL = "base_url"
         const val KEY_MODEL = "model"
         const val KEY_BLOCKING = "blocking_enabled"
+        const val KEY_AUTO_OPEN_KEYBOARD = "auto_open_keyboard"
+        const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_ACCENT_OVERRIDE = "accent_override_argb"
+        const val KEY_ANIMATIONS_ENABLED = "animations_enabled"
         const val KEY_SPACE = "active_space"
+        const val KEY_PINNED_URLS = "pinned_urls"
     }
 }

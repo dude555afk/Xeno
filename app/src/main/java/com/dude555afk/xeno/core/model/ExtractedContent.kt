@@ -13,6 +13,7 @@ data class ExtractedContent(
     val byline: String? = null,
     val text: String = "",
     val excerpt: String = "",
+    val imageUrl: String? = null,
     val wordCount: Int = 0
 ) {
     /**

@@ -149,6 +149,16 @@
     var ogTitle = metaContent('meta[property="og:title"]');
     var title = norm((h1 && h1.textContent) || ogTitle || document.title || '');
 
+    var imageUrl = metaContent('meta[property="og:image"]') || metaContent('meta[property="og:image:url"]') || metaContent('meta[name="twitter:image"]');
+    if (!imageUrl) {
+      var imageEl = document.querySelector('article img[src], main img[src], img[src]');
+      imageUrl = imageEl ? (imageEl.getAttribute('src') || imageEl.currentSrc || '') : '';
+    }
+    if (imageUrl) {
+      try { imageUrl = new URL(imageUrl, location.href).href; }
+      catch (_) { imageUrl = ''; }
+    }
+
     var byline = metaContent('meta[name="author"]') || metaContent('meta[property="article:author"]');
     if (!byline) {
       var bEl = document.querySelector('[rel="author"], .author, .byline');
@@ -157,7 +167,7 @@
 
     var source = document.body || document.documentElement;
     if (!source) {
-      return { url: url, title: title, byline: byline, text: '', excerpt: '', wordCount: 0 };
+      return { url: url, title: title, byline: byline, imageUrl: imageUrl || null, text: '', excerpt: '', wordCount: 0 };
     }
 
     var clone = source.cloneNode(true);
@@ -177,6 +187,7 @@
       url: url,
       title: title,
       byline: byline || null,
+      imageUrl: imageUrl || null,
       text: text,
       excerpt: excerpt,
       wordCount: countWords(text)

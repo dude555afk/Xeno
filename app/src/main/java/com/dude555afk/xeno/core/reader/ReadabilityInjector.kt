@@ -204,6 +204,7 @@ class ReadabilityInjector(
                 byline = str("byline").ifBlank { null },
                 text = str("text"),
                 excerpt = str("excerpt"),
+                imageUrl = str("imageUrl").ifBlank { null },
                 wordCount = num("wordCount")
             )
         }.getOrElse { ExtractedContent.junk(fallbackUrl) }

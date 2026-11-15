@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.dude555afk.xeno.ui.browser.BrowserScreen
 import com.dude555afk.xeno.ui.browser.BrowserViewModel
 import com.dude555afk.xeno.ui.theme.XenoTheme
@@ -32,14 +33,23 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val state by viewModel.state.collectAsState()
-            val accent = state.activeSpace?.accent ?: Color(0xFF7C5CFF)
+            val accent = if (state.accentOverrideArgb != 0) {
+                Color(state.accentOverrideArgb)
+            } else {
+                state.activeSpace?.accent ?: Color(0xFF7C5CFF)
+            }
+            val darkTheme = when (state.themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemInDarkTheme()
+            }
 
-            XenoTheme(accent = accent) {
+            XenoTheme(accent = accent, darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Box(Modifier.fillMaxSize().background(Color.Black)) {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                         BrowserScreen(state = state, viewModel = viewModel, accent = accent)
                     }
                 }

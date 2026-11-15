@@ -1,7 +1,8 @@
 # Design language
 
-Borrowed from Arc, translated for touch. The rules below are the ones that
-actually make the UI feel considered.
+Arc Search's Android interaction model, translated into Xeno's visual identity.
+The implementation below uses the Android-first layout: keyboard-first search,
+a bottom three-control dock, and a horizontal tab-card carousel.
 
 ## Tokens
 
@@ -20,46 +21,54 @@ type           bold + tight tracking for headings
                comfortable body, min 15sp
 ```
 
-## The Arc anatomy, translated
+## Arc Search Android anatomy
 
-| Arc | Xeno |
+| Arc Search Android | Xeno |
 |---|---|
-| Left sidebar tabs | Bottom sheet, compact vertical pill-cards, swipe-to-dismiss |
-| Spaces bar | Bottom nav, swipeable workspaces, each retinting the accent |
-| Command bar | Full-screen sheet, blurred backdrop, pill input docked at bottom |
-| Little Arc | Draggable peek bubble, 28dp radius, shadow + blur |
-| Spring physics | `spring(dampingRatio = 0.6f)` on overlay entrances |
+| Gradient start surface with central search affordance | Gradient start surface with Xeno's arch mark and search card |
+| Search expands into a keyboard-first full-screen view | Full-screen search surface, immediately focused and raised above the IME |
+| Bottom-left tab switcher | Bottom-left tab count and horizontal page-card carousel |
+| Center plus creates a new search | Center plus creates a new Xeno tab |
+| Bottom-right chevron opens page controls | Bottom-right chevron opens page actions |
+| Browse for Me reading view with source carousel | Light, editorial reading surface with source cards and inline citations |
+
+The browser renderer remains Android System WebView, which is Chromium-based.
+Compose owns the browser chrome; the WebView owns page rendering.
 
 ## The three details that sell it
 
-**1. Accent-tinted everything.**
-Not "themed." The space's color bleeds into the scroll glow, the caret, the
-selection handles, the active tab pill. Instant identity switch, and almost
-nobody bothers to do it.
+**1. The bottom dock is the navigation.**
+Tabs, new search, and page controls stay reachable at the bottom. The web page
+gets the space above it.
 
-**2. Spring entrances, never slides.**
-Command palette and peek bubble scale from 0.92 with overshoot while the
-backdrop fades over 180ms. Nothing linear. Nothing that slides in from an
-edge like an Android dialog.
+**2. Keyboard-first search.**
+Opening search requests focus and raises the keyboard immediately. Suggestions
+stay in the remaining viewport, never behind the IME.
 
-**3. Chrome hides.**
-Scroll down and the bottom bar dissolves to a bare pill. Scroll up and it
-blooms back. Content-first, always.
+**3. Page cards, not a tab list.**
+The tab switcher is horizontal and visual. Real page previews should be used
+instead of decorative placeholders whenever a captured preview is available.
 
-## Motion specs
+## Motion and browser behaviour
 
-```kotlin
-// overlay entrance
-spring(dampingRatio = 0.65f, stiffness = 400f)
-durationMillis = 240
-enter = scale(0.92f) + fadeIn
+- Search opens with focus and the keyboard; closing it returns to the active page.
+- The tab switcher is a horizontal card carousel. It captures bounded in-memory page previews before switching.
+- Page chrome hides while scrolling down and reappears on upward scroll or at the top of a page.
+- The page-controls sheet supports swipe-down dismissal and exposes navigation, reload, copy/share, find, summarize, pin, text zoom, content blocking, and app settings.
+- System Back dismisses the top-most surface first, then navigates browser history.
+- The settings destination persists theme mode, a global accent override (or the active space accent), startup search, content blocking, and reduced-motion preference.
 
-// backdrop fade
-tween(180)
+Motion uses spring-based entrances for full-screen surfaces and short fades/slides for browser chrome. The reduced-motion preference removes overlay transitions and uses immediate tab/answer scrolling instead of animated scrolling.
 
-// chrome hide / show
-tween(200, easing = FastOutSlowInEasing)
-```
+## Settings map
+
+| Section | Controls |
+|---|---|
+| Appearance | System / dark / light theme; space accent or six fixed accent colours |
+| Search | Focus search and show the keyboard at launch |
+| Privacy | Global ad and tracker blocking |
+| Motion | Enable or reduce UI animations |
+| About | Version, rendering engine, and interface description |
 
 ## Non-negotiables
 
