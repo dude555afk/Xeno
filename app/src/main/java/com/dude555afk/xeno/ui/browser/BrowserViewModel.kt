@@ -360,6 +360,27 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setAppIcon(value: String) {
         val safe = value.takeIf { it in setOf("default", "dark", "violet", "rose") } ?: "default"
+        val context = getApplication<Application>()
+        val components = mapOf(
+            "default" to "com.dude555afk.xeno.LauncherDefault",
+            "dark" to "com.dude555afk.xeno.LauncherDark",
+            "violet" to "com.dude555afk.xeno.LauncherViolet",
+            "rose" to "com.dude555afk.xeno.LauncherRose"
+        )
+        runCatching {
+            components.forEach { (key, className) ->
+                val state = if (key == safe) {
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                } else {
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                }
+                context.packageManager.setComponentEnabledSetting(
+                    android.content.ComponentName(context.packageName, className),
+                    state,
+                    android.content.pm.PackageManager.DONT_KILL_APP
+                )
+            }
+        }
         settings.appIcon = safe
         _state.update { it.copy(appIcon = safe) }
     }
