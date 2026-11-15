@@ -4,7 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import android.os.SystemClock
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.core.Animatable
@@ -21,14 +23,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.exp
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -45,7 +51,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Settings
@@ -136,7 +142,7 @@ fun PixelArcMark(modifier: Modifier = Modifier) {
                         val elapsed = (now - previousTime).coerceAtLeast(1L)
                         val degrees = Math.toDegrees(delta).toFloat()
                         rotation += degrees
-                        angularVelocity = degrees / elapsed.toFloat()
+                        angularVelocity = degrees * 1000f / elapsed.toFloat()
                         previousAngle = angle
                         previousTime = now
                         change.consume()
@@ -144,21 +150,23 @@ fun PixelArcMark(modifier: Modifier = Modifier) {
                     onDragEnd = {
                         val initialVelocity = angularVelocity
                         flingJob = scope.launch {
-                            var velocity = initialVelocity
-                            var elapsed = 0
-                            while (elapsed < 3800 && abs(velocity) > 0.008f) {
+                            val initialRotation = rotation
+                            val startTime = SystemClock.uptimeMillis()
+                            while (true) {
+                                val elapsedSeconds = (SystemClock.uptimeMillis() - startTime) / 1000f
+                                val remainingVelocity = initialVelocity * exp(-1.15f * elapsedSeconds)
+                                rotation = initialRotation +
+                                    (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                                if (elapsedSeconds >= 4f || abs(remainingVelocity) < 2.2f) break
                                 delay(16)
-                                val decay = exp((-0.0012f * 16f).toDouble()).toFloat()
-                                rotation += velocity * (1f - decay) / 0.0012f
-                                velocity *= decay
-                                elapsed += 16
                             }
+                            val uprightTarget = (rotation / 360f).roundToInt() * 360f
                             val settle = Animatable(rotation)
                             settle.animateTo(
-                                targetValue = 0f,
+                                targetValue = uprightTarget,
                                 animationSpec = spring(
-                                    dampingRatio = 0.48f,
-                                    stiffness = 260f
+                                    dampingRatio = 0.74f,
+                                    stiffness = 220f
                                 )
                             ) { rotation = value }
                         }
@@ -291,8 +299,8 @@ fun PixelBottomDock(
                 Box(contentAlignment = Alignment.Center) {
                     if (homeMode) {
                         Icon(
-                            Icons.Rounded.Archive,
-                            contentDescription = "Archive",
+                            Icons.Rounded.Layers,
+                            contentDescription = "Open tabs",
                             tint = Color.White,
                             modifier = Modifier.size(25.dp)
                         )
@@ -347,10 +355,27 @@ fun PixelBottomDock(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize().combinedClickable(
-                        onClick = onNewTab,
-                        onLongClick = onVoiceStart
-                    ),
+                    modifier = Modifier.fillMaxSize()
+                        .pointerInput(onNewTab, onVoiceStart) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                val quickRelease = withTimeoutOrNull(180L) {
+                                    waitForUpOrCancellation()
+                                }
+                                if (quickRelease != null) {
+                                    onNewTab()
+                                } else {
+                                    onVoiceStart()
+                                    waitForUpOrCancellation()
+                                }
+                            }
+                        }
+                        .semantics {
+                            onClick {
+                                onNewTab()
+                                true
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

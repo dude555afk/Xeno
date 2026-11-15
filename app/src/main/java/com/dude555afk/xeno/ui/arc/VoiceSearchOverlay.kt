@@ -80,7 +80,8 @@ private const val VOICE_CANVAS_HEIGHT = 1000f
 fun VoiceSearchOverlay(
     visible: Boolean,
     onDismiss: () -> Unit,
-    onResult: (String) -> Unit
+    onResult: (String) -> Unit,
+    languageMode: String = "infer"
 ) {
     val context = LocalContext.current
     var transcript by remember { mutableStateOf("Hi! How can I help?") }
@@ -163,6 +164,12 @@ fun VoiceSearchOverlay(
                             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
                         )
+                        val languageTag = when (languageMode) {
+                            "english" -> java.util.Locale.ENGLISH.toLanguageTag()
+                            "system" -> java.util.Locale.getDefault().toLanguageTag()
+                            else -> null
+                        }
+                        if (languageTag != null) putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
                         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                         putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to search")
@@ -287,7 +294,7 @@ fun VoiceSearchOverlay(
                         radius = (279.1f + amplitude * 35.9f) * s,
                         center = Offset(
                             (231.1f + 8f * sin(phase)) * s,
-                            (930.1f + 6f * cos(phase)) * s
+                            (930.1f + 6f * cos(phase * 2f) - 14f * amplitude) * s
                         )
                     )
                     drawCircle(

@@ -19,8 +19,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,11 +96,15 @@ fun CommandPalette(
     onNavigate: (String) -> Unit,
     onAsk: (String) -> Unit,
     onOpenTab: (Tab) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    incognitoMode: Boolean = false,
+    onIncognitoToggle: () -> Unit = {},
+    languageMode: String = "infer"
 ) {
     val motion = LocalArcMotionEnabled.current
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
     val requester = remember { FocusRequester() }
     val voiceLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -134,22 +142,26 @@ fun CommandPalette(
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
-            Column(Modifier.fillMaxSize().imePadding()) {
-                Spacer(Modifier.height(300.dp))
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                // Reference screenshots are authored on a 462px-wide canvas.
+                val coordinateScale = maxWidth.value / 462f
+                fun dpx(value: Float) = (value * coordinateScale).dp
+                Column(Modifier.fillMaxSize().imePadding()) {
+                    Spacer(Modifier.height(dpx(300f)))
                 Surface(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     color = Sheet,
-                    shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp)
+                    shape = RoundedCornerShape(topStart = dpx(44f), topEnd = dpx(44f))
                 ) {
                     Column(Modifier.fillMaxSize()) {
-                        Spacer(Modifier.height(19.dp))
+                        Spacer(Modifier.height(dpx(19f)))
                         Surface(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 19.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = dpx(19f)),
                             shape = CircleShape,
                             color = SearchPill
                         ) {
                             Row(
-                                modifier = Modifier.height(58.dp).padding(start = 25.dp, end = 12.dp),
+                                modifier = Modifier.height(dpx(58f)).padding(start = dpx(25f), end = dpx(12f)),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BasicTextField(
@@ -194,6 +206,12 @@ fun CommandPalette(
                                         onClick = {
                                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                                val languageTag = when (languageMode) {
+                                                    "english" -> java.util.Locale.ENGLISH.toLanguageTag()
+                                                    "system" -> java.util.Locale.getDefault().toLanguageTag()
+                                                    else -> null
+                                                }
+                                                if (languageTag != null) putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
                                                 putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to search")
                                             }
                                             try {
@@ -202,16 +220,10 @@ fun CommandPalette(
                                                 keyboard?.show()
                                             }
                                         },
-                                        modifier = Modifier.size(38.dp)
+                                        modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(Icons.Rounded.Mic, contentDescription = "Voice search", tint = SecondaryText, modifier = Modifier.size(21.dp))
                                     }
-                                    Icon(
-                                        Icons.Rounded.VisibilityOff,
-                                        contentDescription = null,
-                                        tint = SecondaryText,
-                                        modifier = Modifier.padding(start = 3.dp).size(23.dp)
-                                    )
                                 } else {
                                     Surface(
                                         onClick = { onQueryChange("") },
@@ -224,13 +236,21 @@ fun CommandPalette(
                                         }
                                     }
                                 }
+                                IconButton(onClick = onIncognitoToggle, modifier = Modifier.size(36.dp)) {
+                                    Icon(
+                                        Icons.Rounded.VisibilityOff,
+                                        contentDescription = if (incognitoMode) "Turn off incognito" else "Turn on incognito",
+                                        tint = if (incognitoMode) Color(0xFF9D8BFF) else SecondaryText,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(Modifier.height(if (query.isBlank()) 20.dp else 31.dp))
+                        Spacer(Modifier.height(if (query.isBlank()) dpx(20f) else dpx(51f)))
                         if (query.isNotBlank()) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 22.dp, end = 19.dp),
+                                modifier = Modifier.fillMaxWidth().height(dpx(48f)).padding(start = dpx(22f), end = dpx(19f)),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
@@ -260,15 +280,34 @@ fun CommandPalette(
                             }
 
                             if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
+                                val scrubValues = (tabHints.map { it.displayTitle } +
+                                    historyHints.map { it.title.ifBlank { it.url } })
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                                        .pointerInput(scrubValues) {
+                                            var lastIndex = -1
+                                            detectVerticalDragGestures(
+                                                onVerticalDrag = { change, _ ->
+                                                    if (scrubValues.isNotEmpty()) {
+                                                        val rowHeight = with(density) { 58.dp.toPx() }
+                                                        val index = (change.position.y / rowHeight).toInt()
+                                                            .coerceIn(0, scrubValues.lastIndex)
+                                                        if (index != lastIndex) {
+                                                            lastIndex = index
+                                                            onQueryChange(scrubValues[index])
+                                                        }
+                                                        change.consume()
+                                                    }
+                                                }
+                                            )
+                                        },
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                                 ) {
                                     items(tabHints, key = { "tab-${it.id}" }) { tab ->
                                         HistoryRow(
                                             title = tab.displayTitle,
-                                            subtitle = tab.url,
-                                            isAi = false,
+                                            subtitle = if (tab.type == "ai") tab.query else tab.url,
+                                            isAi = tab.type == "ai",
                                             onClick = { keyboard?.hide(); onOpenTab(tab) }
                                         )
                                     }
@@ -322,6 +361,7 @@ fun CommandPalette(
         }
     }
 }
+}
 
 @Composable
 private fun HistoryRow(
@@ -353,6 +393,7 @@ private fun HistoryRow(
             Text(title, color = PrimaryText, fontSize = 15.7.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle.isNotBlank()) {
                 Text(subtitle, color = SecondaryText.copy(alpha = 0.78f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }

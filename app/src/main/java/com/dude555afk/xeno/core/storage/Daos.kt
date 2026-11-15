@@ -103,3 +103,40 @@ interface AnswerCacheDao {
     @Query("DELETE FROM answer_cache WHERE createdAt < :before")
     suspend fun evictOlderThan(before: Long)
 }
+
+
+@Dao
+interface ArchiveDao {
+    @Query("SELECT * FROM archived_tabs ORDER BY archivedAt DESC")
+    fun observeAll(): Flow<List<ArchivedTabEntity>>
+
+    @Query("SELECT * FROM archived_tabs WHERE id = :id LIMIT 1")
+    suspend fun byId(id: Long): ArchivedTabEntity?
+
+    @Insert
+    suspend fun insert(tab: ArchivedTabEntity): Long
+
+    @Query("DELETE FROM archived_tabs WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM archived_tabs")
+    suspend fun clear()
+}
+
+@Dao
+interface PinnedTabDao {
+    @Query("SELECT * FROM pinned_tabs ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<PinnedTabEntity>>
+
+    @Query("SELECT * FROM pinned_tabs WHERE url = :url LIMIT 1")
+    suspend fun byUrl(url: String): PinnedTabEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(tab: PinnedTabEntity)
+
+    @Query("DELETE FROM pinned_tabs WHERE url = :url")
+    suspend fun deleteByUrl(url: String)
+
+    @Query("DELETE FROM pinned_tabs")
+    suspend fun clear()
+}

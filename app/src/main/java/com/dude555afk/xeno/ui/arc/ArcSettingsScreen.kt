@@ -87,7 +87,23 @@ fun ArcSettingsScreen(
     onSetDefaultBrowser: () -> Unit = {},
     onClearBrowsingData: () -> Unit = {},
     onOpenDownloads: () -> Unit = {},
-    onExportData: () -> Unit = {}
+    onExportData: () -> Unit = {},
+    searchEngine: String = "duckduckgo",
+    languageMode: String = "infer",
+    archiveAfter: String = "1d",
+    alwaysOpenAppLinks: Boolean = false,
+    allowGoogleTranslate: Boolean = true,
+    forceDark: Boolean = true,
+    appIcon: String = "default",
+    onSearchEngineChange: (String) -> Unit = {},
+    onLanguageModeChange: (String) -> Unit = {},
+    onArchiveAfterChange: (String) -> Unit = {},
+    onAlwaysOpenAppLinksChange: (Boolean) -> Unit = {},
+    onAllowGoogleTranslateChange: (Boolean) -> Unit = {},
+    onForceDarkChange: (Boolean) -> Unit = {},
+    onAppIconChange: (String) -> Unit = {},
+    onOpenArchive: () -> Unit = {},
+    onOpenPinned: () -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
     AnimatedVisibility(
@@ -157,32 +173,50 @@ fun ArcSettingsScreen(
                     SettingsRow(
                         icon = Icons.Rounded.AutoAwesome,
                         title = "Change App Icon",
-                        subtitle = "Tap to cycle the accent colour",
+                        subtitle = appIcon.replaceFirstChar { it.uppercase() },
                         onClick = {
-                            val values = listOf(0, 0xFF7C5CFF.toInt(), 0xFF00D8D8.toInt(), 0xFFFF6B5C.toInt(), 0xFFB8FF3D.toInt(), 0xFFFFB03D.toInt(), 0xFFFF5CA8.toInt())
-                            val current = values.indexOf(accentOverrideArgb).coerceAtLeast(0)
-                            onAccentChange(values[(current + 1) % values.size])
+                            val values = listOf("default", "dark", "violet", "rose")
+                            onAppIconChange(values[(values.indexOf(appIcon).coerceAtLeast(0) + 1) % values.size])
                         }
                     )
                     SettingsRow(
                         icon = Icons.Rounded.Search,
                         title = "Search Engines",
-                        subtitle = "DuckDuckGo"
+                        subtitle = when (searchEngine) { "google" -> "Google"; "brave" -> "Brave"; else -> "DuckDuckGo" },
+                        onClick = {
+                            val options = listOf("duckduckgo", "google", "brave")
+                            onSearchEngineChange(options[(options.indexOf(searchEngine).coerceAtLeast(0) + 1) % options.size])
+                        }
                     )
                     SettingsRow(
                         icon = Icons.Rounded.Translate,
-                        title = "Languages"
+                        title = "Languages",
+                        subtitle = when (languageMode) { "english" -> "English"; "system" -> "System"; else -> "Infer from query" },
+                        onClick = {
+                            val options = listOf("infer", "english", "system")
+                            onLanguageModeChange(options[(options.indexOf(languageMode).coerceAtLeast(0) + 1) % options.size])
+                        }
                     )
 
                     SectionLabel("Storage")
                     SettingsRow(
                         icon = Icons.Rounded.Archive,
-                        title = "Archive"
+                        title = "Archive",
+                        onClick = onOpenArchive
+                    )
+                    SettingsRow(
+                        icon = Icons.Rounded.Redeem,
+                        title = "Pinned Pages",
+                        onClick = onOpenPinned
                     )
                     SettingsRow(
                         icon = Icons.Rounded.Archive,
                         title = "Archive Inactive Tabs",
-                        subtitle = "After 1 day"
+                        subtitle = "After ${archiveAfter}",
+                        onClick = {
+                            val options = listOf("1h", "1d", "7d", "never")
+                            onArchiveAfterChange(options[(options.indexOf(archiveAfter).coerceAtLeast(0) + 1) % options.size])
+                        }
                     )
                     SettingsRow(
                         icon = Icons.Rounded.DeleteSweep,
@@ -219,6 +253,24 @@ fun ArcSettingsScreen(
                         title = "Animations",
                         checked = animationsEnabled,
                         onCheckedChange = onAnimationsChange
+                    )
+                    SettingsToggleRow(
+                        icon = Icons.Rounded.OpenInBrowser,
+                        title = "Always Open App Links",
+                        checked = alwaysOpenAppLinks,
+                        onCheckedChange = onAlwaysOpenAppLinksChange
+                    )
+                    SettingsToggleRow(
+                        icon = Icons.Rounded.Translate,
+                        title = "Allow Google Translate",
+                        checked = allowGoogleTranslate,
+                        onCheckedChange = onAllowGoogleTranslateChange
+                    )
+                    SettingsToggleRow(
+                        icon = Icons.Rounded.Web,
+                        title = "Force Dark Websites",
+                        checked = forceDark,
+                        onCheckedChange = onForceDarkChange
                     )
 
                     SectionLabel("Support")
