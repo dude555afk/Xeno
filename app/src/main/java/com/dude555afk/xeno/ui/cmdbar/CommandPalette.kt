@@ -19,6 +19,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,11 +95,14 @@ fun CommandPalette(
     onNavigate: (String) -> Unit,
     onAsk: (String) -> Unit,
     onOpenTab: (Tab) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    incognitoMode: Boolean = false,
+    onIncognitoToggle: () -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
     val requester = remember { FocusRequester() }
     val voiceLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -202,16 +208,10 @@ fun CommandPalette(
                                                 keyboard?.show()
                                             }
                                         },
-                                        modifier = Modifier.size(38.dp)
+                                        modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(Icons.Rounded.Mic, contentDescription = "Voice search", tint = SecondaryText, modifier = Modifier.size(21.dp))
                                     }
-                                    Icon(
-                                        Icons.Rounded.VisibilityOff,
-                                        contentDescription = null,
-                                        tint = SecondaryText,
-                                        modifier = Modifier.padding(start = 3.dp).size(23.dp)
-                                    )
                                 } else {
                                     Surface(
                                         onClick = { onQueryChange("") },
@@ -223,6 +223,14 @@ fun CommandPalette(
                                             Icon(Icons.Rounded.Close, contentDescription = "Clear search", tint = SearchPill, modifier = Modifier.size(14.dp))
                                         }
                                     }
+                                }
+                                IconButton(onClick = onIncognitoToggle, modifier = Modifier.size(36.dp)) {
+                                    Icon(
+                                        Icons.Rounded.VisibilityOff,
+                                        contentDescription = if (incognitoMode) "Turn off incognito" else "Turn on incognito",
+                                        tint = if (incognitoMode) Color(0xFF9D8BFF) else SecondaryText,
+                                        modifier = Modifier.size(22.dp)
+                                    )
                                 }
                             }
                         }
@@ -260,8 +268,27 @@ fun CommandPalette(
                             }
 
                             if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
+                                val scrubValues = (tabHints.map { it.displayTitle } +
+                                    historyHints.map { it.title.ifBlank { hit -> hit.url } })
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                                        .pointerInput(scrubValues) {
+                                            var lastIndex = -1
+                                            detectVerticalDragGestures(
+                                                onVerticalDrag = { change, _ ->
+                                                    if (scrubValues.isNotEmpty()) {
+                                                        val rowHeight = with(density) { 58.dp.toPx() }
+                                                        val index = (change.position.y / rowHeight).toInt()
+                                                            .coerceIn(0, scrubValues.lastIndex)
+                                                        if (index != lastIndex) {
+                                                            lastIndex = index
+                                                            onQueryChange(scrubValues[index])
+                                                        }
+                                                        change.consume()
+                                                    }
+                                                }
+                                            )
+                                        },
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                                 ) {
                                     items(tabHints, key = { "tab-${it.id}" }) { tab ->
