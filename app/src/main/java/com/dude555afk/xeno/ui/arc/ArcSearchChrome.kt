@@ -626,7 +626,9 @@ fun ArcSiteActionsSheet(
     onDesktopSiteChange: (Boolean) -> Unit,
     onBlockingChange: (Boolean) -> Unit,
     onZoomChange: (Int) -> Unit,
-    onOpenAppSettings: () -> Unit
+    onOpenAppSettings: () -> Unit,
+    blockedAdsCount: Int = 0,
+    allowGoogleTranslate: Boolean = true
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
     val host = remember(url) {
@@ -712,7 +714,8 @@ fun ArcSiteActionsSheet(
                         title = "Translate",
                         icon = Icons.Rounded.Translate,
                         onClick = onTranslate,
-                        height = 62.dp
+                        height = 62.dp,
+                        enabled = allowGoogleTranslate
                     )
                     Row(
                         Modifier.fillMaxWidth().height(72.dp),
@@ -757,7 +760,7 @@ fun ArcSiteActionsSheet(
                     Spacer(Modifier.weight(1f))
                     Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF323337)))
                     Spacer(Modifier.height(26.dp))
-                    Text("Blocked 1 ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Blocked $blockedAdsCount ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(7.dp))
                     Text(
                         "Problems? Disable in site settings",
@@ -803,15 +806,17 @@ private fun PageMenuRow(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    height: androidx.compose.ui.unit.Dp
+    height: androidx.compose.ui.unit.Dp,
+    enabled: Boolean = true
 ) {
     Row(
-        Modifier.fillMaxWidth().height(height).clickable(onClick = onClick),
+        Modifier.fillMaxWidth().height(height).clickable(enabled = enabled, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(27.dp))
+        val tint = if (enabled) Color.White else Color.White.copy(alpha = 0.35f)
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(27.dp))
         Spacer(Modifier.width(28.dp))
-        Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = tint, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 
