@@ -25,6 +25,8 @@ import com.dude555afk.xeno.core.fetch.AnswerEngine
 import com.dude555afk.xeno.core.fetch.PageFetcher
 import com.dude555afk.xeno.core.fetch.SearchEngine
 import com.dude555afk.xeno.core.model.AnswerResult
+import com.dude555afk.xeno.core.model.ArchivedTab
+import com.dude555afk.xeno.core.model.PinnedPage
 import com.dude555afk.xeno.core.model.PageLoadState
 import com.dude555afk.xeno.core.model.SearchHit
 import com.dude555afk.xeno.core.model.Space
@@ -33,6 +35,8 @@ import com.dude555afk.xeno.core.model.defaultSpace
 import com.dude555afk.xeno.core.model.toEntity
 import com.dude555afk.xeno.core.reader.ReadabilityInjector
 import com.dude555afk.xeno.core.storage.HistoryEntity
+import com.dude555afk.xeno.core.storage.ArchivedTabEntity
+import com.dude555afk.xeno.core.storage.PinnedTabEntity
 import com.dude555afk.xeno.core.storage.SettingsStore
 import com.dude555afk.xeno.core.storage.SpaceEntity
 import com.dude555afk.xeno.core.storage.TabEntity
@@ -56,6 +60,16 @@ data class BrowserUiState(
     val activeSpace: Space? = null,
     val tabs: List<Tab> = emptyList(),
     val activeTab: Tab? = null,
+    val archivedTabs: List<ArchivedTab> = emptyList(),
+    val pinnedTabs: List<PinnedPage> = emptyList(),
+    val incognitoMode: Boolean = false,
+    val searchEngine: String = "duckduckgo",
+    val languageMode: String = "infer",
+    val archiveAfter: String = "1d",
+    val alwaysOpenAppLinks: Boolean = false,
+    val allowGoogleTranslate: Boolean = true,
+    val forceDark: Boolean = true,
+    val appIcon: String = "default",
     val load: PageLoadState = PageLoadState(),
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
@@ -119,6 +133,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         BrowserUiState(
             blockingEnabled = settings.blockingEnabled,
             autoOpenKeyboard = settings.autoOpenKeyboard,
+            searchEngine = settings.searchEngine,
+            languageMode = settings.languageMode,
+            archiveAfter = settings.archiveAfter,
+            alwaysOpenAppLinks = settings.alwaysOpenAppLinks,
+            allowGoogleTranslate = settings.allowGoogleTranslate,
+            forceDark = settings.forceDark,
+            appIcon = settings.appIcon,
             themeMode = settings.themeMode,
             accentOverrideArgb = settings.accentOverrideArgb,
             animationsEnabled = settings.animationsEnabled,
@@ -134,6 +155,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The tab the WebView session is currently showing. */
     private var loadedTabId: Long? = null
+    /** Negative ids identify volatile incognito tabs and can never collide with Room ids. */
+    private val privateTabs = mutableListOf<Tab>()
+    private var nextPrivateTabId = -1L
+    private var recentlyClosedArchiveId: Long? = null
+    private var recentlyClosedTab: Tab? = null
 
     init {
         // The bundled list is already loading in XenoApplication; refresh the
@@ -146,6 +172,42 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 db.spaceDao().insert(defaultSpace().toEntity())
             }
             db.tabDao().deletePeekTabs()
+            archiveExpiredTabs()
+        }
+
+        viewModelScope.launch {
+            db.archiveDao().observeAll().collect { rows ->
+                _state.update { current ->
+                    current.copy(archivedTabs = rows.map { row ->
+                        ArchivedTab(
+                            id = row.id,
+                            originalTabId = row.originalTabId,
+                            spaceId = row.spaceId,
+                            url = row.url,
+                            title = row.title,
+                            faviconUrl = row.faviconUrl,
+                            type = row.type,
+                            query = row.query,
+                            desktopSite = row.desktopSite,
+                            zoomLevel = row.zoomLevel,
+                            blockedAdsCount = row.blockedAdsCount,
+                            archivedAt = row.archivedAt
+                        )
+                    })
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            db.pinnedTabDao().observeAll().collect { rows ->
+                _state.update { current ->
+                    val pinned = rows.map { PinnedPage(it.url, it.title, it.faviconUrl, it.createdAt) }
+                    current.copy(
+                        pinnedTabs = pinned,
+                        isCurrentPagePinned = current.activeTab?.url?.let { url -> pinned.any { it.url == url } } == true
+                    )
+                }
+            }
         }
 
         viewModelScope.launch {
@@ -174,16 +236,25 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             _state.collect { snapshot ->
                 val space = snapshot.activeSpace ?: return@collect
                 db.tabDao().observeForSpace(space.id).collect { entities ->
-                    val tabs = entities.map {
+                    val persistedTabs = entities.map {
                         Tab(
                             id = it.id,
                             spaceId = it.spaceId,
                             url = it.url,
                             title = it.title,
+                            faviconUrl = it.faviconUrl,
                             isPeek = it.isPeek,
-                            position = it.position
+                            position = it.position,
+                            createdAt = it.createdAt,
+                            lastActiveAt = it.lastActiveAt,
+                            type = it.type,
+                            query = it.query,
+                            desktopSite = it.desktopSite,
+                            zoomLevel = it.zoomLevel,
+                            blockedAdsCount = it.blockedAdsCount
                         )
                     }
+                    val tabs = persistedTabs + privateTabs
                     _state.update { current ->
                         val active = current.activeTab
                             ?.let { old -> tabs.firstOrNull { it.id == old.id } }
@@ -206,6 +277,55 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setAutoOpenKeyboard(enabled: Boolean) {
         settings.autoOpenKeyboard = enabled
         _state.update { it.copy(autoOpenKeyboard = enabled) }
+    }
+
+    fun setSearchEngine(value: String) {
+        val safe = value.takeIf { it in setOf("duckduckgo", "google", "brave") } ?: "duckduckgo"
+        settings.searchEngine = safe
+        _state.update { it.copy(searchEngine = safe) }
+    }
+
+    fun setLanguageMode(value: String) {
+        val safe = value.takeIf { it in setOf("infer", "english", "system") } ?: "infer"
+        settings.languageMode = safe
+        _state.update { it.copy(languageMode = safe) }
+    }
+
+    fun setArchiveAfter(value: String) {
+        val safe = value.takeIf { it in setOf("1h", "1d", "7d", "never") } ?: "1d"
+        settings.archiveAfter = safe
+        _state.update { it.copy(archiveAfter = safe) }
+        archiveExpiredTabs()
+    }
+
+    fun setAlwaysOpenAppLinks(enabled: Boolean) {
+        settings.alwaysOpenAppLinks = enabled
+        _state.update { it.copy(alwaysOpenAppLinks = enabled) }
+    }
+
+    fun setAllowGoogleTranslate(enabled: Boolean) {
+        settings.allowGoogleTranslate = enabled
+        _state.update { it.copy(allowGoogleTranslate = enabled) }
+    }
+
+    fun setForceDark(enabled: Boolean) {
+        settings.forceDark = enabled
+        _state.update { it.copy(forceDark = enabled) }
+        pool.peek(SESSION_KEY)?.let { view ->
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                view.settings.forceDark = if (enabled) {
+                    android.webkit.WebSettings.FORCE_DARK_ON
+                } else {
+                    android.webkit.WebSettings.FORCE_DARK_OFF
+                }
+            }
+        }
+    }
+
+    fun setAppIcon(value: String) {
+        val safe = value.takeIf { it in setOf("default", "dark", "violet", "rose") } ?: "default"
+        settings.appIcon = safe
+        _state.update { it.copy(appIcon = safe) }
     }
 
     fun setThemeMode(mode: String) {
@@ -238,22 +358,56 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: Tab) {
-        if (loadedTabId != null && loadedTabId != tab.id) {
+        if (loadedTabId != null && loadedTabId != tab.id && tab.type != "ai") {
             captureTabPreview(loadedTabId!!)
         }
-        _state.update {
-            it.copy(
+        _state.update { current ->
+            current.copy(
                 activeTab = tab,
-                load = PageLoadState(url = tab.url),
-                isCurrentPagePinned = settings.isPinned(tab.url)
+                load = if (tab.type == "ai") PageLoadState() else PageLoadState(url = tab.url),
+                pageTextZoom = tab.zoomLevel,
+                isCurrentPagePinned = current.pinnedTabs.any { it.url == tab.url } && tab.url.isNotBlank()
             )
         }
-        syncSessionToTab(tab)
+        if (tab.isIncognito) {
+            if (tab.type == "ai") startAnswer(tab.query)
+            else syncSessionToTab(tab)
+        } else {
+            viewModelScope.launch {
+                db.tabDao().byId(tab.id)?.let { entity ->
+                    db.tabDao().update(entity.copy(lastActiveAt = System.currentTimeMillis()))
+                }
+            }
+            if (tab.type == "ai") startAnswer(tab.query) else syncSessionToTab(tab)
+        }
     }
 
     fun newTab() {
+        val spaceId = _state.value.activeSpace?.id ?: 1L
+        if (_state.value.incognitoMode) {
+            val tab = Tab(
+                id = nextPrivateTabId--,
+                spaceId = spaceId,
+                isIncognito = true
+            )
+            privateTabs += tab
+            _state.update { current ->
+                current.copy(
+                    tabs = current.tabs + tab,
+                    activeTab = tab,
+                    load = PageLoadState(),
+                    pageTextZoom = 100,
+                    isCurrentPagePinned = false,
+                    tabStackVisible = false,
+                    paletteVisible = true,
+                    query = "",
+                    isQuestion = false,
+                    historyHints = emptyList()
+                )
+            }
+            return
+        }
         viewModelScope.launch {
-            val spaceId = _state.value.activeSpace?.id ?: 1L
             val id = db.tabDao().insert(TabEntity(spaceId = spaceId, url = ""))
             selectTab(Tab(id = id, spaceId = spaceId))
             _state.update {
@@ -269,21 +423,132 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Closing a regular tab archives it; closing an incognito tab only removes
+     * the volatile object. Both paths support one-step undo from the tab stack.
+     */
     fun closeTab(tab: Tab) {
         recentlyClosedTab = tab
+        recentlyClosedArchiveId = null
         viewModelScope.launch {
-            db.tabDao().deleteById(tab.id)
-            _state.update { current ->
-                current.copy(tabPreviews = current.tabPreviews - tab.id)
+            if (tab.isIncognito) {
+                privateTabs.removeAll { it.id == tab.id }
+            } else {
+                val entity = db.tabDao().byId(tab.id)
+                if (entity != null && entity.url.isNotBlank()) {
+                    recentlyClosedArchiveId = db.archiveDao().insert(
+                        ArchivedTabEntity(
+                            originalTabId = entity.id,
+                            spaceId = entity.spaceId,
+                            url = entity.url,
+                            title = entity.title,
+                            faviconUrl = entity.faviconUrl,
+                            type = entity.type,
+                            query = entity.query,
+                            desktopSite = entity.desktopSite,
+                            zoomLevel = entity.zoomLevel,
+                            blockedAdsCount = entity.blockedAdsCount
+                        )
+                    )
+                }
+                db.tabDao().deleteById(tab.id)
             }
             pool.destroy("tab-${tab.id}")
             if (loadedTabId == tab.id) loadedTabId = null
-
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
-            when {
-                remaining.isEmpty() -> newTab()
-                _state.value.activeTab?.id == tab.id -> selectTab(remaining.first())
+            _state.update { it.copy(tabs = remaining, tabPreviews = it.tabPreviews - tab.id) }
+            if (_state.value.activeTab?.id == tab.id) {
+                if (remaining.isNotEmpty()) selectTab(remaining.first())
+                else {
+                    _state.update { it.copy(activeTab = null, incognitoMode = tab.isIncognito) }
+                    newTab()
+                }
             }
+        }
+    }
+
+    private fun archiveExpiredTabs() {
+        val age = when (settings.archiveAfter) {
+            "1h" -> 60L * 60L * 1000L
+            "1d" -> 24L * 60L * 60L * 1000L
+            "7d" -> 7L * 24L * 60L * 60L * 1000L
+            else -> 0L
+        }
+        if (age <= 0L) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val cutoff = System.currentTimeMillis() - age
+            db.tabDao().all().filter { it.url.isNotBlank() && it.lastActiveAt < cutoff }.forEach { entity ->
+                db.archiveDao().insert(
+                    ArchivedTabEntity(
+                        originalTabId = entity.id,
+                        spaceId = entity.spaceId,
+                        url = entity.url,
+                        title = entity.title,
+                        faviconUrl = entity.faviconUrl,
+                        type = entity.type,
+                        query = entity.query,
+                        desktopSite = entity.desktopSite,
+                        zoomLevel = entity.zoomLevel,
+                        blockedAdsCount = entity.blockedAdsCount
+                    )
+                )
+                db.tabDao().deleteById(entity.id)
+            }
+        }
+    }
+
+    fun restoreArchivedTab(tab: ArchivedTab) {
+        viewModelScope.launch {
+            db.archiveDao().deleteById(tab.id)
+            val id = db.tabDao().insert(
+                TabEntity(
+                    spaceId = tab.spaceId,
+                    url = tab.url,
+                    title = tab.title,
+                    faviconUrl = tab.faviconUrl,
+                    type = tab.type,
+                    query = tab.query,
+                    desktopSite = tab.desktopSite,
+                    zoomLevel = tab.zoomLevel,
+                    blockedAdsCount = tab.blockedAdsCount
+                )
+            )
+            selectTab(
+                Tab(
+                    id = id,
+                    spaceId = tab.spaceId,
+                    url = tab.url,
+                    title = tab.title,
+                    faviconUrl = tab.faviconUrl,
+                    type = tab.type,
+                    query = tab.query,
+                    desktopSite = tab.desktopSite,
+                    zoomLevel = tab.zoomLevel,
+                    blockedAdsCount = tab.blockedAdsCount
+                )
+            )
+            _state.update { it.copy(tabStackVisible = false, paletteVisible = false) }
+        }
+    }
+
+    fun deleteArchivedTab(tab: ArchivedTab) {
+        viewModelScope.launch { db.archiveDao().deleteById(tab.id) }
+    }
+
+    fun openPinnedPage(page: PinnedPage) {
+        newTab()
+        viewModelScope.launch {
+            val current = _state.value.activeTab ?: return@launch
+            navigate(page.url)
+        }
+    }
+
+    fun toggleIncognitoMode() {
+        _state.update { it.copy(incognitoMode = !it.incognitoMode) }
+        if (_state.value.incognitoMode) {
+            _state.update { it.copy(historyHints = emptyList()) }
+        } else {
+            refreshHistoryHints(_state.value.query)
         }
     }
 
@@ -304,22 +569,35 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (nextIndex != currentIndex) selectTab(snapshot.tabs[nextIndex])
     }
 
-    private var recentlyClosedTab: Tab? = null
-
-    /** Restore the most recently closed tab from the tab-stack Undo affordance. */
+    /** Restore the most recently archived/closed tab. Incognito restores stay volatile. */
     fun undoCloseLastTab() {
         val tab = recentlyClosedTab ?: return
         recentlyClosedTab = null
+        val archiveId = recentlyClosedArchiveId
+        recentlyClosedArchiveId = null
         viewModelScope.launch {
-            val restoredId = db.tabDao().insert(
-                TabEntity(
-                    spaceId = tab.spaceId,
-                    url = tab.url,
-                    title = tab.title,
-                    position = tab.position
+            if (tab.isIncognito) {
+                privateTabs += tab
+                _state.update { it.copy(tabs = it.tabs + tab) }
+                selectTab(tab)
+            } else {
+                archiveId?.let { db.archiveDao().deleteById(it) }
+                val restoredId = db.tabDao().insert(
+                    TabEntity(
+                        spaceId = tab.spaceId,
+                        url = tab.url,
+                        title = tab.title,
+                        faviconUrl = tab.faviconUrl,
+                        type = tab.type,
+                        query = tab.query,
+                        desktopSite = tab.desktopSite,
+                        zoomLevel = tab.zoomLevel,
+                        blockedAdsCount = tab.blockedAdsCount,
+                        position = tab.position
+                    )
                 )
-            )
-            selectTab(tab.copy(id = restoredId))
+                selectTab(tab.copy(id = restoredId, isIncognito = false))
+            }
         }
     }
 
@@ -359,7 +637,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private fun refreshHistoryHints(q: String) {
         hintsJob?.cancel()
         hintsJob = viewModelScope.launch {
-            if (q.isBlank()) {
+            if (q.isBlank() || _state.value.incognitoMode) {
                 _state.update { it.copy(historyHints = emptyList()) }
                 return@launch
             }
@@ -382,10 +660,52 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun ask(query: String) {
-        if (query.isBlank()) return
+        val clean = query.trim()
+        if (clean.isBlank()) return
         closePalette()
-        answerJob?.cancel()
+        viewModelScope.launch {
+            val current = _state.value.activeTab
+            val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
+            val aiTab = when {
+                current?.isIncognito == true -> {
+                    val updated = current.copy(type = "ai", query = clean, url = "", title = clean)
+                    val index = privateTabs.indexOfFirst { it.id == current.id }
+                    if (index >= 0) privateTabs[index] = updated
+                    _state.update { it.copy(tabs = it.tabs.map { tab -> if (tab.id == updated.id) updated else tab }) }
+                    updated
+                }
+                current != null && current.url.isBlank() -> {
+                    db.tabDao().byId(current.id)?.let { entity ->
+                        db.tabDao().update(entity.copy(type = "ai", query = clean, title = clean, url = ""))
+                    }
+                    current.copy(type = "ai", query = clean, title = clean, url = "")
+                }
+                else -> {
+                    val id = db.tabDao().insert(
+                        TabEntity(spaceId = spaceId, url = "", title = clean, type = "ai", query = clean)
+                    )
+                    Tab(id = id, spaceId = spaceId, title = clean, type = "ai", query = clean)
+                }
+            }
+            _state.update { currentState ->
+                currentState.copy(
+                    tabs = currentState.tabs.let { tabs ->
+                        if (tabs.any { it.id == aiTab.id }) tabs.map { if (it.id == aiTab.id) aiTab else it }
+                        else tabs + aiTab
+                    },
+                    activeTab = aiTab,
+                    load = PageLoadState(),
+                    pageTextZoom = aiTab.zoomLevel,
+                    isCurrentPagePinned = false
+                )
+            }
+            startAnswer(clean)
+        }
+    }
 
+    private fun startAnswer(query: String) {
+        if (query.isBlank()) return
+        answerJob?.cancel()
         _state.update {
             it.copy(
                 answer = AnswerResult(query, emptyList()),
@@ -393,23 +713,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 answerError = null
             )
         }
-
         answerJob = viewModelScope.launch {
             try {
                 engine.answer(query, settings.providerConfig).collect { result ->
-                    _state.update {
-                        it.copy(
-                            answer = result,
-                            answerStreaming = result.markdown.isBlank()
-                        )
-                    }
+                    _state.update { it.copy(answer = result, answerStreaming = result.markdown.isBlank()) }
                 }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        answer = (it.answer ?: AnswerResult(query, emptyList())).copy(
-                            markdown = AnswerEngine.UNREADABLE
-                        ),
+                        answer = (it.answer ?: AnswerResult(query, emptyList())).copy(markdown = AnswerEngine.UNREADABLE),
                         answerStreaming = false,
                         answerError = e.message
                     )
@@ -439,34 +751,70 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun navigate(raw: String) {
         val q = raw.trim()
         if (q.isEmpty()) return
-
         val url = when {
             q.startsWith("http://") || q.startsWith("https://") -> q
             q.matches(Regex("^[\\w.-]+\\.[a-z]{2,}(/.*)?$", RegexOption.IGNORE_CASE)) -> "https://$q"
-            else -> "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(q, "UTF-8")
+            else -> {
+                val encoded = java.net.URLEncoder.encode(q, "UTF-8")
+                when (settings.searchEngine) {
+                    "google" -> "https://www.google.com/search?q=$encoded"
+                    "brave" -> "https://search.brave.com/search?q=$encoded"
+                    else -> "https://duckduckgo.com/?q=$encoded"
+                }
+            }
         }
-
         closePalette()
-
         viewModelScope.launch {
             val current = _state.value.activeTab
             val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
-
-            val id = if (current != null && current.id != 0L) {
-                db.tabDao().update(
-                    TabEntity(
-                        id = current.id,
-                        spaceId = spaceId,
-                        url = url,
-                        position = current.position
-                    )
+            val now = System.currentTimeMillis()
+            if (current?.isIncognito == true) {
+                val updated = current.copy(
+                    url = url, title = "", query = q, type = "web",
+                    lastActiveAt = now, blockedAdsCount = 0
                 )
-                current.id
-            } else {
-                db.tabDao().insert(TabEntity(spaceId = spaceId, url = url))
+                val index = privateTabs.indexOfFirst { it.id == current.id }
+                if (index >= 0) privateTabs[index] = updated
+                _state.update { state ->
+                    state.copy(
+                        tabs = state.tabs.map { if (it.id == updated.id) updated else it },
+                        activeTab = updated,
+                        load = PageLoadState(url = url)
+                    )
+                }
+                syncSessionToTab(updated)
+                return@launch
             }
 
-            selectTab(Tab(id = id, spaceId = spaceId, url = url))
+            val existing = current?.let { db.tabDao().byId(it.id) }
+            val id = if (existing != null) {
+                db.tabDao().update(
+                    existing.copy(
+                        url = url,
+                        title = "",
+                        type = "web",
+                        query = q,
+                        lastActiveAt = now,
+                        blockedAdsCount = 0
+                    )
+                )
+                existing.id
+            } else {
+                db.tabDao().insert(
+                    TabEntity(spaceId = spaceId, url = url, type = "web", query = q)
+                )
+            }
+            selectTab(
+                Tab(
+                    id = id,
+                    spaceId = spaceId,
+                    url = url,
+                    type = "web",
+                    query = q,
+                    desktopSite = current?.desktopSite ?: false,
+                    zoomLevel = current?.zoomLevel ?: 100
+                )
+            )
         }
     }
 
@@ -628,10 +976,12 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
         )
 
-        val activeUrl = _state.value.activeTab?.url
+        val activeTab = _state.value.activeTab
+        val activeUrl = activeTab?.takeUnless { it.type == "ai" }?.url
         if (!activeUrl.isNullOrBlank() && view.url != activeUrl) {
+            activeTab?.let { applyTabSettings(view, it) }
             view.loadUrl(activeUrl)
-            loadedTabId = _state.value.activeTab?.id
+            loadedTabId = activeTab?.id
         }
         refreshBackState()
     }
@@ -682,6 +1032,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun syncSessionToTab(tab: Tab) {
         val view = pool.peek(SESSION_KEY) ?: return
+        applyTabSettings(view, tab)
 
         when {
             tab.url.isBlank() -> {
@@ -727,9 +1078,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onPageFinished(url: String, title: String) {
             if (url.isBlank() || url == "about:blank") return
-            (loadedTabId ?: _state.value.activeTab?.id)?.let(::captureTabPreview)
+            val finishedTabId = loadedTabId ?: _state.value.activeTab?.id
+            finishedTabId?.let(::captureTabPreview)
+            val privatePage = _state.value.tabs.firstOrNull { it.id == finishedTabId }?.isIncognito == true
 
-            viewModelScope.launch {
+            if (!privatePage) viewModelScope.launch {
                 val existing = db.historyDao().byUrl(url)
                 if (existing == null) {
                     db.historyDao().insert(HistoryEntity(url = url, title = title))
@@ -745,7 +1098,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 viewModelScope.launch {
                     db.tabDao().byId(tabId)?.let { entity ->
                         if (entity.title != title) {
-                            db.tabDao().update(entity.copy(title = title))
+                            db.tabDao().update(entity.copy(title = title, lastActiveAt = System.currentTimeMillis()))
                         }
                     }
                 }
@@ -763,6 +1116,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         override fun onFavicon(url: String, icon: android.graphics.Bitmap?) = Unit
 
         override fun onExternalNavigation(requestedUrl: String): Boolean {
+            if (!settings.alwaysOpenAppLinks) return false
             val intent = android.content.Intent(
                 android.content.Intent.ACTION_VIEW,
                 android.net.Uri.parse(requestedUrl)
@@ -798,10 +1152,21 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun togglePinCurrentPage() {
-        val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
-        if (url.isBlank()) return
-        val pinned = settings.togglePinned(url)
-        _state.update { it.copy(isCurrentPagePinned = pinned) }
+        val tab = _state.value.activeTab ?: return
+        val url = _state.value.load.url.ifBlank { tab.url }
+        if (url.isBlank() || tab.isIncognito) return
+        viewModelScope.launch {
+            val existing = db.pinnedTabDao().byUrl(url)
+            if (existing == null) {
+                db.pinnedTabDao().insert(
+                    PinnedTabEntity(url = url, title = _state.value.load.title.ifBlank { tab.title })
+                )
+                _state.update { it.copy(isCurrentPagePinned = true) }
+            } else {
+                db.pinnedTabDao().deleteByUrl(url)
+                _state.update { it.copy(isCurrentPagePinned = false) }
+            }
+        }
     }
 
     fun setBlockingEnabled(enabled: Boolean) {
@@ -819,23 +1184,60 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun changePageTextZoom(delta: Int) {
+        val tab = _state.value.activeTab ?: return
         val zoom = (_state.value.pageTextZoom + delta).coerceIn(50, 200)
         pool.peek(SESSION_KEY)?.settings?.textZoom = zoom
-        _state.update { it.copy(pageTextZoom = zoom) }
+        val updated = tab.copy(zoomLevel = zoom)
+        if (tab.isIncognito) {
+            val index = privateTabs.indexOfFirst { it.id == tab.id }
+            if (index >= 0) privateTabs[index] = updated
+        } else {
+            viewModelScope.launch {
+                db.tabDao().byId(tab.id)?.let { db.tabDao().update(it.copy(zoomLevel = zoom)) }
+            }
+        }
+        _state.update { current ->
+            current.copy(pageTextZoom = zoom, activeTab = updated, tabs = current.tabs.map { if (it.id == tab.id) updated else it })
+        }
     }
 
     fun setDesktopSite(enabled: Boolean) {
+        val tab = _state.value.activeTab ?: return
+        val updated = tab.copy(desktopSite = enabled)
+        if (tab.isIncognito) {
+            val index = privateTabs.indexOfFirst { it.id == tab.id }
+            if (index >= 0) privateTabs[index] = updated
+        } else {
+            viewModelScope.launch {
+                db.tabDao().byId(tab.id)?.let { db.tabDao().update(it.copy(desktopSite = enabled)) }
+            }
+        }
+        _state.update { current ->
+            current.copy(activeTab = updated, tabs = current.tabs.map { if (it.id == tab.id) updated else it })
+        }
         val view = pool.peek(SESSION_KEY) ?: return
+        applyTabSettings(view, updated)
+        view.reload()
+    }
+
+    private fun applyTabSettings(view: WebView, tab: Tab) {
         view.settings.apply {
-            useWideViewPort = enabled
-            loadWithOverviewMode = enabled
-            userAgentString = if (enabled) {
+            textZoom = tab.zoomLevel
+            useWideViewPort = tab.desktopSite
+            loadWithOverviewMode = tab.desktopSite
+            userAgentString = if (tab.desktopSite) {
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
             } else {
                 android.webkit.WebSettings.getDefaultUserAgent(getApplication())
             }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                forceDark = if (settings.forceDark) {
+                    android.webkit.WebSettings.FORCE_DARK_ON
+                } else {
+                    android.webkit.WebSettings.FORCE_DARK_OFF
+                }
+            }
         }
-        view.reload()
     }
 
     /**
