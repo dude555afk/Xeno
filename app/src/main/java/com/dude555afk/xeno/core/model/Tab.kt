@@ -18,6 +18,7 @@ data class Tab(
     val position: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val lastActiveAt: Long = System.currentTimeMillis(),
+    val lastAccessedAt: Long = lastActiveAt,
     /** "web" or "ai"; the AI query is retained so a tab can be reopened. */
     val type: String = "web",
     val query: String = "",

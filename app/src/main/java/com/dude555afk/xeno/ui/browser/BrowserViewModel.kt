@@ -536,10 +536,13 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openPinnedPage(page: PinnedPage) {
-        newTab()
         viewModelScope.launch {
-            val current = _state.value.activeTab ?: return@launch
-            navigate(page.url)
+            val spaceId = _state.value.activeSpace?.id ?: 1L
+            val id = db.tabDao().insert(
+                TabEntity(spaceId = spaceId, url = page.url, title = page.title, faviconUrl = page.faviconUrl)
+            )
+            selectTab(Tab(id = id, spaceId = spaceId, url = page.url, title = page.title, faviconUrl = page.faviconUrl))
+            _state.update { it.copy(tabStackVisible = false, paletteVisible = false) }
         }
     }
 
