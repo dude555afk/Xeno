@@ -924,6 +924,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun attachHost(host: ViewGroup) {
         val view = pool.acquire(SESSION_KEY, host)
+        _state.value.activeTab?.let { applyTabSettings(view, it) }
         view.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val delta = scrollY - oldScrollY
             if (scrollY <= 12) {
@@ -966,14 +967,32 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
             blocker = { request ->
-                if (!settings.blockingEnabled) false else runCatching {
-                    filters.shouldBlock(
-                        url = request.url.toString(),
-                        documentUrl = view.url ?: "",
-                        type = ResourceType.fromRequest(request),
-                        thirdParty = true
-                    )
-                }.getOrDefault(false)
+                if (!settings.blockingEnabled) false else {
+                    val blocked = runCatching {
+                        filters.shouldBlock(
+                            url = request.url.toString(),
+                            documentUrl = view.url ?: "",
+                            type = ResourceType.fromRequest(request),
+                            thirdParty = true
+                        )
+                    }.getOrDefault(false)
+                    if (blocked) {
+                        val activeId = _state.value.activeTab?.id
+                        if (activeId != null) {
+                            _state.update { current ->
+                                val active = current.activeTab
+                                if (active == null || active.id != activeId) current else {
+                                    val updated = active.copy(blockedAdsCount = active.blockedAdsCount + 1)
+                                    current.copy(
+                                        activeTab = updated,
+                                        tabs = current.tabs.map { if (it.id == activeId) updated else it }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    blocked
+                }
             },
             assetLoader = assetLoader,
             cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
@@ -1175,6 +1194,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     fun setBlockingEnabled(enabled: Boolean) {
         settings.blockingEnabled = enabled
         _state.update { it.copy(blockingEnabled = enabled) }
+    }
+
+    fun unpinPinnedPage(page: PinnedPage) {
+        viewModelScope.launch {
+            db.pinnedTabDao().deleteByUrl(page.url)
+            if (_state.value.activeTab?.url == page.url) {
+                _state.update { it.copy(isCurrentPagePinned = false) }
+            }
+        }
     }
 
     /** Clear visit history while keeping open tabs alive. */
