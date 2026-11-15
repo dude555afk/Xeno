@@ -17,7 +17,15 @@ data class Tab(
     val isPeek: Boolean = false,
     val position: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val lastActiveAt: Long = System.currentTimeMillis()
+    val lastActiveAt: Long = System.currentTimeMillis(),
+    /** "web" or "ai"; the AI query is retained so a tab can be reopened. */
+    val type: String = "web",
+    val query: String = "",
+    /** Incognito tabs live only in memory and are never written to Room. */
+    val isIncognito: Boolean = false,
+    val desktopSite: Boolean = false,
+    val zoomLevel: Int = 100,
+    val blockedAdsCount: Int = 0
 ) {
     val displayTitle: String
         get() = title.ifBlank { url.ifBlank { "New tab" } }
@@ -35,4 +43,29 @@ data class PageLoadState(
     val loading: Boolean = false,
     val url: String = "",
     val title: String = ""
+)
+
+
+/** A normal tab removed from the carousel and retained in the archive. */
+data class ArchivedTab(
+    val id: Long,
+    val originalTabId: Long,
+    val spaceId: Long,
+    val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
+    val type: String = "web",
+    val query: String = "",
+    val desktopSite: Boolean = false,
+    val zoomLevel: Int = 100,
+    val blockedAdsCount: Int = 0,
+    val archivedAt: Long = System.currentTimeMillis()
+)
+
+/** A saved page, independent of whether its tab is still open. */
+data class PinnedPage(
+    val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
 )
