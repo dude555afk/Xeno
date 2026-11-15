@@ -54,6 +54,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Persisted browser preferences exposed as one coherent state object. */
+data class BrowserSettings(
+    val autoOpenKeyboard: Boolean = true,
+    val searchEngine: String = "duckduckgo",
+    val languageMode: String = "infer",
+    val archiveAfter: String = "1d",
+    val alwaysOpenAppLinks: Boolean = false,
+    val allowGoogleTranslate: Boolean = true,
+    val forceDark: Boolean = true,
+    val adBlock: Boolean = true,
+    val appIcon: String = "default"
+)
+
 /** Browser UI state — every overlay surface lives here. */
 data class BrowserUiState(
     val spaces: List<Space> = emptyList(),
@@ -96,7 +109,21 @@ data class BrowserUiState(
     val animationsEnabled: Boolean = true,
     val chromeVisible: Boolean = true,
     val hasApiKey: Boolean = false
-)
+) {
+    val openTabs: List<Tab> get() = tabs
+    val settings: BrowserSettings
+        get() = BrowserSettings(
+            autoOpenKeyboard = autoOpenKeyboard,
+            searchEngine = searchEngine,
+            languageMode = languageMode,
+            archiveAfter = archiveAfter,
+            alwaysOpenAppLinks = alwaysOpenAppLinks,
+            allowGoogleTranslate = allowGoogleTranslate,
+            forceDark = forceDark,
+            adBlock = blockingEnabled,
+            appIcon = appIcon
+        )
+}
 
 /**
  * Owns the whole app's behaviour.
@@ -361,25 +388,28 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         if (loadedTabId != null && loadedTabId != tab.id && tab.type != "ai") {
             captureTabPreview(loadedTabId!!)
         }
+        val now = System.currentTimeMillis()
+        val accessed = tab.copy(lastActiveAt = now, lastAccessedAt = now)
         _state.update { current ->
             current.copy(
-                activeTab = tab,
-                load = if (tab.type == "ai") PageLoadState() else PageLoadState(url = tab.url),
-                pageTextZoom = tab.zoomLevel,
-                isCurrentPagePinned = current.pinnedTabs.any { it.url == tab.url } && tab.url.isNotBlank()
+                activeTab = accessed,
+                tabs = current.tabs.map { if (it.id == tab.id) accessed else it },
+                load = if (accessed.type == "ai") PageLoadState() else PageLoadState(url = accessed.url),
+                pageTextZoom = accessed.zoomLevel,
+                isCurrentPagePinned = current.pinnedTabs.any { it.url == accessed.url } && accessed.url.isNotBlank()
             )
         }
-        if (tab.isIncognito) {
-            if (tab.type == "ai") startAnswer(tab.query)
-            else syncSessionToTab(tab)
+        if (accessed.isIncognito) {
+            val index = privateTabs.indexOfFirst { it.id == accessed.id }
+            if (index >= 0) privateTabs[index] = accessed
         } else {
             viewModelScope.launch {
-                db.tabDao().byId(tab.id)?.let { entity ->
-                    db.tabDao().update(entity.copy(lastActiveAt = System.currentTimeMillis()))
+                db.tabDao().byId(accessed.id)?.let { entity ->
+                    db.tabDao().update(entity.copy(lastActiveAt = now))
                 }
             }
-            if (tab.type == "ai") startAnswer(tab.query) else syncSessionToTab(tab)
         }
+        if (accessed.type == "ai") startAnswer(accessed.query) else syncSessionToTab(accessed)
     }
 
     fun newTab() {
@@ -642,7 +672,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private fun refreshHistoryHints(q: String) {
         hintsJob?.cancel()
         hintsJob = viewModelScope.launch {
-            if (q.isBlank() || _state.value.incognitoMode) {
+            if (q.isBlank() || _state.value.incognitoMode || _state.value.activeTab?.isIncognito == true) {
                 _state.update { it.copy(historyHints = emptyList()) }
                 return@launch
             }
