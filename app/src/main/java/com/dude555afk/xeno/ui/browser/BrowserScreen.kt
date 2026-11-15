@@ -71,7 +71,11 @@ fun BrowserScreen(
     var homeSettingsVisible by remember { mutableStateOf(false) }
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
-    var desktopSiteEnabled by remember { mutableStateOf(false) }
+    var desktopSiteEnabled by remember(state.activeTab?.id, state.activeTab?.desktopSite) {
+        mutableStateOf(state.activeTab?.desktopSite == true)
+    }
+    var libraryVisible by remember { mutableStateOf(false) }
+    var librarySection by remember { mutableStateOf("archive") }
     var voiceVisible by remember { mutableStateOf(false) }
     var answerWebMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -119,12 +123,13 @@ fun BrowserScreen(
     }
 
     BackHandler(
-        enabled = voiceVisible || homeSettingsVisible || findInPageVisible || controlsVisible ||
+        enabled = voiceVisible || libraryVisible || homeSettingsVisible || findInPageVisible || controlsVisible ||
             state.summaryVisible || state.answer != null || state.paletteVisible ||
             state.tabStackVisible || state.canGoBack
     ) {
         when {
             voiceVisible -> voiceVisible = false
+            libraryVisible -> libraryVisible = false
             homeSettingsVisible -> homeSettingsVisible = false
             findInPageVisible -> {
                 findInPageVisible = false
@@ -142,7 +147,7 @@ fun BrowserScreen(
 
     LaunchedEffect(viewModel) { viewModel.showStartupSearchIfConfigured() }
 
-    val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
+    val displayUrl = if (state.activeTab?.type == "ai") "" else state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
     val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
 
     CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
@@ -263,12 +268,40 @@ fun BrowserScreen(
                     runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
                 },
                 onExportData = {
-                    val urls = state.tabs.map { it.url }.filter { it.isNotBlank() }.distinct()
+                    val urls = (
+                        state.tabs.filterNot { it.isIncognito }.map { it.url } +
+                            state.archivedTabs.map { it.url } +
+                            state.pinnedTabs.map { it.url }
+                    ).filter { it.isNotBlank() }.distinct()
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, urls.joinToString("\n"))
                     }
-                    context.startActivity(Intent.createChooser(intent, "Export open tabs"))
+                    context.startActivity(Intent.createChooser(intent, "Export Xeno data"))
+                },
+                searchEngine = state.searchEngine,
+                languageMode = state.languageMode,
+                archiveAfter = state.archiveAfter,
+                alwaysOpenAppLinks = state.alwaysOpenAppLinks,
+                allowGoogleTranslate = state.allowGoogleTranslate,
+                forceDark = state.forceDark,
+                appIcon = state.appIcon,
+                onSearchEngineChange = viewModel::setSearchEngine,
+                onLanguageModeChange = viewModel::setLanguageMode,
+                onArchiveAfterChange = viewModel::setArchiveAfter,
+                onAlwaysOpenAppLinksChange = viewModel::setAlwaysOpenAppLinks,
+                onAllowGoogleTranslateChange = viewModel::setAllowGoogleTranslate,
+                onForceDarkChange = viewModel::setForceDark,
+                onAppIconChange = viewModel::setAppIcon,
+                onOpenArchive = {
+                    librarySection = "archive"
+                    libraryVisible = true
+                    homeSettingsVisible = false
+                },
+                onOpenPinned = {
+                    librarySection = "pinned"
+                    libraryVisible = true
+                    homeSettingsVisible = false
                 }
             )
 
@@ -287,7 +320,9 @@ fun BrowserScreen(
                     viewModel.selectTab(tab)
                     viewModel.closePalette()
                 },
-                onDismiss = viewModel::closePalette
+                onDismiss = viewModel::closePalette,
+                incognitoMode = state.incognitoMode,
+                onIncognitoToggle = viewModel::toggleIncognitoMode
             )
 
             TabStackSheet(
@@ -311,6 +346,8 @@ fun BrowserScreen(
 
             ArcSiteActionsSheet(
                 visible = controlsVisible,
+                blockedAdsCount = state.activeTab?.blockedAdsCount ?: 0,
+                allowGoogleTranslate = state.allowGoogleTranslate,
                 title = state.load.title.ifBlank { state.activeTab?.displayTitle.orEmpty() },
                 url = displayUrl,
                 canGoBack = state.canGoBack,
@@ -361,6 +398,18 @@ fun BrowserScreen(
                     controlsVisible = false
                     homeSettingsVisible = true
                 }
+            )
+
+            BrowserLibrarySheet(
+                visible = libraryVisible,
+                archivedTabs = state.archivedTabs,
+                pinnedTabs = state.pinnedTabs,
+                initialSection = librarySection,
+                onRestore = { tab -> viewModel.restoreArchivedTab(tab); libraryVisible = false },
+                onDeleteArchive = viewModel::deleteArchivedTab,
+                onOpenPinned = { page -> viewModel.openPinnedPage(page); libraryVisible = false },
+                onUnpin = viewModel::unpinPinnedPage,
+                onDismiss = { libraryVisible = false }
             )
 
             if (findInPageVisible) {
@@ -430,10 +479,7 @@ fun BrowserScreen(
             VoiceSearchOverlay(
                 visible = voiceVisible,
                 onDismiss = { voiceVisible = false },
-                onResult = { spoken ->
-                    viewModel.openPalette()
-                    viewModel.onQueryChange(spoken)
-                }
+                onResult = viewModel::ask
             )
         }
     }

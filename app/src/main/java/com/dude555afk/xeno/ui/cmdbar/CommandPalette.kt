@@ -269,7 +269,7 @@ fun CommandPalette(
 
                             if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
                                 val scrubValues = (tabHints.map { it.displayTitle } +
-                                    historyHints.map { it.title.ifBlank { hit -> hit.url } })
+                                    historyHints.map { it.title.ifBlank { it.url } })
                                 LazyColumn(
                                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
                                         .pointerInput(scrubValues) {
