@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
+import com.dude555afk.xeno.ui.arc.BrowserLibrarySheet
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
