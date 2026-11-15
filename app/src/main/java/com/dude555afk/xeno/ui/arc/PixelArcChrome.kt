@@ -51,7 +51,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Settings
@@ -299,8 +299,8 @@ fun PixelBottomDock(
                 Box(contentAlignment = Alignment.Center) {
                     if (homeMode) {
                         Icon(
-                            Icons.Rounded.Archive,
-                            contentDescription = "Archive",
+                            Icons.Rounded.Layers,
+                            contentDescription = "Open tabs",
                             tint = Color.White,
                             modifier = Modifier.size(25.dp)
                         )

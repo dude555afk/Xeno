@@ -306,8 +306,8 @@ fun CommandPalette(
                                     items(tabHints, key = { "tab-${it.id}" }) { tab ->
                                         HistoryRow(
                                             title = tab.displayTitle,
-                                            subtitle = tab.url,
-                                            isAi = false,
+                                            subtitle = if (tab.type == "ai") tab.query else tab.url,
+                                            isAi = tab.type == "ai",
                                             onClick = { keyboard?.hide(); onOpenTab(tab) }
                                         )
                                     }

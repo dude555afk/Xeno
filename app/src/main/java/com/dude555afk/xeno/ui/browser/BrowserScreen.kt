@@ -270,8 +270,12 @@ fun BrowserScreen(
                 },
                 onExportData = {
                     val urls = (
-                        state.tabs.filterNot { it.isIncognito }.map { it.url } +
-                            state.archivedTabs.map { it.url } +
+                        state.tabs.filterNot { it.isIncognito }.map {
+                            if (it.type == "ai") "Browse for me: ${it.query}" else it.url
+                        } +
+                            state.archivedTabs.map {
+                                if (it.type == "ai") "Browse for me: ${it.query}" else it.url
+                            } +
                             state.pinnedTabs.map { it.url }
                     ).filter { it.isNotBlank() }.distinct()
                     val intent = Intent(Intent.ACTION_SEND).apply {
@@ -310,7 +314,7 @@ fun BrowserScreen(
                 visible = state.paletteVisible,
                 query = state.query,
                 onQueryChange = viewModel::onQueryChange,
-                tabHints = state.tabs.filter { it.hasContent },
+                tabHints = state.tabs.filter { it.hasContent || (it.type == "ai" && it.query.isNotBlank()) },
                 historyHints = state.historyHints,
                 loading = state.answerStreaming,
                 isQuestion = state.isQuestion,
