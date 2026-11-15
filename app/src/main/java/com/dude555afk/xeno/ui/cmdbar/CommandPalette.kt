@@ -23,6 +23,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -141,22 +142,26 @@ fun CommandPalette(
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
-            Column(Modifier.fillMaxSize().imePadding()) {
-                Spacer(Modifier.height(300.dp))
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                // Reference screenshots are authored on a 462px-wide canvas.
+                val coordinateScale = maxWidth.value / 462f
+                fun dpx(value: Float) = (value * coordinateScale).dp
+                Column(Modifier.fillMaxSize().imePadding()) {
+                    Spacer(Modifier.height(dpx(300f)))
                 Surface(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     color = Sheet,
-                    shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp)
+                    shape = RoundedCornerShape(topStart = dpx(44f), topEnd = dpx(44f))
                 ) {
                     Column(Modifier.fillMaxSize()) {
-                        Spacer(Modifier.height(19.dp))
+                        Spacer(Modifier.height(dpx(19f)))
                         Surface(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 19.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = dpx(19f)),
                             shape = CircleShape,
                             color = SearchPill
                         ) {
                             Row(
-                                modifier = Modifier.height(58.dp).padding(start = 25.dp, end = 12.dp),
+                                modifier = Modifier.height(dpx(58f)).padding(start = dpx(25f), end = dpx(12f)),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BasicTextField(
@@ -242,10 +247,10 @@ fun CommandPalette(
                             }
                         }
 
-                        Spacer(Modifier.height(if (query.isBlank()) 20.dp else 31.dp))
+                        Spacer(Modifier.height(if (query.isBlank()) dpx(20f) else dpx(51f)))
                         if (query.isNotBlank()) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().height(48.dp).padding(start = 22.dp, end = 19.dp),
+                                modifier = Modifier.fillMaxWidth().height(dpx(48f)).padding(start = dpx(22f), end = dpx(19f)),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
@@ -387,6 +392,7 @@ private fun HistoryRow(
             Text(title, color = PrimaryText, fontSize = 15.7.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle.isNotBlank()) {
                 Text(subtitle, color = SecondaryText.copy(alpha = 0.78f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }

@@ -648,16 +648,20 @@ fun ArcSiteActionsSheet(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            // Convert the 462px reference grid into this device's dp width.
+            val coordinateScale = maxWidth.value / 462f
+            fun dpx(value: Float) = (value * coordinateScale).dp
+            fun spx(value: Float) = (value * coordinateScale).sp
             Box(
                 Modifier.fillMaxSize()
                     .background(Color(0xFF121315).copy(alpha = 0.35f))
                     .clickable(onClick = onDismiss)
             )
             Surface(
-                modifier = Modifier.fillMaxWidth().height(minOf(660.dp, maxHeight)),
-                shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp),
+                modifier = Modifier.fillMaxWidth().height(minOf(dpx(660f), maxHeight)),
+                shape = RoundedCornerShape(topStart = dpx(44f), topEnd = dpx(44f)),
                 color = Color(0xFF2D2E32),
-                shadowElevation = 0.dp
+                shadowElevation = dpx(0f)
             ) {
                 Column(
                     Modifier.fillMaxSize()
@@ -665,25 +669,25 @@ fun ArcSiteActionsSheet(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {}
-                        .padding(horizontal = 22.dp)
+                        .padding(horizontal = dpx(22f))
                 ) {
-                    Spacer(Modifier.height(22.dp))
+                    Spacer(Modifier.height(dpx(22f)))
                     Row(
-                        Modifier.fillMaxWidth().height(58.dp)
+                        Modifier.fillMaxWidth().height(dpx(58f))
                             .clip(CircleShape)
                             .background(Color(0xFF4F5052)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = onBack, enabled = canGoBack, modifier = Modifier.weight(0.78f)) {
-                            Text("‹", color = Color(0xFFADAEB2), fontSize = 28.sp, fontWeight = FontWeight.Normal)
+                            Text("‹", color = Color(0xFFADAEB2), fontSize = spx(28f), fontWeight = FontWeight.Normal)
                         }
                         IconButton(onClick = onForward, enabled = canGoForward, modifier = Modifier.weight(0.78f)) {
-                            Text("›", color = Color(0xFFADAEB2), fontSize = 28.sp, fontWeight = FontWeight.Normal)
+                            Text("›", color = Color(0xFFADAEB2), fontSize = spx(28f), fontWeight = FontWeight.Normal)
                         }
                         Text(
                             host,
                             color = Color(0xFFFAFCFB),
-                            fontSize = 15.sp,
+                            fontSize = spx(15f),
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -691,85 +695,85 @@ fun ArcSiteActionsSheet(
                             modifier = Modifier.weight(2.1f)
                         )
                         IconButton(onClick = onCopyUrl, modifier = Modifier.weight(0.9f)) {
-                            Icon(Icons.Rounded.Link, contentDescription = "Copy link", tint = Color.White, modifier = Modifier.size(24.dp))
+                            Icon(Icons.Rounded.Link, contentDescription = "Copy link", tint = Color.White, modifier = Modifier.size(dpx(24f)))
                         }
                         IconButton(onClick = onReload, modifier = Modifier.weight(0.9f)) {
-                            Icon(Icons.Rounded.Refresh, contentDescription = "Reload", tint = Color.White, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Rounded.Refresh, contentDescription = "Reload", tint = Color.White, modifier = Modifier.size(dpx(22f)))
                         }
                     }
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(dpx(24f)))
                     Row(
-                        Modifier.fillMaxWidth().height(97.dp)
-                            .clip(RoundedCornerShape(15.dp))
+                        Modifier.fillMaxWidth().height(dpx(97f))
+                            .clip(RoundedCornerShape(dpx(15f)))
                             .background(Color(0xFF2D2E32)),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(dpx(2f))
                     ) {
                         PageActionTile("Summarize", Icons.Rounded.AutoAwesome, onSummarize, Modifier.weight(1f))
                         PageActionTile("Pin", Icons.Rounded.PushPin, onTogglePin, Modifier.weight(1f), selected = isPinned)
                         PageActionTile("Find", Icons.Rounded.Search, onFindInPage, Modifier.weight(1f))
                         PageActionTile("Share", Icons.Rounded.Share, onShare, Modifier.weight(1f))
                     }
-                    Spacer(Modifier.height(30.dp))
+                    Spacer(Modifier.height(dpx(30f)))
                     PageMenuRow(
                         title = "Translate",
                         icon = Icons.Rounded.Translate,
                         onClick = onTranslate,
-                        height = 62.dp,
+                        height = dpx(62f),
                         enabled = allowGoogleTranslate
                     )
                     Row(
-                        Modifier.fillMaxWidth().height(72.dp),
+                        Modifier.fillMaxWidth().height(dpx(72f)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.ZoomOutMap, contentDescription = null, tint = Color.White, modifier = Modifier.size(25.dp))
-                        Spacer(Modifier.width(28.dp))
+                        Icon(Icons.Rounded.ZoomOutMap, contentDescription = null, tint = Color.White, modifier = Modifier.size(dpx(25f)))
+                        Spacer(Modifier.width(dpx(28f)))
                         Column(Modifier.weight(1f)) {
-                            Text("Zoom", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Text("$pageTextZoom%", color = Color(0xFFE2E3E5), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Zoom", color = Color.White, fontSize = spx(18f), fontWeight = FontWeight.Bold)
+                            Text("$pageTextZoom%", color = Color(0xFFE2E3E5), fontSize = spx(14f), fontWeight = FontWeight.SemiBold)
                         }
                         TextButton(onClick = { onZoomChange(10) }, enabled = pageTextZoom < 200) {
-                            Text("+", color = Color.White, fontSize = 23.sp)
+                            Text("+", color = Color.White, fontSize = spx(23f))
                         }
                         TextButton(onClick = { onZoomChange(-10) }, enabled = pageTextZoom > 50) {
-                            Text("−", color = Color.White, fontSize = 23.sp)
+                            Text("−", color = Color.White, fontSize = spx(23f))
                         }
                     }
                     Row(
-                        Modifier.fillMaxWidth().height(66.dp).clickable { onDesktopSiteChange(!desktopSiteEnabled) },
+                        Modifier.fillMaxWidth().height(dpx(66f)).clickable { onDesktopSiteChange(!desktopSiteEnabled) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.DesktopWindows, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
-                        Spacer(Modifier.width(28.dp))
-                        Text("Desktop Site", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Icon(Icons.Rounded.DesktopWindows, contentDescription = null, tint = Color.White, modifier = Modifier.size(dpx(26f)))
+                        Spacer(Modifier.width(dpx(28f)))
+                        Text("Desktop Site", color = Color.White, fontSize = spx(18f), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         Box(
-                            Modifier.size(24.dp).clip(RoundedCornerShape(3.dp))
+                            Modifier.size(dpx(24f)).clip(RoundedCornerShape(dpx(3f)))
                                 .background(if (desktopSiteEnabled) Color.White else Color.Transparent)
                                 .then(if (!desktopSiteEnabled) Modifier.background(Color.Transparent) else Modifier),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (desktopSiteEnabled) Text("✓", color = Color(0xFF2D2E32), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                            else Box(Modifier.fillMaxSize().background(Color.Transparent).border(2.dp, Color(0xFF96979B), RoundedCornerShape(3.dp)))
+                            if (desktopSiteEnabled) Text("✓", color = Color(0xFF2D2E32), fontSize = spx(17f), fontWeight = FontWeight.Bold)
+                            else Box(Modifier.fillMaxSize().background(Color.Transparent).border(dpx(2f), Color(0xFF96979B), RoundedCornerShape(dpx(3f))))
                         }
                     }
                     PageMenuRow(
                         title = "Site Settings",
                         icon = Icons.Rounded.Settings,
                         onClick = onOpenAppSettings,
-                        height = 64.dp
+                        height = dpx(64f)
                     )
                     Spacer(Modifier.weight(1f))
-                    Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF323337)))
-                    Spacer(Modifier.height(26.dp))
-                    Text("Blocked $blockedAdsCount ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(7.dp))
+                    Box(Modifier.fillMaxWidth().height(dpx(2f)).background(Color(0xFF323337)))
+                    Spacer(Modifier.height(dpx(26f)))
+                    Text("Blocked $blockedAdsCount ads and trackers", color = Color(0xFFFAFBFD), fontSize = spx(16f), fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(dpx(7f)))
                     Text(
                         "Problems? Disable in site settings",
                         color = Color(0xFF95969A),
-                        fontSize = 14.sp,
+                        fontSize = spx(14f),
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.clickable { onBlockingChange(!blockingEnabled) }
                     )
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(dpx(18f)))
                 }
             }
         }
