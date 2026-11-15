@@ -361,6 +361,7 @@ fun CommandPalette(
         }
     }
 }
+}
 
 @Composable
 private fun HistoryRow(
