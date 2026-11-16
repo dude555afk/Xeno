@@ -1297,6 +1297,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         pool.peek(SESSION_KEY)?.clearMatches()
     }
 
+    fun unpinPage(url: String) {
+        if (url.isBlank()) return
+        if (settings.isPinned(url)) settings.togglePinned(url)
+        viewModelScope.launch {
+            db.pinnedTabDao().deleteByUrl(url)
+            _state.update { current ->
+                current.copy(
+                    pinnedTabs = current.pinnedTabs.filterNot { it.url == url },
+                    isCurrentPagePinned = if (
+                        current.load.url == url || current.activeTab?.url == url
+                    ) false else current.isCurrentPagePinned
+                )
+            }
+        }
+    }
+
     fun togglePinCurrentPage() {
         val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
         if (url.isBlank()) return
