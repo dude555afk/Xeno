@@ -50,6 +50,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -222,42 +225,48 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // Tabs for whichever space is active. The collector resolves the active
-        // tab by id against the fresh list rather than only defaulting when it
-        // is null, so a row the session rewrote (title, or a navigate in
-        // another path) is reflected here instead of being overwritten back.
+        // Observe only the currently selected space. collectLatest cancels the
+        // previous Room Flow when the space id changes; nesting collect inside
+        // _state.collect would otherwise pin the ViewModel to the first space
+        // forever and keep the old observer alive.
         viewModelScope.launch {
-            _state.collect { snapshot ->
-                val space = snapshot.activeSpace ?: return@collect
-                db.tabDao().observeForSpace(space.id).collect { entities ->
-                    val tabs = entities.map {
-                        Tab(
-                            id = it.id,
-                            spaceId = it.spaceId,
-                            url = it.url,
-                            title = it.title,
-                            faviconUrl = it.faviconUrl,
-                            isPeek = it.isPeek,
-                            position = it.position,
-                            createdAt = it.createdAt,
-                            lastActiveAt = it.lastActiveAt,
-                            type = it.type,
-                            query = it.query,
-                            desktopSite = it.desktopSite,
-                            zoomLevel = it.zoomLevel,
-                            blockedAdsCount = it.blockedAdsCount
-                        )
-                    } + inMemoryIncognitoTabs.filter { it.spaceId == space.id }
-                    _state.update { current ->
-                        val active = current.activeTab
-                            ?.let { old -> tabs.firstOrNull { it.id == old.id } }
-                            ?: tabs.firstOrNull()
-                        current.copy(tabs = tabs, activeTab = active)
+            _state
+                .map { it.activeSpace?.id }
+                .distinctUntilChanged()
+                .collectLatest { spaceId ->
+                    if (spaceId == null) {
+                        _state.update { it.copy(tabs = emptyList(), activeTab = null) }
+                        return@collectLatest
                     }
-                    _state.value.activeTab?.let(::syncSessionToTab)
-                    refreshBackState()
+                    db.tabDao().observeForSpace(spaceId).collect { entities ->
+                        val tabs = entities.map {
+                            Tab(
+                                id = it.id,
+                                spaceId = it.spaceId,
+                                url = it.url,
+                                title = it.title,
+                                faviconUrl = it.faviconUrl,
+                                isPeek = it.isPeek,
+                                position = it.position,
+                                createdAt = it.createdAt,
+                                lastActiveAt = it.lastActiveAt,
+                                type = it.type,
+                                query = it.query,
+                                desktopSite = it.desktopSite,
+                                zoomLevel = it.zoomLevel,
+                                blockedAdsCount = it.blockedAdsCount
+                            )
+                        } + inMemoryIncognitoTabs.filter { it.spaceId == spaceId }
+                        _state.update { current ->
+                            val active = current.activeTab
+                                ?.let { old -> tabs.firstOrNull { it.id == old.id } }
+                                ?: tabs.firstOrNull()
+                            current.copy(tabs = tabs, activeTab = active)
+                        }
+                        _state.value.activeTab?.let(::syncSessionToTab)
+                        refreshBackState()
+                    }
                 }
-            }
         }
     }
 
@@ -415,6 +424,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     fun closeTab(tab: Tab) {
         recentlyClosedTab = tab
+        recentlyArchivedId = null
         viewModelScope.launch {
             if (tab.isIncognito) {
                 inMemoryIncognitoTabs.removeAll { it.id == tab.id }
@@ -457,6 +467,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         recentlyClosedTab = tab
+        recentlyArchivedId = null
         viewModelScope.launch {
             val archiveId = db.archiveDao().insert(
                 ArchivedTabEntity(
@@ -514,6 +525,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 )
             )
             db.archiveDao().deleteById(archived.id)
+            _state.value.spaces.firstOrNull { it.id == archived.spaceId }?.let(::selectSpace)
             val tab = Tab(
                 id = newId,
                 spaceId = archived.spaceId,
