@@ -314,7 +314,11 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleIncognitoMode() {
-        _state.update { it.copy(incognitoMode = !it.incognitoMode) }
+        _state.update { current ->
+            val enabled = !current.incognitoMode
+            current.copy(incognitoMode = enabled, historyHints = if (enabled) emptyList() else current.historyHints)
+        }
+        if (!_state.value.incognitoMode) refreshHistoryHints(_state.value.query)
     }
 
     fun setAutoOpenKeyboard(enabled: Boolean) {
@@ -419,8 +423,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(tabs = remaining) }
             when {
                 remaining.isEmpty() -> {
-                    _state.update { it.copy(incognitoMode = tab.isIncognito) }
-                    newTab()
+                    _state.update {
+                        it.copy(
+                            activeTab = null,
+                            incognitoMode = false,
+                            paletteVisible = false,
+                            load = PageLoadState(),
+                            tabs = emptyList(),
+                            canGoBack = false,
+                            canGoForward = false
+                        )
+                    }
                 }
                 _state.value.activeTab?.id == tab.id -> selectTab(remaining.first())
             }
@@ -457,7 +470,18 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             _state.update { it.copy(tabs = remaining) }
             if (_state.value.activeTab?.id == tab.id) {
-                if (remaining.isNotEmpty()) selectTab(remaining.first()) else newTab()
+                if (remaining.isNotEmpty()) selectTab(remaining.first())
+                else _state.update {
+                    it.copy(
+                        activeTab = null,
+                        incognitoMode = false,
+                        paletteVisible = false,
+                        load = PageLoadState(),
+                        tabs = emptyList(),
+                        canGoBack = false,
+                        canGoForward = false
+                    )
+                }
             }
         }
     }
@@ -611,7 +635,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private fun refreshHistoryHints(q: String) {
         hintsJob?.cancel()
         hintsJob = viewModelScope.launch {
-            if (q.isBlank()) {
+            if (q.isBlank() || _state.value.incognitoMode) {
                 _state.update { it.copy(historyHints = emptyList()) }
                 return@launch
             }
@@ -964,6 +988,20 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun syncSessionToTab(tab: Tab) {
         val view = pool.peek(SESSION_KEY) ?: return
+        view.settings.apply {
+            useWideViewPort = tab.desktopSite
+            loadWithOverviewMode = tab.desktopSite
+            textZoom = tab.zoomLevel
+            userAgentString = if (tab.desktopSite) {
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            } else {
+                android.webkit.WebSettings.getDefaultUserAgent(getApplication())
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                forceDark = if (settings.forceDark) android.webkit.WebSettings.FORCE_DARK_ON
+                else android.webkit.WebSettings.FORCE_DARK_OFF
+            }
+        }
 
         when {
             tab.url.isBlank() -> {
