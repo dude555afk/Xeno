@@ -80,7 +80,8 @@ private const val VOICE_CANVAS_HEIGHT = 1000f
 fun VoiceSearchOverlay(
     visible: Boolean,
     onDismiss: () -> Unit,
-    onResult: (String) -> Unit
+    onResult: (String) -> Unit,
+    holdReleased: Boolean = false
 ) {
     val context = LocalContext.current
     var transcript by remember { mutableStateOf("Hi! How can I help?") }
@@ -181,6 +182,12 @@ fun VoiceSearchOverlay(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) startRecognition() else latestOnDismiss()
+    }
+
+    LaunchedEffect(holdReleased) {
+        if (holdReleased && visible && isListening) {
+            runCatching { recognizer?.stopListening() }
+        }
     }
 
     LaunchedEffect(visible) {

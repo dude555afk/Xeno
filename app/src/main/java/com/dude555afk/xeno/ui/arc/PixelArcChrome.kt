@@ -216,6 +216,7 @@ fun PixelArcHomeScreen(
     onOpenSettings: () -> Unit,
     tabCount: Int,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -229,6 +230,7 @@ fun PixelArcHomeScreen(
             onNewTab = onOpenSearch,
             onOpenControls = onOpenSettings,
             onVoiceStart = onVoiceStart,
+            onVoiceEnd = onVoiceEnd,
             onSwipeTab = onSwipeTab,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
@@ -245,6 +247,7 @@ fun PixelBottomDock(
     onNewTab: () -> Unit,
     onOpenControls: () -> Unit,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -360,6 +363,7 @@ fun PixelBottomDock(
                             if (released == null) {
                                 onVoiceStart()
                                 waitForUpOrCancellation()
+                                onVoiceEnd()
                             } else {
                                 onNewTab()
                             }

@@ -76,6 +76,7 @@ fun BrowserScreen(
     val desktopSiteEnabled = state.desktopSiteEnabled
     var archiveVisible by remember { mutableStateOf(false) }
     var voiceVisible by remember { mutableStateOf(false) }
+    var voiceHoldReleased by remember { mutableStateOf(false) }
     var answerWebMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -193,7 +194,8 @@ fun BrowserScreen(
                     onOpenTabs = viewModel::toggleTabStack,
                     onOpenSettings = { homeSettingsVisible = true },
                     tabCount = state.tabs.size,
-                    onVoiceStart = { voiceVisible = true },
+                    onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
+                    onVoiceEnd = { voiceHoldReleased = true },
                     onSwipeTab = scrubTabs
                 )
             } else {
@@ -225,7 +227,8 @@ fun BrowserScreen(
                             onOpenTabs = viewModel::toggleTabStack,
                             onNewTab = viewModel::newTab,
                             onOpenControls = { controlsVisible = true },
-                            onVoiceStart = { voiceVisible = true },
+                            onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
+                            onVoiceEnd = { voiceHoldReleased = true },
                             onSwipeTab = scrubTabs,
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
@@ -330,7 +333,8 @@ fun BrowserScreen(
                 onDismiss = viewModel::toggleTabStack,
                 onOpenSettings = { homeSettingsVisible = true },
                 onUndoClose = viewModel::undoCloseLastTab,
-                onVoiceStart = { voiceVisible = true },
+                onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
+                onVoiceEnd = { voiceHoldReleased = true },
                 onSwipeTab = scrubTabs
             )
 
@@ -426,7 +430,8 @@ fun BrowserScreen(
                 onNewTab = viewModel::newTab,
                 onOpenControls = { controlsVisible = true },
                 tabCount = state.tabs.size,
-                onVoiceStart = { voiceVisible = true },
+                onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
+                onVoiceEnd = { voiceHoldReleased = true },
                 onSwipeTab = scrubTabs
             )
 
@@ -465,11 +470,9 @@ fun BrowserScreen(
 
             VoiceSearchOverlay(
                 visible = voiceVisible,
-                onDismiss = { voiceVisible = false },
-                onResult = { spoken ->
-                    viewModel.openPalette()
-                    viewModel.onQueryChange(spoken)
-                }
+                holdReleased = voiceHoldReleased,
+                onDismiss = { voiceVisible = false; voiceHoldReleased = false },
+                onResult = viewModel::ask
             )
         }
     }

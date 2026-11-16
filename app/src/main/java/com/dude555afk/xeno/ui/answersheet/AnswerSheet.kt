@@ -98,6 +98,7 @@ fun AnswerSheet(
     onOpenControls: () -> Unit,
     tabCount: Int,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
@@ -359,6 +360,7 @@ fun AnswerSheet(
                 onNewTab = onNewTab,
                 onOpenControls = onOpenControls,
                 onVoiceStart = onVoiceStart,
+                onVoiceEnd = onVoiceEnd,
                 onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

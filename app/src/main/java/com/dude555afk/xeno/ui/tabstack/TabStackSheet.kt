@@ -79,6 +79,7 @@ fun TabStackSheet(
     onOpenSettings: () -> Unit = onDismiss,
     onUndoClose: () -> Unit = {},
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
@@ -267,6 +268,7 @@ fun TabStackSheet(
                 onNewTab = onNewTab,
                 onOpenControls = onOpenSettings,
                 onVoiceStart = onVoiceStart,
+                onVoiceEnd = onVoiceEnd,
                 onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
