@@ -1166,23 +1166,41 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private val blockedRequestLock = Any()
+
     private fun recordBlockedRequest() {
-        val tab = _state.value.activeTab ?: return
-        if (loadedTabId != null && loadedTabId != tab.id) return
-        val updated = tab.copy(blockedAdsCount = tab.blockedAdsCount + 1)
-        _state.update { current ->
-            current.copy(
-                tabs = current.tabs.map { if (it.id == tab.id) updated else it },
-                activeTab = updated,
-                blockedAdsCount = updated.blockedAdsCount
-            )
-        }
-        if (!tab.isIncognito) viewModelScope.launch {
-            db.tabDao().byId(tab.id)?.let { row ->
-                db.tabDao().update(row.copy(blockedAdsCount = updated.blockedAdsCount))
+        val tabId = loadedTabId ?: _state.value.activeTab?.id ?: return
+        synchronized(blockedRequestLock) {
+            var updatedTab: Tab? = null
+            _state.update { current ->
+                val tab = current.tabs.firstOrNull { it.id == tabId }
+                    ?: current.activeTab?.takeIf { it.id == tabId }
+                    ?: inMemoryIncognitoTabs.firstOrNull { it.id == tabId }
+                    ?: return@update current
+                val updated = tab.copy(blockedAdsCount = tab.blockedAdsCount + 1)
+                updatedTab = updated
+                current.copy(
+                    tabs = current.tabs.map { if (it.id == tabId) updated else it },
+                    activeTab = if (current.activeTab?.id == tabId) updated else current.activeTab,
+                    blockedAdsCount = if (current.activeTab?.id == tabId) updated.blockedAdsCount else current.blockedAdsCount
+                )
             }
-        } else {
-            inMemoryIncognitoTabs.replaceAll { if (it.id == tab.id) updated else it }
+            val updated = updatedTab
+            if (updated == null) {
+                // A regular tab may be loading after its space was switched;
+                // still persist its count. Negative ids are never durable.
+                if (tabId > 0L) {
+                    viewModelScope.launch(Dispatchers.IO) {
+                        db.tabDao().incrementBlockedAdsCount(tabId)
+                    }
+                }
+            } else if (updated.isIncognito || tabId < 0L) {
+                inMemoryIncognitoTabs.replaceAll { if (it.id == tabId) updated else it }
+            } else {
+                viewModelScope.launch(Dispatchers.IO) {
+                    db.tabDao().incrementBlockedAdsCount(tabId)
+                }
+            }
         }
     }
 
@@ -1207,9 +1225,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             if (url.isBlank() || url == "about:blank") return
             (loadedTabId ?: _state.value.activeTab?.id)?.let(::captureTabPreview)
 
-            val finishedTabId = loadedTabId ?: _state.value.activeTab?.id
+            val finishedTabId = loadedTabId ?: _state.value.activeTab?.id ?: return
+            // Incognito ids are negative and the in-memory lookup survives a
+            // space switch. Never infer "normal" just because a private tab is
+            // temporarily absent from the visible tab list.
             val currentTab = _state.value.tabs.firstOrNull { it.id == finishedTabId }
-            if (currentTab?.isIncognito != true) {
+                ?: inMemoryIncognitoTabs.firstOrNull { it.id == finishedTabId }
+            val isIncognito = finishedTabId < 0L || currentTab?.isIncognito == true
+            if (!isIncognito) {
                 viewModelScope.launch {
                     val existing = db.historyDao().byUrl(url)
                     if (existing == null) {
