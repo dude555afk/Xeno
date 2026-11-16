@@ -467,8 +467,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             recentlyArchivedId = archiveId
             db.tabDao().deleteById(tab.id)
             _state.update { it.copy(tabPreviews = it.tabPreviews - tab.id) }
-            pool.destroy("tab-${tab.id}")
-            if (loadedTabId == tab.id) loadedTabId = null
+            if (loadedTabId == tab.id) {
+                pool.peek(SESSION_KEY)?.loadUrl("about:blank")
+                loadedTabId = null
+            }
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             _state.update { it.copy(tabs = remaining) }
             if (_state.value.activeTab?.id == tab.id) {
@@ -594,6 +596,12 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                     spaceId = tab.spaceId,
                     url = tab.url,
                     title = tab.title,
+                    faviconUrl = tab.faviconUrl,
+                    type = tab.type,
+                    query = tab.query,
+                    desktopSite = tab.desktopSite,
+                    zoomLevel = tab.zoomLevel,
+                    blockedAdsCount = tab.blockedAdsCount,
                     position = tab.position
                 )
             )
@@ -1035,6 +1043,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun recordBlockedRequest() {
         val tab = _state.value.activeTab ?: return
+        if (loadedTabId != null && loadedTabId != tab.id) return
         val updated = tab.copy(blockedAdsCount = tab.blockedAdsCount + 1)
         _state.update { current ->
             current.copy(
@@ -1073,7 +1082,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             if (url.isBlank() || url == "about:blank") return
             (loadedTabId ?: _state.value.activeTab?.id)?.let(::captureTabPreview)
 
-            val currentTab = _state.value.activeTab
+            val finishedTabId = loadedTabId ?: _state.value.activeTab?.id
+            val currentTab = _state.value.tabs.firstOrNull { it.id == finishedTabId }
             if (currentTab?.isIncognito != true) {
                 viewModelScope.launch {
                     val existing = db.historyDao().byUrl(url)
@@ -1087,7 +1097,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
             // Keep the tab's stored title current, so the tab stack is not full
             // of URLs where titles should be.
-            val tabId = loadedTabId ?: _state.value.activeTab?.id
+            val tabId = finishedTabId
             if (tabId != null && title.isNotBlank()) {
                 if (currentTab?.isIncognito == true) {
                     val updated = currentTab.copy(title = title)
