@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.core.storage
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -36,11 +37,11 @@ data class TabEntity(
     val position: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val lastActiveAt: Long = System.currentTimeMillis(),
-    val type: String = "web",
-    val query: String = "",
-    val desktopSite: Boolean = false,
-    val zoomLevel: Int = 100,
-    val blockedAdsCount: Int = 0
+    @ColumnInfo(defaultValue = "'web'") val type: String = "web",
+    @ColumnInfo(defaultValue = "''") val query: String = "",
+    @ColumnInfo(defaultValue = "0") val desktopSite: Boolean = false,
+    @ColumnInfo(defaultValue = "100") val zoomLevel: Int = 100,
+    @ColumnInfo(defaultValue = "0") val blockedAdsCount: Int = 0
 )
 
 /**
