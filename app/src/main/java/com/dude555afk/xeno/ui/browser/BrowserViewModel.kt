@@ -557,7 +557,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch(Dispatchers.IO) {
             val cutoff = System.currentTimeMillis() - age
-            db.tabDao().all().filter { it.lastActiveAt < cutoff && it.url.isNotBlank() }.forEach { row ->
+            db.tabDao().all().filter {
+                it.lastActiveAt < cutoff && (it.url.isNotBlank() || (it.type == "ai" && it.query.isNotBlank()))
+            }.forEach { row ->
                 db.archiveDao().insert(
                     ArchivedTabEntity(
                         originalTabId = row.id,
@@ -1071,6 +1073,9 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
      * state a browser can be in.
      */
     private fun syncSessionToTab(tab: Tab) {
+        // AI tabs are rendered by the answer surface, not by the WebView. Keep
+        // the last web session parked underneath so returning to it is instant.
+        if (tab.type == "ai") return
         val view = pool.peek(SESSION_KEY) ?: return
         view.settings.apply {
             useWideViewPort = tab.desktopSite
