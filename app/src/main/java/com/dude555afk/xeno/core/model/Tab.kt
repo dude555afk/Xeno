@@ -26,10 +26,11 @@ data class Tab(
     val blockedAdsCount: Int = 0
 ) {
     val displayTitle: String
-        get() = title.ifBlank { url.ifBlank { "New tab" } }
+        get() = if (type == "ai") query.ifBlank { title.ifBlank { "Browse for me" } }
+        else title.ifBlank { url.ifBlank { "New tab" } }
 
     val hasContent: Boolean
-        get() = url.isNotBlank()
+        get() = url.isNotBlank() || (type == "ai" && query.isNotBlank())
 }
 
 /**
