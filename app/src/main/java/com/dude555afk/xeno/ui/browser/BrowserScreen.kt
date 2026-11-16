@@ -148,7 +148,8 @@ fun BrowserScreen(
     LaunchedEffect(viewModel) { viewModel.showStartupSearchIfConfigured() }
 
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
-    val isHome = displayUrl.isBlank() || displayUrl == "about:blank"
+    val showingAiAnswer = state.activeTab?.type == "ai" && state.answer != null && !answerWebMode
+    val isHome = !showingAiAnswer && (displayUrl.isBlank() || displayUrl == "about:blank")
 
     CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -188,7 +189,10 @@ fun BrowserScreen(
                 }
             )
 
-            if (isHome) {
+            if (showingAiAnswer) {
+                // AnswerSheet owns its dock; do not draw the empty-home or
+                // regular web dock underneath an active AI tab.
+            } else if (isHome) {
                 PixelArcHomeScreen(
                     onOpenSearch = viewModel::openPalette,
                     onOpenTabs = viewModel::toggleTabStack,
