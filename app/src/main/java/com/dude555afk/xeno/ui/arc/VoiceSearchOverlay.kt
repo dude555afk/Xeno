@@ -184,7 +184,7 @@ fun VoiceSearchOverlay(
         if (granted) startRecognition() else latestOnDismiss()
     }
 
-    LaunchedEffect(holdReleased) {
+    LaunchedEffect(holdReleased, visible, isListening) {
         if (holdReleased && visible && isListening) {
             runCatching { recognizer?.stopListening() }
         }
