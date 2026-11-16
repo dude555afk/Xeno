@@ -123,6 +123,10 @@ fun BrowserScreen(
         if (state.answer == null) answerWebMode = false
     }
 
+    LaunchedEffect(state.activeTab?.id, state.activeTab?.type, state.activeTab?.query) {
+        if (state.activeTab?.type == "ai") viewModel.ensureActiveAiTabLoaded()
+    }
+
     BackHandler(
         enabled = voiceVisible || homeSettingsVisible || findInPageVisible || controlsVisible ||
             state.summaryVisible || state.answer != null || state.paletteVisible ||
