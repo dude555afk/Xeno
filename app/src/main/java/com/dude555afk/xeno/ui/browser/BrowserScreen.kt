@@ -476,7 +476,13 @@ fun BrowserScreen(
                     viewModel.restoreArchivedTab(archived)
                 },
                 onDelete = viewModel::deleteArchivedTab,
-                onDismiss = { archiveVisible = false }
+                onDismiss = { archiveVisible = false },
+                pinnedPages = state.pinnedTabs,
+                onOpenPinned = { page ->
+                    archiveVisible = false
+                    viewModel.navigate(page.url)
+                },
+                onUnpin = { page -> viewModel.unpinPage(page.url) }
             )
 
             VoiceSearchOverlay(
