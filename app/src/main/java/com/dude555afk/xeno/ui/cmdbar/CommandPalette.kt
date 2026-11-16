@@ -19,6 +19,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -101,6 +103,10 @@ fun CommandPalette(
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val scale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
+    val scrubSuggestions = remember(tabHints, historyHints) {
+        tabHints.map { it.displayTitle } + historyHints.map { it.title.ifBlank { it.url } }
+    }
+    val suggestionRowHeightPx = with(LocalDensity.current) { 58.dp.toPx() }
     val requester = remember { FocusRequester() }
     val voiceLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -272,7 +278,22 @@ fun CommandPalette(
 
                             if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                                        .pointerInput(scrubSuggestions) {
+                                            var lastScrubIndex = -1
+                                            detectVerticalDragGestures(
+                                                onDragStart = { lastScrubIndex = -1 },
+                                                onVerticalDrag = { change, _ ->
+                                                    val index = ((change.position.y - suggestionRowHeightPx * 0.2f) /
+                                                        suggestionRowHeightPx).toInt()
+                                                    if (index in scrubSuggestions.indices && index != lastScrubIndex) {
+                                                        lastScrubIndex = index
+                                                        onQueryChange(scrubSuggestions[index])
+                                                    }
+                                                    change.consume()
+                                                }
+                                            )
+                                        },
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                                 ) {
                                     items(tabHints, key = { "tab-${it.id}" }) { tab ->
