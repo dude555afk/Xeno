@@ -30,6 +30,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dude555afk.xeno.core.model.ArchivedTab
+import com.dude555afk.xeno.core.model.PinnedPage
 
 @Composable
 fun ArchiveSheet(
@@ -45,8 +48,12 @@ fun ArchiveSheet(
     tabs: List<ArchivedTab>,
     onRestore: (ArchivedTab) -> Unit,
     onDelete: (Long) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    pinnedPages: List<PinnedPage> = emptyList(),
+    onOpenPinned: (PinnedPage) -> Unit = {},
+    onUnpin: (PinnedPage) -> Unit = {}
 ) {
+    val showPinned = remember(visible) { mutableStateOf(false) }
     BackHandler(enabled = visible, onBack = onDismiss)
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
         Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(onClick = onDismiss)) {
@@ -68,7 +75,51 @@ fun ArchiveSheet(
                             Icon(Icons.Rounded.Close, contentDescription = "Close archive", tint = Color.White)
                         }
                     }
-                    if (tabs.isEmpty()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("Archive", "Pinned").forEachIndexed { index, label ->
+                            val selected = showPinned.value == (index == 1)
+                            Surface(
+                                onClick = { showPinned.value = index == 1 },
+                                color = if (selected) Color(0xFF4E5BCD) else Color(0xFF303138),
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(Modifier.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                                    Text(label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+
+                    if (showPinned.value) {
+                        if (pinnedPages.isEmpty()) {
+                            Spacer(Modifier.height(24.dp))
+                            Text("Pinned pages will appear here", color = Color(0xFFAAAAB0), fontSize = 14.sp)
+                        } else {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                items(pinnedPages, key = { it.url }) { page ->
+                                    Row(
+                                        Modifier.fillMaxWidth().clickable { onOpenPinned(page) }.padding(vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(page.title.ifBlank { page.url },
+                                                color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(page.url, color = Color(0xFF9B9CA3), fontSize = 11.sp,
+                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        IconButton(onClick = { onUnpin(page) }, modifier = Modifier.size(42.dp)) {
+                                            Icon(Icons.Rounded.DeleteOutline, contentDescription = "Unpin page", tint = Color(0xFFB0B0B7))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (tabs.isEmpty()) {
                         Spacer(Modifier.height(24.dp))
                         Text("Archived tabs will appear here", color = Color(0xFFAAAAB0), fontSize = 14.sp)
                     } else {
@@ -79,10 +130,11 @@ fun ArchiveSheet(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(tab.title.ifBlank { tab.url.ifBlank { "New tab" } },
+                                        Text(tab.title.ifBlank { tab.query.ifBlank { tab.url.ifBlank { "New tab" } } },
                                             color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(tab.url, color = Color(0xFF9B9CA3), fontSize = 11.sp,
+                                        Text(tab.url.ifBlank { if (tab.type == "ai") "Browse for me" else "" },
+                                            color = Color(0xFF9B9CA3), fontSize = 11.sp,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                     IconButton(onClick = { onRestore(tab) }, modifier = Modifier.size(42.dp)) {
