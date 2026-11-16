@@ -769,7 +769,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         answerJob = viewModelScope.launch {
             try {
-                engine.answer(q, settings.providerConfig).collect { result ->
+                engine.answer(q, settings.providerConfig, settings.languageMode).collect { result ->
                     _state.update {
                         it.copy(
                             answer = result,
@@ -931,7 +931,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             // of which are real work. On the main dispatcher that is a jank
             // spike visible before a single token arrives.
             val outcome = withContext(Dispatchers.Default) {
-                summarizer.summarize(content, settings.providerConfig, tone)
+                summarizer.summarize(content, settings.providerConfig, tone, settings.languageMode)
             }
 
             when (outcome) {
