@@ -227,6 +227,21 @@ fun BrowserScreen(
                     )
                 }
 
+                ArcPageAddress(
+                    url = displayUrl,
+                    title = state.load.title.ifBlank { state.activeTab?.title.orEmpty() },
+                    displayLabel = addressLabel,
+                    onClick = viewModel::openPalette,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                        .graphicsLayer {
+                            scaleX = pageScale
+                            scaleY = pageScale
+                            translationY = with(density) { pageOffsetY.dp.toPx() }
+                            transformOrigin = TransformOrigin(0.5f, 0.5f)
+                        }
+                        .padding(top = 54.dp)
+                )
+
                 AnimatedVisibility(
                     visible = state.chromeVisible,
                     modifier = Modifier.fillMaxSize(),
@@ -240,20 +255,6 @@ fun BrowserScreen(
                     ) else ExitTransition.None
                 ) {
                     Box(Modifier.fillMaxSize()) {
-                        ArcPageAddress(
-                            url = displayUrl,
-                            title = state.load.title.ifBlank { state.activeTab?.title.orEmpty() },
-                            displayLabel = addressLabel,
-                            onClick = viewModel::openPalette,
-                            modifier = Modifier.align(Alignment.TopCenter)
-                                .graphicsLayer {
-                                    scaleX = pageScale
-                                    scaleY = pageScale
-                                    translationY = with(density) { pageOffsetY.dp.toPx() }
-                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                }
-                                .padding(top = 54.dp)
-                        )
                         PixelBottomDock(
                             tabCount = state.tabs.size,
                             homeMode = false,
