@@ -46,6 +46,10 @@ interface TabDao {
     @Update
     suspend fun update(tab: TabEntity)
 
+    /** Atomic counter update for concurrent WebView resource callbacks. */
+    @Query("UPDATE tabs SET blockedAdsCount = blockedAdsCount + 1 WHERE id = :id")
+    suspend fun incrementBlockedAdsCount(id: Long)
+
     @Delete
     suspend fun delete(tab: TabEntity)
 
