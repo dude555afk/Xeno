@@ -395,7 +395,7 @@ fun ArcPageAddress(
     }
     Surface(
         onClick = onClick,
-        modifier = modifier.padding(horizontal = 26.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 26.dp),
         shape = CircleShape,
         color = Color(0xFF151619),
         shadowElevation = 0.dp,
