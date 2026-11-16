@@ -69,7 +69,7 @@ fun ArchiveSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Rounded.Archive, contentDescription = null, tint = Color.White)
-                        Text("Archive", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold,
+                        Text(if (showPinned.value) "Pinned Pages" else "Archive", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f).padding(start = 13.dp))
                         IconButton(onClick = onDismiss) {
                             Icon(Icons.Rounded.Close, contentDescription = "Close archive", tint = Color.White)
