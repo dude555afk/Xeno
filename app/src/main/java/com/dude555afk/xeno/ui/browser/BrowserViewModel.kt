@@ -778,6 +778,31 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Return the active tab from DuckDuckGo SERP mode to its AI answer mode.
+     * The query is retained so switching back to web can rebuild the SERP.
+     */
+    fun returnToAnswerMode() {
+        val tab = _state.value.activeTab ?: return
+        if (tab.query.isBlank()) return
+        val updated = tab.copy(type = "ai", url = "")
+        if (tab.isIncognito) {
+            inMemoryIncognitoTabs.replaceAll { if (it.id == tab.id) updated else it }
+        } else {
+            viewModelScope.launch {
+                db.tabDao().byId(tab.id)?.let { db.tabDao().update(it.copy(type = "ai", url = "")) }
+            }
+        }
+        _state.update { current ->
+            current.copy(
+                activeTab = updated,
+                tabs = current.tabs.map { if (it.id == updated.id) updated else it },
+                load = PageLoadState(),
+                isCurrentPagePinned = false
+            )
+        }
+    }
+
     fun dismissAnswer() {
         answerJob?.cancel()
         _state.update { it.copy(answer = null, answerStreaming = false) }
