@@ -1314,6 +1314,8 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun togglePinCurrentPage() {
+        // A private tab must not create a durable bookmark or exportable URL.
+        if (_state.value.activeTab?.isIncognito == true) return
         val url = _state.value.load.url.ifBlank { _state.value.activeTab?.url.orEmpty() }
         if (url.isBlank()) return
         val pinned = settings.togglePinned(url)
