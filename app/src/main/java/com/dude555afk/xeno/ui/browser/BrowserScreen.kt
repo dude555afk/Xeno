@@ -84,7 +84,7 @@ fun BrowserScreen(
     val tabSwipeOffset = remember { Animatable(0f) }
     val scrubTabs: (Int) -> Unit = { direction ->
         interactionScope.launch {
-            val width = with(density) { 420.dp.toPx() }
+            val width = with(density) { (478f * coordinateScale).dp.toPx() }
             tabSwipeOffset.animateTo(direction * width, animationSpec = tween(140))
             viewModel.selectAdjacentTab(direction)
             tabSwipeOffset.snapTo(-direction * width)
@@ -106,7 +106,7 @@ fun BrowserScreen(
     )
     val pageOffsetY by animateFloatAsState(
         targetValue = when {
-            state.paletteVisible -> 65f
+            state.paletteVisible -> 0f
             state.summaryVisible -> -132f
             else -> 0f
         },
@@ -210,11 +210,11 @@ fun BrowserScreen(
                     visible = state.chromeVisible,
                     modifier = Modifier.fillMaxSize(),
                     enter = if (state.animationsEnabled) fadeIn(tween(140)) + slideInVertically(
-                        initialOffsetY = { with(density) { 85.dp.roundToPx() } },
+                        initialOffsetY = { with(density) { (85f * coordinateScale).dp.roundToPx() } },
                         animationSpec = tween(220)
                     ) else EnterTransition.None,
                     exit = if (state.animationsEnabled) fadeOut(tween(110)) + slideOutVertically(
-                        targetOffsetY = { with(density) { 85.dp.roundToPx() } },
+                        targetOffsetY = { with(density) { (85f * coordinateScale).dp.roundToPx() } },
                         animationSpec = tween(220)
                     ) else ExitTransition.None
                 ) {

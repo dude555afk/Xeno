@@ -728,12 +728,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             val current = _state.value.activeTab
-            val useIncognito = current?.isIncognito == true || _state.value.incognitoMode
+            val useIncognito = _state.value.incognitoMode
             val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
-            val target = if (useIncognito && current?.isIncognito != true) {
-                Tab(id = nextIncognitoTabId--, spaceId = spaceId, isIncognito = true)
-                    .also { inMemoryIncognitoTabs.add(it) }
-            } else current
+            val target = when {
+                useIncognito && current?.isIncognito != true ->
+                    Tab(id = nextIncognitoTabId--, spaceId = spaceId, isIncognito = true)
+                        .also { inMemoryIncognitoTabs.add(it) }
+                !useIncognito && current?.isIncognito == true -> null
+                else -> current
+            }
 
             if (target?.isIncognito == true) {
                 val updated = target.copy(
