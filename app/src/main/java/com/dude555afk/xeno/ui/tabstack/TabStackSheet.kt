@@ -113,7 +113,7 @@ fun TabStackSheet(
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 145.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isAi = activeTab.url.startsWith("xeno://answer", ignoreCase = true)
+                    val isAi = activeTab.type == "ai"
                     Icon(
                         if (isAi) Icons.Rounded.AutoAwesome else Icons.Rounded.Language,
                         contentDescription = null,
