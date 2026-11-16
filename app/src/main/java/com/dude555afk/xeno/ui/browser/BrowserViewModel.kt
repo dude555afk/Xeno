@@ -1210,12 +1210,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            // Keep the tab's stored title current, so the tab stack is not full
-            // of URLs where titles should be.
+            // Persist the final URL as well as the title. Redirects otherwise
+            // leave the tab stack and exported data pointing at the pre-redirect URL.
             val tabId = finishedTabId
-            if (tabId != null && title.isNotBlank()) {
+            if (tabId != null) {
                 if (currentTab?.isIncognito == true) {
-                    val updated = currentTab.copy(title = title)
+                    val updated = currentTab.copy(
+                        url = url,
+                        title = title.ifBlank { currentTab.title }
+                    )
                     inMemoryIncognitoTabs.replaceAll { if (it.id == tabId) updated else it }
                     _state.update { state ->
                         state.copy(
@@ -1226,7 +1229,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     viewModelScope.launch {
                         db.tabDao().byId(tabId)?.let { entity ->
-                            if (entity.title != title) db.tabDao().update(entity.copy(title = title))
+                            val updatedTitle = title.ifBlank { entity.title }
+                            if (entity.url != url || entity.title != updatedTitle) {
+                                db.tabDao().update(entity.copy(url = url, title = updatedTitle))
+                            }
                         }
                     }
                 }
@@ -1249,8 +1255,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 android.content.Intent.ACTION_VIEW,
                 android.net.Uri.parse(requestedUrl)
             ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            runCatching { getApplication<Application>().startActivity(intent) }
-            return true
+            return runCatching {
+                getApplication<Application>().startActivity(intent)
+                true
+            }.getOrDefault(false)
         }
     }
 
