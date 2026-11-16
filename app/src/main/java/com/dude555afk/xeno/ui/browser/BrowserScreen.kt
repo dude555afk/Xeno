@@ -379,10 +379,7 @@ fun BrowserScreen(
                     }
                     controlsVisible = false
                 },
-                onDesktopSiteChange = { enabled ->
-                    desktopSiteEnabled = enabled
-                    viewModel.setDesktopSite(enabled)
-                },
+                onDesktopSiteChange = viewModel::setDesktopSite,
                 onBlockingChange = viewModel::setBlockingEnabled,
                 onZoomChange = viewModel::changePageTextZoom,
                 onOpenAppSettings = {
