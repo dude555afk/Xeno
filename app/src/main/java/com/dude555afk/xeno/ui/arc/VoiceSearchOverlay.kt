@@ -198,7 +198,7 @@ fun VoiceSearchOverlay(
             domeScale.snapTo(0.1f)
             domeScale.animateTo(
                 targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.86f, stiffness = 320f)
+                animationSpec = spring(dampingRatio = 0.671f, stiffness = 320f)
             )
         } else {
             isListening = false
@@ -266,8 +266,8 @@ fun VoiceSearchOverlay(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color(0x8C161326),
-                                Color(0x99532025)
+                                Color(0x99532025),
+                                Color(0x8C161326)
                             )
                         )
                     )
@@ -287,7 +287,7 @@ fun VoiceSearchOverlay(
                         radius = (279.1f + amplitude * 35.9f) * s,
                         center = Offset(
                             (231.1f + 8f * sin(phase)) * s,
-                            (930.1f + 6f * cos(phase)) * s
+                            (930.1f + 6f * cos(phase * 2f) - 14f * amplitude) * s
                         )
                     )
                     drawCircle(

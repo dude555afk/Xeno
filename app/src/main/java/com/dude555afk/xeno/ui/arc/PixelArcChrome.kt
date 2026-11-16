@@ -5,9 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import android.os.SystemClock
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.core.Animatable
@@ -32,8 +29,6 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.exp
-import kotlin.math.roundToInt
-import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -101,7 +96,7 @@ fun PixelArcAmbientBackground(modifier: Modifier = Modifier) {
 
 /** Arc's five-limbed sticker mark, sized to the audit's 183×151 base grid. */
 @Composable
-fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun PixelArcMark(modifier: Modifier = Modifier) {
     var rotation by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var angularVelocity by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
@@ -114,7 +109,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                 rotationZ = rotation
                 transformOrigin = TransformOrigin(0.5f, 0.53f)
             }
-            .then(if (enabled) Modifier.pointerInput(enabled) {
+            .pointerInput(Unit) {
                 var previousAngle = 0.0
                 var previousTime = 0L
                 detectDragGestures(
@@ -141,39 +136,36 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                         val elapsed = (now - previousTime).coerceAtLeast(1L)
                         val degrees = Math.toDegrees(delta).toFloat()
                         rotation += degrees
-                        angularVelocity = degrees / elapsed.toFloat() * 1000f
+                        angularVelocity = degrees / elapsed.toFloat()
                         previousAngle = angle
                         previousTime = now
                         change.consume()
                     },
                     onDragEnd = {
-                        val startAngle = rotation
                         val initialVelocity = angularVelocity
                         flingJob = scope.launch {
-                            var elapsedSeconds = 0f
-                            while (elapsedSeconds < 5f &&
-                                abs(initialVelocity * exp(-1.15f * elapsedSeconds)) > 0.35f
-                            ) {
+                            var velocity = initialVelocity
+                            var elapsed = 0
+                            while (elapsed < 3800 && abs(velocity) > 0.008f) {
                                 delay(16)
-                                elapsedSeconds += 0.016f
-                                rotation = startAngle +
-                                    (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                                val decay = exp((-0.0012f * 16f).toDouble()).toFloat()
+                                rotation += velocity * (1f - decay) / 0.0012f
+                                velocity *= decay
+                                elapsed += 16
                             }
-                            val uprightTarget = (rotation / 360f).roundToInt() * 360f
                             val settle = Animatable(rotation)
                             settle.animateTo(
-                                targetValue = uprightTarget,
+                                targetValue = 0f,
                                 animationSpec = spring(
-                                    stiffness = 220f,
-                                    dampingRatio = 0.742f
+                                    dampingRatio = 0.48f,
+                                    stiffness = 260f
                                 )
                             ) { rotation = value }
-                            rotation = uprightTarget
                         }
                     },
                     onDragCancel = { angularVelocity = 0f }
                 )
-            } else Modifier)
+            }
     ) {
         val path = Path().apply {
             moveTo(89f, 5f)
@@ -223,7 +215,7 @@ fun PixelArcHomeScreen(
 ) {
     Box(modifier.fillMaxSize()) {
         PixelArcAmbientBackground()
-        PixelArcMark(Modifier.align(Alignment.Center), enabled = tabCount == 0)
+        PixelArcMark(Modifier.align(Alignment.Center))
         PixelBottomDock(
             tabCount = tabCount,
             homeMode = true,
@@ -355,23 +347,15 @@ fun PixelBottomDock(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize().pointerInput(onNewTab, onVoiceStart) {
-                        awaitEachGesture {
-                            awaitFirstDown(requireUnconsumed = false)
-                            val released = withTimeoutOrNull(180L) { waitForUpOrCancellation() }
-                            if (released == null) {
-                                onVoiceStart()
-                                waitForUpOrCancellation()
-                            } else {
-                                onNewTab()
-                            }
-                        }
-                    },
+                    modifier = Modifier.fillMaxSize().combinedClickable(
+                        onClick = onNewTab,
+                        onLongClick = onVoiceStart
+                    ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.Add,
-                        contentDescription = "New search. Hold for voice search",
+                        contentDescription = "New search. Long press for voice search",
                         tint = Color.White,
                         modifier = Modifier.size(23.dp)
                     )
@@ -415,10 +399,7 @@ fun ArcAiWebTogglePill(
     }
     val indicatorOffset by animateDpAsState(
         targetValue = if (selectedWeb) 48.dp else 0.dp,
-        animationSpec = tween(
-            durationMillis = 250,
-            easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)
-        ),
+        animationSpec = spring(stiffness = 420f, dampingRatio = 0.683f),
         label = "arc-ai-web-indicator"
     )
     val scope = rememberCoroutineScope()
