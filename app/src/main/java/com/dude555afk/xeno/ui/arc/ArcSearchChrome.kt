@@ -56,6 +56,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -384,10 +385,11 @@ fun ArcPageAddress(
     url: String,
     title: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    displayLabel: String? = null
 ) {
-    val host = remember(url) {
-        runCatching {
+    val host = remember(url, title, displayLabel) {
+        displayLabel?.takeIf { it.isNotBlank() } ?: runCatching {
             java.net.URI(url).host?.removePrefix("www.") ?: url
         }.getOrDefault(url).ifBlank { title }
     }
@@ -395,19 +397,19 @@ fun ArcPageAddress(
         onClick = onClick,
         modifier = modifier.padding(horizontal = 26.dp),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        color = Color(0xFF151619),
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Color(0xFF2B2C30))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 17.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Rounded.Search,
+                Icons.Rounded.Language,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(17.dp)
+                tint = Color(0xFFB7B8BD),
+                modifier = Modifier.size(19.dp)
             )
             Spacer(Modifier.width(10.dp))
             Text(
@@ -419,10 +421,10 @@ fun ArcPageAddress(
                 modifier = Modifier.weight(1f)
             )
             Icon(
-                Icons.Rounded.ExpandMore,
-                contentDescription = "Open address controls",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(19.dp)
+                Icons.Rounded.Search,
+                contentDescription = "Open search",
+                tint = Color(0xFFB7B8BD),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
