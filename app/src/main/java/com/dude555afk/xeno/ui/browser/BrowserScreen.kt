@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +79,7 @@ fun BrowserScreen(
     var answerWebMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val density = LocalDensity.current
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
     val interactionScope = rememberCoroutineScope()
     val tabSwipeOffset = remember { Animatable(0f) }
     val scrubTabs: (Int) -> Unit = { direction ->
@@ -342,6 +344,7 @@ fun BrowserScreen(
                 blockingEnabled = state.blockingEnabled,
                 pageTextZoom = state.pageTextZoom,
                 desktopSiteEnabled = desktopSiteEnabled,
+                blockedAdsCount = state.blockedAdsCount,
                 onDismiss = { controlsVisible = false },
                 onBack = viewModel::goBack,
                 onForward = viewModel::goForward,
@@ -369,9 +372,11 @@ fun BrowserScreen(
                     context.startActivity(Intent.createChooser(share, "Share page"))
                 },
                 onTranslate = {
-                    val target = "https://translate.google.com/translate?sl=auto&tl=en&u=" +
-                        android.net.Uri.encode(displayUrl)
-                    viewModel.navigate(target)
+                    if (state.allowGoogleTranslate) {
+                        val target = "https://translate.google.com/translate?sl=auto&tl=en&u=" +
+                            android.net.Uri.encode(displayUrl)
+                        viewModel.navigate(target)
+                    }
                     controlsVisible = false
                 },
                 onDesktopSiteChange = { enabled ->
@@ -433,7 +438,7 @@ fun BrowserScreen(
                     webMode = true,
                     onToggle = { answerWebMode = false },
                     modifier = Modifier.align(Alignment.BottomEnd)
-                        .padding(end = 17.dp, bottom = 90.dp)
+                        .padding(end = (17f * coordinateScale).dp, bottom = (90f * coordinateScale).dp)
                 )
             }
 

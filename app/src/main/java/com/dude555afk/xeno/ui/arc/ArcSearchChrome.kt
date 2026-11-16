@@ -613,6 +613,7 @@ fun ArcSiteActionsSheet(
     blockingEnabled: Boolean,
     pageTextZoom: Int,
     desktopSiteEnabled: Boolean,
+    blockedAdsCount: Int = 0,
     onDismiss: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
@@ -646,14 +647,18 @@ fun ArcSiteActionsSheet(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            val coordinateScale = (maxWidth / 462.dp).coerceIn(0.75f, 1.1f)
             Box(
                 Modifier.fillMaxSize()
                     .background(Color(0xFF121315).copy(alpha = 0.35f))
                     .clickable(onClick = onDismiss)
             )
             Surface(
-                modifier = Modifier.fillMaxWidth().height(minOf(660.dp, maxHeight)),
-                shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp),
+                modifier = Modifier.fillMaxWidth().height(minOf((660f * coordinateScale).dp, maxHeight)),
+                shape = RoundedCornerShape(
+                    topStart = (44f * coordinateScale).dp,
+                    topEnd = (44f * coordinateScale).dp
+                ),
                 color = Color(0xFF2D2E32),
                 shadowElevation = 0.dp
             ) {
@@ -757,7 +762,10 @@ fun ArcSiteActionsSheet(
                     Spacer(Modifier.weight(1f))
                     Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF323337)))
                     Spacer(Modifier.height(26.dp))
-                    Text("Blocked 1 ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Blocked $blockedAdsCount ${if (blockedAdsCount == 1) "ad" else "ads"} and trackers",
+                        color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(7.dp))
                     Text(
                         "Problems? Disable in site settings",

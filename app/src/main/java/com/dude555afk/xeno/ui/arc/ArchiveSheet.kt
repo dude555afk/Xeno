@@ -52,7 +52,7 @@ fun ArchiveSheet(
         Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(onClick = onDismiss)) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxSize(0.78f)
-                    .clickable(enabled = false) {},
+                    .clickable { },
                 color = Color(0xFF202126),
                 shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
             ) {
