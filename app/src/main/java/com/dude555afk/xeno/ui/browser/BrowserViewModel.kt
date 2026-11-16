@@ -378,6 +378,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         syncSessionToTab(tab)
+        if (tab.type == "ai") {
+            if (_state.value.answer?.query != tab.query || _state.value.answer == null) {
+                generateAnswer(tab.query)
+            }
+        } else if (_state.value.answer != null || _state.value.answerStreaming) {
+            answerJob?.cancel()
+            _state.update { it.copy(answer = null, answerStreaming = false, answerError = null) }
+        }
     }
 
     fun newTab() {
@@ -668,13 +676,64 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun ask(query: String) {
-        if (query.isBlank()) return
+        val q = query.trim()
+        if (q.isEmpty()) return
         closePalette()
-        answerJob?.cancel()
 
+        viewModelScope.launch {
+            val current = _state.value.activeTab
+            val spaceId = current?.spaceId ?: _state.value.activeSpace?.id ?: 1L
+            val privateTab = _state.value.incognitoMode || current?.isIncognito == true
+
+            val aiTab = when {
+                privateTab && current?.isIncognito == true &&
+                    (current.url.isBlank() || current.type == "ai") -> {
+                    current.copy(url = "", title = q, type = "ai", query = q)
+                        .also { updated ->
+                            inMemoryIncognitoTabs.replaceAll { if (it.id == updated.id) updated else it }
+                            _state.update { state ->
+                                state.copy(tabs = state.tabs.map { if (it.id == updated.id) updated else it })
+                            }
+                        }
+                }
+                privateTab -> Tab(
+                    id = nextIncognitoTabId--,
+                    spaceId = spaceId,
+                    title = q,
+                    type = "ai",
+                    query = q,
+                    isIncognito = true
+                ).also { created ->
+                    inMemoryIncognitoTabs.add(created)
+                    _state.update { it.copy(tabs = it.tabs + created) }
+                }
+                current != null && !current.isIncognito &&
+                    (current.url.isBlank() || current.type == "ai") -> {
+                    val row = db.tabDao().byId(current.id)
+                    if (row != null) {
+                        db.tabDao().update(row.copy(url = "", title = q, type = "ai", query = q))
+                    }
+                    current.copy(url = "", title = q, type = "ai", query = q)
+                }
+                else -> {
+                    val id = db.tabDao().insert(
+                        TabEntity(spaceId = spaceId, url = "", title = q, type = "ai", query = q)
+                    )
+                    Tab(id = id, spaceId = spaceId, title = q, type = "ai", query = q)
+                }
+            }
+            _state.update { it.copy(tabStackVisible = false, paletteVisible = false) }
+            selectTab(aiTab)
+        }
+    }
+
+    private fun generateAnswer(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        answerJob?.cancel()
         _state.update {
             it.copy(
-                answer = AnswerResult(query, emptyList()),
+                answer = AnswerResult(q, emptyList()),
                 answerStreaming = true,
                 answerError = null
             )
@@ -682,7 +741,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
 
         answerJob = viewModelScope.launch {
             try {
-                engine.answer(query, settings.providerConfig).collect { result ->
+                engine.answer(q, settings.providerConfig).collect { result ->
                     _state.update {
                         it.copy(
                             answer = result,
@@ -693,7 +752,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        answer = (it.answer ?: AnswerResult(query, emptyList())).copy(
+                        answer = (it.answer ?: AnswerResult(q, emptyList())).copy(
                             markdown = AnswerEngine.UNREADABLE
                         ),
                         answerStreaming = false,
