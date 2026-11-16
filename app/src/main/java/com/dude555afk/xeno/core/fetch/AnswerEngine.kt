@@ -58,7 +58,11 @@ class AnswerEngine(
      * Emits intermediate [AnswerResult]s so the UI can render progress:
      * sources appear first, then streamed answer text, then citations parsed.
      */
-    fun answer(query: String, config: ProviderConfig): Flow<AnswerResult> = flow {
+    fun answer(
+        query: String,
+        config: ProviderConfig,
+        languageMode: String = "infer"
+    ): Flow<AnswerResult> = flow {
         emit(AnswerResult(query, emptyList())) // "finding sources…"
 
         val hits = search.search(query)
@@ -103,7 +107,7 @@ class AnswerEngine(
         val request = ChatRequest(
             model = config.model,
             messages = listOf(
-                ChatMessage.system(Prompts.ANSWER_SYSTEM),
+                ChatMessage.system("${Prompts.ANSWER_SYSTEM}\n\n${responseLanguageInstruction(languageMode)}"),
                 ChatMessage.user(Prompts.answerWithSources(query, promptSources))
             ),
             stream = true,
@@ -131,6 +135,13 @@ class AnswerEngine(
         const val NO_SOURCES = "No sources found for that query."
         const val UNREADABLE = "Found sources but couldn't read any of them — they may be paywalled or JavaScript-only."
         const val NO_KEY = "Add an AI provider key in settings to get a synthesized answer."
+
+        private fun responseLanguageInstruction(mode: String): String = when (mode) {
+            "en" -> "Write the complete answer in English."
+            "hi" -> "Write the complete answer in Hindi."
+            "bn" -> "Write the complete answer in Bengali."
+            else -> "Infer the answer language from the user's query and respond in that language."
+        }
 
         /** Pulls `[1][2][12]` markers out of streamed text. */
         fun parseCitations(markdown: String): List<Citation> {
