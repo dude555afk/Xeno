@@ -51,6 +51,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArchiveSheet
+import com.dude555afk.xeno.ui.arc.ArcPageAddress
 import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
@@ -152,6 +153,16 @@ fun BrowserScreen(
     LaunchedEffect(viewModel) { viewModel.showStartupSearchIfConfigured() }
 
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
+    val currentHost = remember(displayUrl) {
+        runCatching { java.net.URI(displayUrl).host?.removePrefix("www.") }.getOrNull().orEmpty()
+    }
+    val isSearchResultsPage = currentHost.contains("duckduckgo.com", true) ||
+        currentHost.contains("google.", true) || currentHost.contains("bing.com", true)
+    val addressLabel = if (isSearchResultsPage) {
+        state.activeTab?.query?.takeIf { it.isNotBlank() } ?: currentHost
+    } else {
+        currentHost.ifBlank { state.load.title.ifBlank { state.activeTab?.title.orEmpty() } }
+    }
     val showingAiAnswer = state.activeTab?.type == "ai" && state.answer != null && !answerWebMode
     val isHome = !showingAiAnswer && (displayUrl.isBlank() || displayUrl == "about:blank")
 
@@ -229,6 +240,20 @@ fun BrowserScreen(
                     ) else ExitTransition.None
                 ) {
                     Box(Modifier.fillMaxSize()) {
+                        ArcPageAddress(
+                            url = displayUrl,
+                            title = state.load.title.ifBlank { state.activeTab?.title.orEmpty() },
+                            displayLabel = addressLabel,
+                            onClick = viewModel::openPalette,
+                            modifier = Modifier.align(Alignment.TopCenter)
+                                .graphicsLayer {
+                                    scaleX = pageScale
+                                    scaleY = pageScale
+                                    translationY = with(density) { pageOffsetY.dp.toPx() }
+                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                }
+                                .padding(top = 54.dp)
+                        )
                         PixelBottomDock(
                             tabCount = state.tabs.size,
                             homeMode = false,
