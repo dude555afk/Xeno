@@ -163,6 +163,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
     private val inMemoryIncognitoTabs = mutableListOf<Tab>()
     private var nextIncognitoTabId = -1L
     private var recentlyArchivedId: Long? = null
+    private var answerTabId: Long? = null
 
     init {
         // The bundled list is already loading in XenoApplication; refresh the
@@ -395,11 +396,12 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         }
         syncSessionToTab(tab)
         if (tab.type == "ai") {
-            if (_state.value.answer?.query != tab.query || _state.value.answer == null) {
+            if (answerTabId != tab.id || _state.value.answer?.query != tab.query || _state.value.answer == null) {
                 generateAnswer(tab.query)
             }
-        } else if (_state.value.answer != null || _state.value.answerStreaming) {
+        } else if (answerTabId != tab.id && (_state.value.answer != null || _state.value.answerStreaming)) {
             answerJob?.cancel()
+            answerTabId = null
             _state.update { it.copy(answer = null, answerStreaming = false, answerError = null) }
         }
     }
@@ -759,6 +761,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val q = query.trim()
         if (q.isEmpty()) return
         answerJob?.cancel()
+        answerTabId = _state.value.activeTab?.id
         _state.update {
             it.copy(
                 answer = AnswerResult(q, emptyList()),
@@ -815,10 +818,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                 isCurrentPagePinned = false
             )
         }
+        if (_state.value.answer?.query != updated.query) generateAnswer(updated.query)
+    }
+
+    fun ensureActiveAiTabLoaded() {
+        val tab = _state.value.activeTab?.takeIf { it.type == "ai" } ?: return
+        if (_state.value.answer?.query != tab.query) generateAnswer(tab.query)
     }
 
     fun dismissAnswer() {
         answerJob?.cancel()
+        answerTabId = null
         _state.update { it.copy(answer = null, answerStreaming = false) }
     }
 
