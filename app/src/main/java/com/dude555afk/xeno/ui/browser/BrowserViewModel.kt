@@ -369,7 +369,14 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             captureTabPreview(loadedTabId!!)
         }
         _state.update {
+            val replacedTabs = it.tabs.map { existing -> if (existing.id == tab.id) tab else existing }
+            val visibleTabs = if (replacedTabs.any { existing -> existing.id == tab.id }) {
+                replacedTabs
+            } else {
+                replacedTabs + tab
+            }
             it.copy(
+                tabs = visibleTabs,
                 activeTab = tab,
                 load = PageLoadState(url = tab.url),
                 isCurrentPagePinned = settings.isPinned(tab.url),
@@ -451,7 +458,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                             load = PageLoadState(),
                             tabs = emptyList(),
                             canGoBack = false,
-                            canGoForward = false
+                            canGoForward = false,
+                            answer = null,
+                            answerStreaming = false,
+                            answerError = null
                         )
                     }
                 }
@@ -502,7 +512,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
                         load = PageLoadState(),
                         tabs = emptyList(),
                         canGoBack = false,
-                        canGoForward = false
+                        canGoForward = false,
+                        answer = null,
+                        answerStreaming = false,
+                        answerError = null
                     )
                 }
             }
@@ -603,6 +616,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         val tab = recentlyClosedTab ?: return
         recentlyClosedTab = null
         viewModelScope.launch {
+            _state.value.spaces.firstOrNull { it.id == tab.spaceId }?.let(::selectSpace)
             if (tab.isIncognito) {
                 inMemoryIncognitoTabs.add(tab)
                 _state.update { it.copy(tabs = it.tabs + tab) }
