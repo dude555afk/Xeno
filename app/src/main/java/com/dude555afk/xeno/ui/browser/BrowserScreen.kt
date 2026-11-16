@@ -438,7 +438,10 @@ fun BrowserScreen(
             if (state.answer != null && answerWebMode) {
                 ArcAiWebTogglePill(
                     webMode = true,
-                    onToggle = { answerWebMode = false },
+                    onToggle = {
+                        answerWebMode = false
+                        viewModel.returnToAnswerMode()
+                    },
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(end = (17f * coordinateScale).dp, bottom = (90f * coordinateScale).dp)
                 )
