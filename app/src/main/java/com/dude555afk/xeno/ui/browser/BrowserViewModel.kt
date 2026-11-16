@@ -416,8 +416,10 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { current ->
                 current.copy(tabPreviews = current.tabPreviews - tab.id)
             }
-            pool.destroy("tab-${tab.id}")
-            if (loadedTabId == tab.id) loadedTabId = null
+            if (loadedTabId == tab.id) {
+                pool.peek(SESSION_KEY)?.loadUrl("about:blank")
+                loadedTabId = null
+            }
 
             val remaining = _state.value.tabs.filterNot { it.id == tab.id }
             _state.update { it.copy(tabs = remaining) }
