@@ -49,6 +49,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
+import com.dude555afk.xeno.ui.arc.ArchiveSheet
 import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
@@ -71,7 +72,8 @@ fun BrowserScreen(
     var homeSettingsVisible by remember { mutableStateOf(false) }
     var findInPageVisible by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
-    var desktopSiteEnabled by remember { mutableStateOf(false) }
+    val desktopSiteEnabled = state.desktopSiteEnabled
+    var archiveVisible by remember { mutableStateOf(false) }
     var voiceVisible by remember { mutableStateOf(false) }
     var answerWebMode by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -236,6 +238,21 @@ fun BrowserScreen(
                 animationsEnabled = state.animationsEnabled,
                 blockingEnabled = state.blockingEnabled,
                 autoOpenKeyboard = state.autoOpenKeyboard,
+                searchEngine = state.searchEngine,
+                languageMode = state.languageMode,
+                archiveAfter = state.archiveAfter,
+                alwaysOpenAppLinks = state.alwaysOpenAppLinks,
+                allowGoogleTranslate = state.allowGoogleTranslate,
+                forceDark = state.forceDark,
+                appIcon = state.appIcon,
+                onSearchEngineChange = viewModel::setSearchEngine,
+                onLanguageModeChange = viewModel::setLanguageMode,
+                onArchiveAfterChange = viewModel::setArchiveAfter,
+                onAlwaysOpenAppLinksChange = viewModel::setAlwaysOpenAppLinks,
+                onAllowGoogleTranslateChange = viewModel::setAllowGoogleTranslate,
+                onForceDarkChange = viewModel::setForceDark,
+                onAppIconChange = viewModel::setAppIcon,
+                onOpenArchive = { homeSettingsVisible = false; archiveVisible = true },
                 onThemeModeChange = viewModel::setThemeMode,
                 onAccentChange = viewModel::setAccentOverride,
                 onAnimationsChange = viewModel::setAnimationsEnabled,
@@ -263,7 +280,11 @@ fun BrowserScreen(
                     runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
                 },
                 onExportData = {
-                    val urls = state.tabs.map { it.url }.filter { it.isNotBlank() }.distinct()
+                    val urls = (
+                        state.tabs.filterNot { it.isIncognito }.map { it.url } +
+                            state.pinnedTabs.map { it.url } +
+                            state.archivedTabs.map { it.url }
+                        ).filter { it.isNotBlank() }.distinct()
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, urls.joinToString("\n"))
@@ -276,8 +297,8 @@ fun BrowserScreen(
                 visible = state.paletteVisible,
                 query = state.query,
                 onQueryChange = viewModel::onQueryChange,
-                tabHints = state.tabs.filter { it.hasContent },
-                historyHints = state.historyHints,
+                tabHints = state.tabs.filter { it.hasContent && it.isIncognito == state.incognitoMode },
+                historyHints = if (state.incognitoMode) emptyList() else state.historyHints,
                 loading = state.answerStreaming,
                 isQuestion = state.isQuestion,
                 accent = accent,
@@ -287,7 +308,9 @@ fun BrowserScreen(
                     viewModel.selectTab(tab)
                     viewModel.closePalette()
                 },
-                onDismiss = viewModel::closePalette
+                onDismiss = viewModel::closePalette,
+                incognitoMode = state.incognitoMode,
+                onToggleIncognito = viewModel::toggleIncognitoMode
             )
 
             TabStackSheet(
@@ -300,7 +323,7 @@ fun BrowserScreen(
                     viewModel.selectTab(tab)
                     viewModel.toggleTabStack()
                 },
-                onClose = viewModel::closeTab,
+                onClose = viewModel::archiveTab,
                 onNewTab = viewModel::newTab,
                 onDismiss = viewModel::toggleTabStack,
                 onOpenSettings = { homeSettingsVisible = true },
@@ -425,6 +448,17 @@ fun BrowserScreen(
                 onToneChange = viewModel::setSummaryTone,
                 onCopy = viewModel::copySummary,
                 onDismiss = viewModel::dismissSummary
+            )
+
+            ArchiveSheet(
+                visible = archiveVisible,
+                tabs = state.archivedTabs,
+                onRestore = { archived ->
+                    archiveVisible = false
+                    viewModel.restoreArchivedTab(archived)
+                },
+                onDelete = viewModel::deleteArchivedTab,
+                onDismiss = { archiveVisible = false }
             )
 
             VoiceSearchOverlay(
