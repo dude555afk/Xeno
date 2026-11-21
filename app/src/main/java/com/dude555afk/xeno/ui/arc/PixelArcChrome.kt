@@ -103,34 +103,40 @@ fun PixelArcAmbientBackground(modifier: Modifier = Modifier) {
 /** Arc's five-limbed sticker mark, sized to the audit's 183×151 base grid. */
 @Composable
 fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val motionEnabled = LocalArcMotionEnabled.current
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.5f, 1.5f)
     var rotation by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var angularVelocity by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     var flingJob by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Job?>(null) }
 
     Canvas(
         modifier
-            .size(width = 156.dp, height = 128.dp)
+            .size(width = (183f * coordinateScale).dp, height = (151f * coordinateScale).dp)
             .graphicsLayer {
                 rotationZ = rotation
                 transformOrigin = TransformOrigin(0.5f, 0.53f)
             }
-            .then(if (enabled) Modifier.pointerInput(enabled) {
+            .then(if (enabled) Modifier.pointerInput(enabled, motionEnabled) {
+                val center = Offset(size.width * 0.5f, size.height * 0.53f)
                 var previousAngle = 0.0
-                var previousTime = 0L
+                var velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                var lastHapticStep = 0
                 detectDragGestures(
                     onDragStart = { point ->
                         flingJob?.cancel()
-                        val center = Offset(size.width * 0.5f, size.height * 0.53f)
+                        velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                        velocityTracker.addPosition(android.os.SystemClock.uptimeMillis(), point)
                         previousAngle = atan2(
                             (point.y - center.y).toDouble(),
                             (point.x - center.x).toDouble()
                         )
-                        previousTime = SystemClock.uptimeMillis()
                         angularVelocity = 0f
+                        lastHapticStep = (rotation / 45f).toInt()
                     },
                     onDrag = { change, _ ->
-                        val center = Offset(size.width * 0.5f, size.height * 0.53f)
+                        velocityTracker.addPosition(change.uptimeMillis, change.position)
                         val angle = atan2(
                             (change.position.y - center.y).toDouble(),
                             (change.position.x - center.x).toDouble()
@@ -138,35 +144,52 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                         var delta = angle - previousAngle
                         while (delta > PI) delta -= 2.0 * PI
                         while (delta < -PI) delta += 2.0 * PI
-                        val now = SystemClock.uptimeMillis()
-                        val elapsed = (now - previousTime).coerceAtLeast(1L)
-                        val degrees = Math.toDegrees(delta).toFloat()
-                        rotation += degrees
-                        angularVelocity = degrees / elapsed.toFloat() * 1000f
+                        rotation += Math.toDegrees(delta).toFloat()
+                        val step = (rotation / 45f).toInt()
+                        if (step != lastHapticStep) {
+                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            lastHapticStep = step
+                        }
                         previousAngle = angle
-                        previousTime = now
                         change.consume()
                     },
                     onDragEnd = {
-                        val startAngle = rotation
-                        val initialVelocity = angularVelocity
-                        flingJob = scope.launch {
-                            var elapsedSeconds = 0f
-                            while (elapsedSeconds < 5f &&
-                                abs(initialVelocity * exp(-1.15f * elapsedSeconds)) > 0.35f
-                            ) {
-                                delay(16)
-                                elapsedSeconds += 0.016f
-                                rotation = startAngle +
-                                    (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                        if (!motionEnabled) {
+                            rotation = (rotation / 360f).roundToInt() * 360f
+                            angularVelocity = 0f
+                        } else {
+                            val velocity = velocityTracker.calculateVelocity()
+                            val dx = velocity.x
+                            val dy = velocity.y
+                            val tx = center.x - center.x
+                            val ty = center.y - center.y
+                            val last = velocityTracker.calculateVelocity()
+                            val position = velocityTracker.calculateVelocity()
+                            @Suppress("UNUSED_VARIABLE") val ignored = position
+                            val radiusSquared = maxOf(1f, tx * tx + ty * ty)
+                            val omega0 = ((tx * dy) - (ty * dx)) / radiusSquared
+                            angularVelocity = omega0
+                            val startAngle = rotation
+                            val initialVelocity = omega0
+                            flingJob = scope.launch {
+                                var elapsedSeconds = 0f
+                                var lastFrame = 0L
+                                while (abs(initialVelocity * exp(-1.15f * elapsedSeconds)) >= 0.35f) {
+                                    androidx.compose.runtime.withFrameNanos { frame ->
+                                        if (lastFrame != 0L) elapsedSeconds += (frame - lastFrame) / 1_000_000_000f
+                                        lastFrame = frame
+                                    }
+                                    rotation = startAngle +
+                                        (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                                }
+                                val uprightTarget = (rotation / 360f).roundToInt() * 360f
+                                val settle = Animatable(rotation)
+                                settle.animateTo(
+                                    targetValue = uprightTarget,
+                                    animationSpec = spring(stiffness = 220f, dampingRatio = 0.74f)
+                                ) { rotation = value }
+                                rotation = uprightTarget
                             }
-                            val uprightTarget = (rotation / 360f).roundToInt() * 360f
-                            val settle = Animatable(rotation)
-                            settle.animateTo(
-                                targetValue = uprightTarget,
-                                animationSpec = spring(stiffness = 220f, dampingRatio = 0.742f)
-                            ) { rotation = value }
-                            rotation = uprightTarget
                         }
                     },
                     onDragCancel = { angularVelocity = 0f }
@@ -188,22 +211,12 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
             close()
         }
         scale(size.width / 183f, size.height / 151f, pivot = Offset.Zero) {
-            drawPath(
-                path = path,
-                color = Color.White,
-                style = Stroke(width = 15f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-            drawPath(
-                path = path,
-                brush = Brush.verticalGradient(
-                    listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2))
-                )
-            )
+            drawPath(path = path, color = Color.White,
+                style = Stroke(width = 15f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(path = path, brush = Brush.verticalGradient(
+                listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2))))
             val cutout = Path().apply {
-                moveTo(82f, 90f)
-                lineTo(101f, 90f)
-                lineTo(91.5f, 108f)
-                close()
+                moveTo(82f, 90f); lineTo(101f, 90f); lineTo(91.5f, 108f); close()
             }
             drawPath(cutout, Color.White)
         }
