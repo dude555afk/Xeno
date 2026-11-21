@@ -253,7 +253,7 @@ fun SummarySheet(
                             Column(horizontalAlignment = Alignment.Start) {
                                 Text(
                                     "Summarizing for you…",
-                                    color = accent.copy(alpha = introPulse),
+                                    color = accent.copy(alpha = if (motionEnabled) introPulse else 1f),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Spacer(Modifier.height(Dimens.spaceM))
@@ -265,12 +265,12 @@ fun SummarySheet(
                                     parsed.blocks.forEachIndexed { index, block ->
                                         var blockVisible by remember(block, visible) { mutableStateOf(false) }
                                         LaunchedEffect(block, visible) {
-                                            delay(index * 65L)
+                                            if (motionEnabled) delay(index * 50L)
                                             blockVisible = true
                                         }
                                         AnimatedVisibility(
                                             visible = blockVisible,
-                                            enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 16 })
+                                            enter = if (motionEnabled) fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 16 }) else EnterTransition.None
                                         ) {
                                             val text: AnnotatedString = when (block) {
                                                 is AnswerText.Parsed.Block.Heading ->
