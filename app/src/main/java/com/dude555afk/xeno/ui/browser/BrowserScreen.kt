@@ -359,16 +359,10 @@ fun BrowserScreen(
                     runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
                 },
                 onExportData = {
-                    val urls = state.tabs
-                        .asSequence()
-                        .filter { !it.isIncognito && it.type != "ai" }
-                        .map { it.url }
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                        .toList()
+                    val urls = viewModel.exportOpenTabUrls()
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, urls.joinToString("\n"))
+                        putExtra(Intent.EXTRA_TEXT, urls)
                     }
                     context.startActivity(Intent.createChooser(intent, "Export open tabs"))
                 }
