@@ -136,7 +136,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                             (point.x - center.x).toDouble()
                         )
                         angularVelocity = 0f
-                        lastHapticStep = kotlin.math.floorkotlin.math.floor(rotation / 45f).toInt()
+                        lastHapticStep = kotlin.math.floor(rotation / 45f).toInt()
                     },
                     onDrag = { change, _ ->
                         velocityTracker.addPosition(change.uptimeMillis, change.position)
