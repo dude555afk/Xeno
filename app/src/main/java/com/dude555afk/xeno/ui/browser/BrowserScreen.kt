@@ -22,7 +22,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -179,12 +180,30 @@ fun BrowserScreen(
             AndroidView(
                 modifier = Modifier.fillMaxSize()
                     .pointerInput(state.activeTab?.id, state.summaryVisible) {
-                        detectTransformGestures { _, _, zoom, _ ->
-                            if (zoom < 1f) pinchScale = (pinchScale * zoom).coerceIn(0.5f, 1f)
+                        awaitEachGesture {
+                            var previousSpan = 0f
+                            var gestureScale = 1f
+                            do {
+                                val event = awaitPointerEvent()
+                                val pointers = event.changes.filter { it.pressed }
+                                if (pointers.size >= 2) {
+                                    val centerX = pointers.map { it.position.x }.average().toFloat()
+                                    val centerY = pointers.map { it.position.y }.average().toFloat()
+                                    val span = pointers.map {
+                                        kotlin.math.hypot(it.position.x - centerX, it.position.y - centerY)
+                                    }.average().toFloat()
+                                    if (previousSpan > 0f && span < previousSpan) {
+                                        gestureScale = (gestureScale * (span / previousSpan)).coerceIn(0.5f, 1f)
+                                        pinchScale = gestureScale
+                                    }
+                                    previousSpan = span
+                                    event.changes.forEach { it.consume() }
+                                } else previousSpan = 0f
+                            } while (event.changes.any { it.pressed })
+                            val shouldSummarize = gestureScale <= 0.65f && !state.summaryVisible
+                            pinchScale = 1f
+                            if (shouldSummarize) viewModel.summarizeCurrentPage()
                         }
-                        val shouldSummarize = pinchScale <= 0.65f && !state.summaryVisible
-                        pinchScale = 1f
-                        if (shouldSummarize) viewModel.summarizeCurrentPage()
                     }
                     .graphicsLayer {
                     scaleX = pageScale
