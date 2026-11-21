@@ -173,16 +173,23 @@ fun TabStackSheet(
                                     alpha = (1f - abs(cardOffset.value) / 430f).coerceIn(0f, 1f)
                                 }
                                 .pointerInput(tab.id) {
+                                    var velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                                     detectVerticalDragGestures(
+                                        onDragStart = { point ->
+                                            velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                                            velocityTracker.addPosition(android.os.SystemClock.uptimeMillis(), point)
+                                        },
                                         onVerticalDrag = { change, dragAmount ->
+                                            velocityTracker.addPosition(change.uptimeMillis, change.position)
                                             change.consume()
                                             gestureScope.launch {
                                                 cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(-520f, 520f))
                                             }
                                         },
                                         onDragEnd = {
+                                            val velocityY = velocityTracker.calculateVelocity().y
                                             when {
-                                                cardOffset.value < -140f -> {
+                                                cardOffset.value < -140f || velocityY < -600f -> {
                                                     gestureScope.launch {
                                                         val flingTarget = with(density) { (-600).dp.toPx() }
                                                         if (motion) cardOffset.animateTo(
