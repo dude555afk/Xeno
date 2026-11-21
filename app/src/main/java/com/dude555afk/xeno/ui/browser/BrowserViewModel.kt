@@ -7,7 +7,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.ViewGroup
-import android.view.ScaleGestureDetector
 import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -1010,40 +1009,17 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             val delta = scrollY - oldScrollY
             if (scrollY <= 12) {
                 setChromeVisible(true)
-            } else if (kotlin.math.abs(delta) >= 7) {
-                setChromeVisible(delta < 0)
+            } else if (delta > 12) {
+                setChromeVisible(false)
+            } else if (delta < -8) {
+                setChromeVisible(true)
             }
         }
-        var pinchTriggered = false
-        val pinchDetector = ScaleGestureDetector(
-            getApplication(),
-            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                override fun onScale(detector: ScaleGestureDetector): Boolean {
-                    if (!pinchTriggered && detector.scaleFactor < 0.90f &&
-                        detector.currentSpan < detector.previousSpan
-                    ) {
-                        pinchTriggered = true
-                        summarizeCurrentPage()
-                    }
-                    return pinchTriggered
-                }
-            }
-        )
         view.setOnTouchListener { _, event ->
             if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
                 setChromeVisible(true)
-                pinchTriggered = false
             }
-            pinchDetector.onTouchEvent(event)
-            if (event.actionMasked == android.view.MotionEvent.ACTION_UP ||
-                event.actionMasked == android.view.MotionEvent.ACTION_CANCEL
-            ) {
-                val consumed = pinchTriggered
-                pinchTriggered = false
-                consumed
-            } else {
-                pinchTriggered
-            }
+            false
         }
         view.webViewClient = XenoWebViewClient(
             listener = sessionListener(),
