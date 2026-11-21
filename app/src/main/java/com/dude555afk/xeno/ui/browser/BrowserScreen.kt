@@ -95,15 +95,19 @@ fun BrowserScreen(
     val interactionScope = rememberCoroutineScope()
     val tabSwipeOffset = remember { Animatable(0f) }
     val scrubTabs: (Int) -> Unit = { direction ->
-        interactionScope.launch {
+        if (state.tabs.size > 1) interactionScope.launch {
             val width = with(density) { (478f * coordinateScale).dp.toPx() }
-            tabSwipeOffset.animateTo(direction * width, animationSpec = tween(140))
+            if (state.animationsEnabled) {
+                tabSwipeOffset.animateTo(direction * width, animationSpec = tween(140))
+            } else tabSwipeOffset.snapTo(direction * width)
             viewModel.selectAdjacentTab(direction)
             tabSwipeOffset.snapTo(-direction * width)
-            tabSwipeOffset.animateTo(
-                0f,
-                animationSpec = spring(stiffness = 350f, dampingRatio = 0.9f)
-            )
+            if (state.animationsEnabled) {
+                tabSwipeOffset.animateTo(
+                    0f,
+                    animationSpec = spring(stiffness = 360f, dampingRatio = 0.90f)
+                )
+            } else tabSwipeOffset.snapTo(0f)
         }
     }
     val compactPage = state.paletteVisible || state.tabStackVisible
