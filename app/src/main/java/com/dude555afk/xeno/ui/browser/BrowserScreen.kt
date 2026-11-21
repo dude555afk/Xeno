@@ -532,30 +532,34 @@ fun BrowserScreen(
                 )
             }
 
-            if (state.answer != null && !answerWebMode) AnswerSheet(
-                result = state.answer,
-                streaming = state.answerStreaming,
-                accent = accent,
-                onOpenSource = { source ->
-                    viewModel.navigate(source.url)
-                    viewModel.dismissAnswer()
-                },
-                onDismiss = viewModel::dismissAnswer,
-                onOpenWeb = {
-                    val query = state.answer?.query.orEmpty()
-                    if (query.isNotBlank()) {
-                        answerWebMode = true
-                        viewModel.navigate(query)
-                    }
-                },
-                onOpenTabs = viewModel::toggleTabStack,
-                onNewTab = viewModel::newTab,
-                onOpenControls = { controlsVisible = true },
-                tabCount = state.tabs.size,
-                onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
-                onVoiceEnd = { voiceHoldReleased = true },
-                onSwipeTab = scrubTabs
-            )
+            if (state.answer != null && !answerWebMode) {
+                Box(Modifier.fillMaxSize().graphicsLayer { translationX = tabSwipeOffset.value }) {
+                    AnswerSheet(
+                        result = state.answer,
+                        streaming = state.answerStreaming,
+                        accent = accent,
+                        onOpenSource = { source ->
+                            viewModel.navigate(source.url)
+                            viewModel.dismissAnswer()
+                        },
+                        onDismiss = viewModel::dismissAnswer,
+                        onOpenWeb = {
+                            val query = state.answer?.query.orEmpty()
+                            if (query.isNotBlank()) {
+                                answerWebMode = true
+                                viewModel.navigate(query)
+                            }
+                        },
+                        onOpenTabs = viewModel::toggleTabStack,
+                        onNewTab = viewModel::newTab,
+                        onOpenControls = { controlsVisible = true },
+                        tabCount = state.tabs.size,
+                        onVoiceStart = { voiceVisible = true; voiceHoldReleased = false },
+                        onVoiceEnd = { voiceHoldReleased = true },
+                        onSwipeTab = scrubTabs
+                    )
+                }
+            }
 
             if (state.answer != null && answerWebMode) {
                 ArcAiWebTogglePill(
@@ -566,7 +570,10 @@ fun BrowserScreen(
                     },
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(end = (17f * coordinateScale).dp, bottom = (90f * coordinateScale).dp)
-                        .graphicsLayer { translationY = with(density) { chromeDockOffset.dp.toPx() } }
+                        .graphicsLayer {
+                            translationX = tabSwipeOffset.value
+                            translationY = with(density) { chromeDockOffset.dp.toPx() }
+                        }
                 )
             }
 
