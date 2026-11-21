@@ -175,6 +175,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                             flingJob = scope.launch {
                                 var elapsedSeconds = 0f
                                 var lastFrame = 0L
+                                var flingHapticStep = (startAngle / 45f).toInt()
                                 while (abs(initialVelocity * exp(-1.15f * elapsedSeconds)) >= 0.35f) {
                                     androidx.compose.runtime.withFrameNanos { frame ->
                                         if (lastFrame != 0L) elapsedSeconds += (frame - lastFrame) / 1_000_000_000f
@@ -182,6 +183,13 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                                     }
                                     rotation = startAngle +
                                         (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                                    val currentStep = (rotation / 45f).toInt()
+                                    if (currentStep != flingHapticStep) {
+                                        repeat(abs(currentStep - flingHapticStep)) {
+                                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        }
+                                        flingHapticStep = currentStep
+                                    }
                                 }
                                 val uprightTarget = (rotation / 360f).roundToInt() * 360f
                                 val settle = Animatable(rotation)
