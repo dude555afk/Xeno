@@ -121,6 +121,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
             .then(if (enabled) Modifier.pointerInput(enabled, motionEnabled) {
                 val center = Offset(size.width * 0.5f, size.height * 0.53f)
                 var previousAngle = 0.0
+                var lastTouch = Offset.Zero
                 var velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                 var lastHapticStep = 0
                 detectDragGestures(
@@ -128,6 +129,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                         flingJob?.cancel()
                         velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                         velocityTracker.addPosition(android.os.SystemClock.uptimeMillis(), point)
+                        lastTouch = point
                         previousAngle = atan2(
                             (point.y - center.y).toDouble(),
                             (point.x - center.x).toDouble()
@@ -137,6 +139,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                     },
                     onDrag = { change, _ ->
                         velocityTracker.addPosition(change.uptimeMillis, change.position)
+                        lastTouch = change.position
                         val angle = atan2(
                             (change.position.y - center.y).toDouble(),
                             (change.position.x - center.x).toDouble()
@@ -161,11 +164,8 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                             val velocity = velocityTracker.calculateVelocity()
                             val dx = velocity.x
                             val dy = velocity.y
-                            val tx = center.x - center.x
-                            val ty = center.y - center.y
-                            val last = velocityTracker.calculateVelocity()
-                            val position = velocityTracker.calculateVelocity()
-                            @Suppress("UNUSED_VARIABLE") val ignored = position
+                            val tx = lastTouch.x - center.x
+                            val ty = lastTouch.y - center.y
                             val radiusSquared = maxOf(1f, tx * tx + ty * ty)
                             val omega0 = ((tx * dy) - (ty * dx)) / radiusSquared
                             angularVelocity = omega0
