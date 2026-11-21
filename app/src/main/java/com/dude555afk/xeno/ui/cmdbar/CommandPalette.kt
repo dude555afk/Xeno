@@ -19,6 +19,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,9 +58,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -92,11 +96,18 @@ fun CommandPalette(
     onNavigate: (String) -> Unit,
     onAsk: (String) -> Unit,
     onOpenTab: (Tab) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    incognitoMode: Boolean = false,
+    onToggleIncognito: () -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val scale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
+    val scrubSuggestions = remember(tabHints, historyHints) {
+        tabHints.map { it.displayTitle } + historyHints.map { it.title.ifBlank { it.url } }
+    }
+    val suggestionRowHeightPx = with(LocalDensity.current) { 58.dp.toPx() }
     val requester = remember { FocusRequester() }
     val voiceLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -135,11 +146,11 @@ fun CommandPalette(
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
             Column(Modifier.fillMaxSize().imePadding()) {
-                Spacer(Modifier.height(300.dp))
+                Spacer(Modifier.height((300f * scale).dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     color = Sheet,
-                    shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp)
+                    shape = RoundedCornerShape(topStart = (44f * scale).dp, topEnd = (44f * scale).dp)
                 ) {
                     Column(Modifier.fillMaxSize()) {
                         Spacer(Modifier.height(19.dp))
@@ -149,7 +160,7 @@ fun CommandPalette(
                             color = SearchPill
                         ) {
                             Row(
-                                modifier = Modifier.height(58.dp).padding(start = 25.dp, end = 12.dp),
+                                modifier = Modifier.height((58f * scale).dp).padding(start = (25f * scale).dp, end = (12f * scale).dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BasicTextField(
@@ -206,18 +217,25 @@ fun CommandPalette(
                                     ) {
                                         Icon(Icons.Rounded.Mic, contentDescription = "Voice search", tint = SecondaryText, modifier = Modifier.size(21.dp))
                                     }
-                                    Icon(
-                                        Icons.Rounded.VisibilityOff,
-                                        contentDescription = null,
-                                        tint = SecondaryText,
-                                        modifier = Modifier.padding(start = 3.dp).size(23.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(start = 2.dp).clickable(onClick = onToggleIncognito),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("00", color = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText,
+                                            fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Icon(
+                                            Icons.Rounded.VisibilityOff,
+                                            contentDescription = if (incognitoMode) "Disable incognito" else "Enable incognito",
+                                            tint = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText,
+                                            modifier = Modifier.padding(start = 2.dp).size(23.dp)
+                                        )
+                                    }
                                 } else {
                                     Surface(
                                         onClick = { onQueryChange("") },
                                         color = Color(0xFFA5A6A8),
                                         shape = CircleShape,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size((25f * scale).dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(Icons.Rounded.Close, contentDescription = "Clear search", tint = SearchPill, modifier = Modifier.size(14.dp))
@@ -251,7 +269,7 @@ fun CommandPalette(
                                     },
                                     color = BrowseBlue,
                                     shape = CircleShape,
-                                    modifier = Modifier.width(110.dp).height(41.dp)
+                                    modifier = Modifier.width((129f * scale).dp).height((48f * scale).dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text("Browse for me", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -261,7 +279,22 @@ fun CommandPalette(
 
                             if (tabHints.isNotEmpty() || historyHints.isNotEmpty()) {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                                        .pointerInput(scrubSuggestions) {
+                                            var lastScrubIndex = -1
+                                            detectVerticalDragGestures(
+                                                onDragStart = { lastScrubIndex = -1 },
+                                                onVerticalDrag = { change, _ ->
+                                                    val index = ((change.position.y - suggestionRowHeightPx * 0.2f) /
+                                                        suggestionRowHeightPx).toInt()
+                                                    if (index in scrubSuggestions.indices && index != lastScrubIndex) {
+                                                        lastScrubIndex = index
+                                                        onQueryChange(scrubSuggestions[index])
+                                                    }
+                                                    change.consume()
+                                                }
+                                            )
+                                        },
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                                 ) {
                                     items(tabHints, key = { "tab-${it.id}" }) { tab ->

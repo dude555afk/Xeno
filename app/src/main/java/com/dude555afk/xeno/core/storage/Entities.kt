@@ -1,5 +1,6 @@
 package com.dude555afk.xeno.core.storage
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -35,7 +36,12 @@ data class TabEntity(
     val isPeek: Boolean = false,
     val position: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val lastActiveAt: Long = System.currentTimeMillis()
+    val lastActiveAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "'web'") val type: String = "web",
+    @ColumnInfo(defaultValue = "''") val query: String = "",
+    @ColumnInfo(defaultValue = "0") val desktopSite: Boolean = false,
+    @ColumnInfo(defaultValue = "100") val zoomLevel: Int = 100,
+    @ColumnInfo(defaultValue = "0") val blockedAdsCount: Int = 0
 )
 
 /**
@@ -73,5 +79,32 @@ data class AnswerCacheEntity(
     val query: String,
     val markdown: String,
     val sourcesJson: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+
+/** Archived tabs are durable but are never kept in the WebView session pool. */
+@Entity(tableName = "archived_tabs")
+data class ArchivedTabEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val originalTabId: Long,
+    val spaceId: Long,
+    val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
+    val type: String = "web",
+    val query: String = "",
+    val desktopSite: Boolean = false,
+    val zoomLevel: Int = 100,
+    val blockedAdsCount: Int = 0,
+    val archivedAt: Long = System.currentTimeMillis()
+)
+
+/** Canonical URL primary key prevents duplicate pin records. */
+@Entity(tableName = "pinned_tabs")
+data class PinnedTabEntity(
+    @PrimaryKey val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

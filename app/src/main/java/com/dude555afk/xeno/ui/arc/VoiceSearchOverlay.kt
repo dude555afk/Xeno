@@ -80,9 +80,11 @@ private const val VOICE_CANVAS_HEIGHT = 1000f
 fun VoiceSearchOverlay(
     visible: Boolean,
     onDismiss: () -> Unit,
-    onResult: (String) -> Unit
+    onResult: (String) -> Unit,
+    holdReleased: Boolean = false
 ) {
     val context = LocalContext.current
+    val motionEnabled = LocalArcMotionEnabled.current
     var transcript by remember { mutableStateOf("Hi! How can I help?") }
     var amplitude by remember { mutableFloatStateOf(0f) }
     var isListening by remember { mutableStateOf(false) }
@@ -183,6 +185,16 @@ fun VoiceSearchOverlay(
         if (granted) startRecognition() else latestOnDismiss()
     }
 
+    LaunchedEffect(motionEnabled) {
+        if (!motionEnabled) domeScale.snapTo(if (visible) 1f else 0.1f)
+    }
+
+    LaunchedEffect(holdReleased, visible, isListening) {
+        if (holdReleased && visible && isListening) {
+            runCatching { recognizer?.stopListening() }
+        }
+    }
+
     LaunchedEffect(visible) {
         if (visible) {
             transcript = "Hi! How can I help?"
@@ -196,10 +208,12 @@ fun VoiceSearchOverlay(
             else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
 
             domeScale.snapTo(0.1f)
-            domeScale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.86f, stiffness = 320f)
-            )
+            if (motionEnabled) {
+                domeScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(dampingRatio = 0.671f, stiffness = 320f)
+                )
+            } else domeScale.snapTo(1f)
         } else {
             isListening = false
             amplitude = 0f
@@ -207,15 +221,18 @@ fun VoiceSearchOverlay(
             recognizer?.destroy()
             recognizer = null
             eyeBlink.snapTo(1f)
-            domeScale.animateTo(0.1f, animationSpec = tween(150))
+            if (motionEnabled) domeScale.animateTo(0.1f, animationSpec = tween(150))
+            else domeScale.snapTo(0.1f)
         }
     }
 
-    LaunchedEffect(visible) {
-        if (visible) {
+    LaunchedEffect(visible, motionEnabled) {
+        if (!motionEnabled) {
+            eyeBlink.snapTo(1f)
+        } else if (visible) {
             while (true) {
                 delay(3200)
-                eyeBlink.animateTo(0.10f, animationSpec = tween(80))
+                eyeBlink.animateTo(0.08f, animationSpec = tween(80))
                 eyeBlink.animateTo(1f, animationSpec = tween(80))
             }
         }
@@ -231,8 +248,8 @@ fun VoiceSearchOverlay(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = tween(220)),
-        exit = fadeOut(animationSpec = tween(170))
+        enter = if (motionEnabled) fadeIn(animationSpec = tween(220)) else androidx.compose.animation.EnterTransition.None,
+        exit = if (motionEnabled) fadeOut(animationSpec = tween(170)) else androidx.compose.animation.ExitTransition.None
     ) {
         val motion = rememberInfiniteTransition(label = "voice-dome-motion")
         val idlePhase by motion.animateFloat(
@@ -244,7 +261,7 @@ fun VoiceSearchOverlay(
             ),
             label = "voice-dome-idle-wobble"
         )
-        val faceTilt by motion.animateFloat(
+        val animatedFaceTilt by motion.animateFloat(
             initialValue = -4.5f,
             targetValue = 4.5f,
             animationSpec = infiniteRepeatable(
@@ -253,6 +270,9 @@ fun VoiceSearchOverlay(
             ),
             label = "voice-smiley-rock"
         )
+
+        val faceTilt = if (motionEnabled) animatedFaceTilt else 0f
+        val visibleIdlePhase = if (motionEnabled) idlePhase else 0f
 
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val unit = maxWidth / VOICE_CANVAS_WIDTH
@@ -266,8 +286,8 @@ fun VoiceSearchOverlay(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color(0x8C161326),
-                                Color(0x99532025)
+                                Color(0x99532025),
+                                Color(0x8C161326)
                             )
                         )
                     )
@@ -276,7 +296,7 @@ fun VoiceSearchOverlay(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val s = size.width / VOICE_CANVAS_WIDTH
                 val pivot = Offset(231f * s, 955.5f * s)
-                val phase = idlePhase
+                val phase = visibleIdlePhase
 
                 scale(
                     scale = domeScale.value,
@@ -287,7 +307,7 @@ fun VoiceSearchOverlay(
                         radius = (279.1f + amplitude * 35.9f) * s,
                         center = Offset(
                             (231.1f + 8f * sin(phase)) * s,
-                            (930.1f + 6f * cos(phase)) * s
+                            (930.1f + 6f * cos(phase * 2f) - 14f * amplitude) * s
                         )
                     )
                     drawCircle(
@@ -340,7 +360,7 @@ fun VoiceSearchOverlay(
             // The transcript occupies the audited 167px-wide line below the face.
             Box(
                 modifier = Modifier
-                    .offset(x = unit * 148f, y = unit * 850f)
+                    .offset(x = unit * 148f, y = unit * 857f)
                     .size(width = unit * 167f, height = unit * 33f),
                 contentAlignment = Alignment.Center
             ) {

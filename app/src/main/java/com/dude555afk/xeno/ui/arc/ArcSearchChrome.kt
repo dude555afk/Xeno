@@ -56,6 +56,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -384,30 +385,31 @@ fun ArcPageAddress(
     url: String,
     title: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    displayLabel: String? = null
 ) {
-    val host = remember(url) {
-        runCatching {
+    val host = remember(url, title, displayLabel) {
+        displayLabel?.takeIf { it.isNotBlank() } ?: runCatching {
             java.net.URI(url).host?.removePrefix("www.") ?: url
         }.getOrDefault(url).ifBlank { title }
     }
     Surface(
         onClick = onClick,
-        modifier = modifier.padding(horizontal = 26.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 26.dp),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        color = Color(0xFF151619),
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Color(0xFF2B2C30))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 17.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Rounded.Search,
+                Icons.Rounded.Language,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(17.dp)
+                tint = Color(0xFFB7B8BD),
+                modifier = Modifier.size(19.dp)
             )
             Spacer(Modifier.width(10.dp))
             Text(
@@ -419,10 +421,10 @@ fun ArcPageAddress(
                 modifier = Modifier.weight(1f)
             )
             Icon(
-                Icons.Rounded.ExpandMore,
-                contentDescription = "Open address controls",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(19.dp)
+                Icons.Rounded.Search,
+                contentDescription = "Open search",
+                tint = Color(0xFFB7B8BD),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -613,6 +615,7 @@ fun ArcSiteActionsSheet(
     blockingEnabled: Boolean,
     pageTextZoom: Int,
     desktopSiteEnabled: Boolean,
+    blockedAdsCount: Int = 0,
     onDismiss: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
@@ -646,14 +649,18 @@ fun ArcSiteActionsSheet(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            val coordinateScale = (maxWidth / 462.dp).coerceIn(0.75f, 1.1f)
             Box(
                 Modifier.fillMaxSize()
                     .background(Color(0xFF121315).copy(alpha = 0.35f))
                     .clickable(onClick = onDismiss)
             )
             Surface(
-                modifier = Modifier.fillMaxWidth().height(minOf(660.dp, maxHeight)),
-                shape = RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp),
+                modifier = Modifier.fillMaxWidth().height(minOf((660f * coordinateScale).dp, maxHeight)),
+                shape = RoundedCornerShape(
+                    topStart = (44f * coordinateScale).dp,
+                    topEnd = (44f * coordinateScale).dp
+                ),
                 color = Color(0xFF2D2E32),
                 shadowElevation = 0.dp
             ) {
@@ -757,7 +764,10 @@ fun ArcSiteActionsSheet(
                     Spacer(Modifier.weight(1f))
                     Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF323337)))
                     Spacer(Modifier.height(26.dp))
-                    Text("Blocked 1 ads and trackers", color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Blocked $blockedAdsCount ${if (blockedAdsCount == 1) "ad" else "ads"} and trackers",
+                        color = Color(0xFFFAFBFD), fontSize = 16.sp, fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(7.dp))
                     Text(
                         "Problems? Disable in site settings",

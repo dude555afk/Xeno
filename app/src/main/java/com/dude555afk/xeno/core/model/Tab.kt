@@ -17,13 +17,20 @@ data class Tab(
     val isPeek: Boolean = false,
     val position: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val lastActiveAt: Long = System.currentTimeMillis()
+    val lastActiveAt: Long = System.currentTimeMillis(),
+    val type: String = "web",
+    val query: String = "",
+    val isIncognito: Boolean = false,
+    val desktopSite: Boolean = false,
+    val zoomLevel: Int = 100,
+    val blockedAdsCount: Int = 0
 ) {
     val displayTitle: String
-        get() = title.ifBlank { url.ifBlank { "New tab" } }
+        get() = if (type == "ai") query.ifBlank { title.ifBlank { "Browse for me" } }
+        else title.ifBlank { url.ifBlank { "New tab" } }
 
     val hasContent: Boolean
-        get() = url.isNotBlank()
+        get() = url.isNotBlank() || (type == "ai" && query.isNotBlank())
 }
 
 /**
@@ -35,4 +42,29 @@ data class PageLoadState(
     val loading: Boolean = false,
     val url: String = "",
     val title: String = ""
+)
+
+
+/** A normal tab removed from the live carousel and retained for later restore. */
+data class ArchivedTab(
+    val id: Long,
+    val originalTabId: Long,
+    val spaceId: Long,
+    val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
+    val type: String = "web",
+    val query: String = "",
+    val desktopSite: Boolean = false,
+    val zoomLevel: Int = 100,
+    val blockedAdsCount: Int = 0,
+    val archivedAt: Long = System.currentTimeMillis()
+)
+
+/** A pinned destination independent of its open-tab state. */
+data class PinnedPage(
+    val url: String,
+    val title: String = "",
+    val faviconUrl: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
 )
