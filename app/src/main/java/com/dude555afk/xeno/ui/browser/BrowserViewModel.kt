@@ -1332,6 +1332,15 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(blockingEnabled = enabled) }
     }
 
+    /** URLs eligible for the user-requested open-tab export. */
+    fun exportOpenTabUrls(): String = _state.value.tabs
+        .asSequence()
+        .filter { !it.isIncognito && it.type != "ai" }
+        .map { it.url }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString("\n")
+
     /** Clear visit history while keeping open tabs alive. */
     fun clearBrowsingData() {
         hintsJob?.cancel()
