@@ -185,6 +185,10 @@ fun VoiceSearchOverlay(
         if (granted) startRecognition() else latestOnDismiss()
     }
 
+    LaunchedEffect(motionEnabled) {
+        if (!motionEnabled) domeScale.snapTo(if (visible) 1f else 0.1f)
+    }
+
     LaunchedEffect(holdReleased, visible, isListening) {
         if (holdReleased && visible && isListening) {
             runCatching { recognizer?.stopListening() }
