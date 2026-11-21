@@ -205,10 +205,10 @@ fun TabStackSheet(
                                                     onUndoClose()
                                                 }
                                                 else -> gestureScope.launch {
-                                                    cardOffset.animateTo(
+                                                    if (motion) cardOffset.animateTo(
                                                         0f,
                                                         spring(stiffness = 350f, dampingRatio = 0.80f)
-                                                    )
+                                                    ) else cardOffset.snapTo(0f)
                                                 }
                                             }
                                         },
