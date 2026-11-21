@@ -15,6 +15,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.snap
@@ -46,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -120,6 +122,11 @@ fun BrowserScreen(
         },
         animationSpec = if (state.animationsEnabled) spring(stiffness = 380f, dampingRatio = 1f) else snap(),
         label = "arc-shared-page-offset"
+    )
+    val chromeDockOffset by animateFloatAsState(
+        targetValue = if (state.chromeVisible) 0f else 85f * coordinateScale,
+        animationSpec = if (state.animationsEnabled) tween(220, easing = FastOutSlowInEasing) else snap(),
+        label = "arc-dock-collapse-offset"
     )
     val pageFoldRotation by animateFloatAsState(
         targetValue = if (state.summaryVisible) -55f else -55f * pinchProgress,
@@ -513,6 +520,7 @@ fun BrowserScreen(
                     },
                     modifier = Modifier.align(Alignment.BottomEnd)
                         .padding(end = (17f * coordinateScale).dp, bottom = (90f * coordinateScale).dp)
+                        .graphicsLayer { translationY = with(density) { chromeDockOffset.dp.toPx() } }
                 )
             }
 
