@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
@@ -91,13 +92,19 @@ fun TabStackSheet(
     val gestureScope = rememberCoroutineScope()
 
     BackHandler(enabled = visible, onBack = onDismiss)
+    LaunchedEffect(showUndo) {
+        if (showUndo) {
+            delay(4500L)
+            showUndo = false
+        }
+    }
     AnimatedVisibility(
         visible = visible,
         enter = if (motion) fadeIn() + scaleIn(
             initialScale = 0.6364f,
-            animationSpec = spring(stiffness = 350f, dampingRatio = 1f)
+            animationSpec = spring(stiffness = 350f, dampingRatio = 0.80f)
         ) else EnterTransition.None,
-        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.98f) else ExitTransition.None
+        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.6364f, animationSpec = spring(stiffness = 350f, dampingRatio = 0.80f)) else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
@@ -175,9 +182,16 @@ fun TabStackSheet(
                                         },
                                         onDragEnd = {
                                             when {
-                                                cardOffset.value < -120f -> {
-                                                    showUndo = true
-                                                    onClose(tab)
+                                                cardOffset.value < -140f -> {
+                                                    gestureScope.launch {
+                                                        val flingTarget = with(density) { (-600).dp.toPx() }
+                                                        if (motion) cardOffset.animateTo(
+                                                            flingTarget,
+                                                            spring(stiffness = 350f, dampingRatio = 0.80f)
+                                                        ) else cardOffset.snapTo(flingTarget)
+                                                        showUndo = true
+                                                        onClose(tab)
+                                                    }
                                                 }
                                                 cardOffset.value > 120f && showUndo -> {
                                                     showUndo = false
@@ -186,7 +200,7 @@ fun TabStackSheet(
                                                 else -> gestureScope.launch {
                                                     cardOffset.animateTo(
                                                         0f,
-                                                        spring(stiffness = 350f, dampingRatio = 0.82f)
+                                                        spring(stiffness = 350f, dampingRatio = 0.80f)
                                                     )
                                                 }
                                             }
@@ -201,11 +215,11 @@ fun TabStackSheet(
                                         }
                                     )
                                 },
-                            shape = RoundedCornerShape(13.dp),
+                            shape = RoundedCornerShape(15.dp),
                             color = Color(0xFF202126),
                             border = BorderStroke(1.dp, CardStroke)
                         ) {
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp))) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))) {
                                 if (preview != null && !preview.isRecycled) {
                                     Image(
                                         bitmap = preview.asImageBitmap(),
