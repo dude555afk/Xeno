@@ -198,7 +198,7 @@ fun BrowserScreen(
                                     val span = pointers.map {
                                         kotlin.math.hypot(it.position.x - centerX, it.position.y - centerY)
                                     }.average().toFloat()
-                                    if (previousSpan > 0f && span < previousSpan) {
+                                    if (previousSpan > 0f) {
                                         gestureScale = (gestureScale * (span / previousSpan)).coerceIn(0.5f, 1f)
                                         pinchScale = gestureScale
                                     }
