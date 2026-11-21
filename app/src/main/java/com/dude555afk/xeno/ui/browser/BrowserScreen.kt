@@ -17,10 +17,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +34,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -79,6 +82,7 @@ fun BrowserScreen(
     var voiceVisible by remember { mutableStateOf(false) }
     var voiceHoldReleased by remember { mutableStateOf(false) }
     var answerWebMode by remember { mutableStateOf(false) }
+    var pinchScale by remember(state.activeTab?.id) { mutableFloatStateOf(1f) }
     val context = LocalContext.current
     val density = LocalDensity.current
     val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
@@ -97,13 +101,15 @@ fun BrowserScreen(
         }
     }
     val compactPage = state.paletteVisible || state.tabStackVisible
+    val pinchProgress = ((1f - pinchScale) / 0.35f).coerceIn(0f, 1f)
     val pageScale by animateFloatAsState(
         targetValue = when {
             compactPage -> 0.6364f
             state.summaryVisible -> 0.62f
+            pinchScale < 1f -> 1f - (0.38f * pinchProgress)
             else -> 1f
         },
-        animationSpec = spring(stiffness = 380f, dampingRatio = 1f),
+        animationSpec = if (state.animationsEnabled) spring(stiffness = 380f, dampingRatio = 1f) else snap(),
         label = "arc-shared-page-scale"
     )
     val pageOffsetY by animateFloatAsState(
@@ -112,12 +118,12 @@ fun BrowserScreen(
             state.summaryVisible -> -132f
             else -> 0f
         },
-        animationSpec = spring(stiffness = 380f, dampingRatio = 1f),
+        animationSpec = if (state.animationsEnabled) spring(stiffness = 380f, dampingRatio = 1f) else snap(),
         label = "arc-shared-page-offset"
     )
     val pageFoldRotation by animateFloatAsState(
-        targetValue = if (state.summaryVisible) -55f else 0f,
-        animationSpec = spring(stiffness = 320f, dampingRatio = 0.9f),
+        targetValue = if (state.summaryVisible) -55f else -55f * pinchProgress,
+        animationSpec = if (state.animationsEnabled) spring(stiffness = 320f, dampingRatio = 0.9f) else snap(),
         label = "arc-page-fold"
     )
     LaunchedEffect(state.answer) {
@@ -169,15 +175,24 @@ fun BrowserScreen(
     CompositionLocalProvider(LocalArcMotionEnabled provides state.animationsEnabled) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // The live WebView stays mounted; Compose only transforms its surface.
-            if (state.summaryVisible) PixelArcAmbientBackground()
+            if (state.summaryVisible || pinchScale < 1f) PixelArcAmbientBackground()
             AndroidView(
-                modifier = Modifier.fillMaxSize().graphicsLayer {
+                modifier = Modifier.fillMaxSize()
+                    .pointerInput(state.activeTab?.id, state.summaryVisible) {
+                        detectTransformGestures { _, _, zoom, _ ->
+                            if (zoom < 1f) pinchScale = (pinchScale * zoom).coerceIn(0.5f, 1f)
+                        }
+                        val shouldSummarize = pinchScale <= 0.65f && !state.summaryVisible
+                        pinchScale = 1f
+                        if (shouldSummarize) viewModel.summarizeCurrentPage()
+                    }
+                    .graphicsLayer {
                     scaleX = pageScale
                     scaleY = pageScale
                     translationY = with(density) { pageOffsetY.dp.toPx() }
                     translationX = tabSwipeOffset.value
                     rotationX = pageFoldRotation
-                    cameraDistance = 900f * density.density
+                    cameraDistance = if (state.summaryVisible || pinchScale < 1f) 12f * density.density else 900f * density.density
                     transformOrigin = if (state.summaryVisible) {
                         TransformOrigin(0.5f, 0.08f)
                     } else {
@@ -185,12 +200,12 @@ fun BrowserScreen(
                     }
                     shape = RoundedCornerShape(
                         when {
-                            state.summaryVisible -> 20.dp
+                            state.summaryVisible || pinchScale < 1f -> 20.dp
                             compactPage -> 15.dp
                             else -> 0.dp
                         }
                     )
-                    clip = compactPage || state.summaryVisible
+                    clip = compactPage || state.summaryVisible || pinchScale < 1f
                 },
                 factory = { ctx ->
                     val container = android.widget.FrameLayout(ctx).apply {
