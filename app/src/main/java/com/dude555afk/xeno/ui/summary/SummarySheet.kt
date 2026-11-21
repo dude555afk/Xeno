@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ fun SummarySheet(
     onDismiss: () -> Unit
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
+    val density = LocalDensity.current
     val parsed = remember(streamText) { AnswerText.parse(streamText) }
     var introFinished by remember(visible, pageTitle) { mutableStateOf(false) }
     val pulseTransition = rememberInfiniteTransition(label = "summary-intro-pulse")
@@ -270,7 +272,7 @@ fun SummarySheet(
                                         }
                                         AnimatedVisibility(
                                             visible = blockVisible,
-                                            enter = if (motionEnabled) fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 16 }) else EnterTransition.None
+                                            enter = if (motionEnabled) fadeIn(tween(220)) + slideInVertically(initialOffsetY = { with(density) { 16.dp.roundToPx() } }) else EnterTransition.None
                                         ) {
                                             val text: AnnotatedString = when (block) {
                                                 is AnswerText.Parsed.Block.Heading ->
