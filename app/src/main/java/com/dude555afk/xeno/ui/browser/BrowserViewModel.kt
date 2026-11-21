@@ -11,6 +11,8 @@ import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
+import androidx.webkit.WebViewFeature
+import androidx.webkit.WebSettingsCompat
 import androidx.lifecycle.viewModelScope
 import com.dude555afk.xeno.core.ai.AiClient
 import com.dude555afk.xeno.core.blocking.FilterListEngine
@@ -305,15 +307,22 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(allowGoogleTranslate = value) }
     }
 
+    private fun applyForceDark(web: android.webkit.WebSettings, enabled: Boolean) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(web, enabled)
+            }
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            web.forceDark = if (enabled) android.webkit.WebSettings.FORCE_DARK_ON
+            else android.webkit.WebSettings.FORCE_DARK_OFF
+        }
+    }
+
     fun setForceDark(value: Boolean) {
         settings.forceDark = value
         _state.update { it.copy(forceDark = value) }
-        pool.peek(SESSION_KEY)?.settings?.let { web ->
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                web.forceDark = if (value) android.webkit.WebSettings.FORCE_DARK_ON
-                else android.webkit.WebSettings.FORCE_DARK_OFF
-            }
-        }
+        pool.peek(SESSION_KEY)?.settings?.let { web -> applyForceDark(web, value) }
     }
 
     fun setAppIcon(value: String) {
@@ -1039,12 +1048,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             cosmeticSelectors = { filters.cosmeticFor(view.url ?: "") }
         )
 
-        view.settings.apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                forceDark = if (settings.forceDark) android.webkit.WebSettings.FORCE_DARK_ON
-                else android.webkit.WebSettings.FORCE_DARK_OFF
-            }
-        }
+        applyForceDark(view.settings, settings.forceDark)
         val activeUrl = _state.value.activeTab?.url
         if (!activeUrl.isNullOrBlank() && view.url != activeUrl) {
             view.loadUrl(activeUrl)
@@ -1102,6 +1106,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
         // the last web session parked underneath so returning to it is instant.
         if (tab.type == "ai") return
         val view = pool.peek(SESSION_KEY) ?: return
+        applyForceDark(view.settings, settings.forceDark)
         view.settings.apply {
             useWideViewPort = tab.desktopSite
             loadWithOverviewMode = tab.desktopSite
@@ -1111,10 +1116,7 @@ class BrowserViewModel(app: Application) : AndroidViewModel(app) {
             } else {
                 android.webkit.WebSettings.getDefaultUserAgent(getApplication())
             }
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                forceDark = if (settings.forceDark) android.webkit.WebSettings.FORCE_DARK_ON
-                else android.webkit.WebSettings.FORCE_DARK_OFF
-            }
+            // Apply outside the settings receiver below to use WebSettingsCompat.
         }
 
         when {
