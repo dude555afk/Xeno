@@ -23,6 +23,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +46,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -243,6 +247,54 @@ fun BrowserScreen(
                     container
                 }
             )
+
+            if (state.summaryVisible || pinchScale < 1f) {
+                val pleatProgress = if (state.summaryVisible) 1f else pinchProgress
+                Canvas(
+                    Modifier.fillMaxSize().graphicsLayer {
+                        scaleX = pageScale
+                        scaleY = pageScale
+                        translationY = with(density) { pageOffsetY.dp.toPx() }
+                        translationX = tabSwipeOffset.value
+                        rotationX = pageFoldRotation
+                        cameraDistance = 12f * density.density
+                        transformOrigin = TransformOrigin(0.5f, 0.08f)
+                        shape = RoundedCornerShape(20.dp)
+                        clip = true
+                    }
+                ) {
+                    val pleatHeight = 20.dp.toPx()
+                    repeat(2) { index ->
+                        val top = size.height * (0.10f + index * 0.12f)
+                        val skew = pleatHeight * (0.42f + index * 0.08f)
+                        val pleat = Path().apply {
+                            moveTo(0f, top)
+                            cubicTo(size.width * 0.28f, top + skew, size.width * 0.72f, top + skew, size.width, top)
+                            lineTo(size.width, top + pleatHeight)
+                            cubicTo(size.width * 0.72f, top + pleatHeight - skew, size.width * 0.28f, top + pleatHeight - skew, 0f, top + pleatHeight)
+                            close()
+                        }
+                        drawPath(
+                            path = pleat,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.10f * pleatProgress),
+                                    Color(0xFF17131F).copy(alpha = 0.20f * pleatProgress),
+                                    Color.White.copy(alpha = 0.025f * pleatProgress)
+                                ),
+                                startY = top,
+                                endY = top + pleatHeight
+                            )
+                        )
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.16f * pleatProgress),
+                            start = Offset(0f, top),
+                            end = Offset(size.width, top),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                }
+            }
 
             if (showingAiAnswer) {
                 // AnswerSheet owns its dock; do not draw the empty-home or
