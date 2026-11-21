@@ -196,7 +196,16 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                                 settle.animateTo(
                                     targetValue = uprightTarget,
                                     animationSpec = spring(stiffness = 220f, dampingRatio = 0.74f)
-                                ) { rotation = value }
+                                ) {
+                                    rotation = value
+                                    val currentStep = (value / 45f).toInt()
+                                    if (currentStep != flingHapticStep) {
+                                        repeat(abs(currentStep - flingHapticStep)) {
+                                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        }
+                                        flingHapticStep = currentStep
+                                    }
+                                }
                                 rotation = uprightTarget
                             }
                         }
