@@ -16,6 +16,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
@@ -264,38 +265,44 @@ fun PixelBottomDock(
     onSwipeTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.5f, 1.5f)
     val dockSurface = if (homeMode) Color.Transparent else Color(0xFF2D2E32)
+    var dragProgress by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var scrubDirection by androidx.compose.runtime.remember { mutableIntStateOf(1) }
     val leftCardTilt by animateFloatAsState(
-        targetValue = if (scrubDirection > 0) -15f else 12f,
-        animationSpec = spring(stiffness = 420f, dampingRatio = 0.78f),
+        targetValue = if (dragProgress >= 0f) -15f + 27f * abs(dragProgress) else 12f - 27f * abs(dragProgress),
+        animationSpec = if (motionEnabled) spring(stiffness = 360f, dampingRatio = 0.90f) else snap(),
         label = "tab-mini-card-left-tilt"
     )
     val rightCardTilt by animateFloatAsState(
-        targetValue = if (scrubDirection > 0) 12f else -15f,
-        animationSpec = spring(stiffness = 420f, dampingRatio = 0.78f),
+        targetValue = if (dragProgress >= 0f) 12f - 27f * abs(dragProgress) else -15f + 27f * abs(dragProgress),
+        animationSpec = if (motionEnabled) spring(stiffness = 360f, dampingRatio = 0.90f) else snap(),
         label = "tab-mini-card-right-tilt"
     )
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(76.dp)
+            .height((85f * coordinateScale).dp)
             .background(dockSurface)
             .pointerInput(onSwipeTab) {
                 var accumulated = 0f
                 detectHorizontalDragGestures(
                     onHorizontalDrag = { change, amount ->
                         accumulated += amount
+                        dragProgress = (accumulated / 72f).coerceIn(-1f, 1f)
+                        if (abs(accumulated) > 4f) scrubDirection = if (accumulated < 0f) 1 else -1
                         change.consume()
                         if (abs(accumulated) >= 72f) {
                             val direction = if (accumulated < 0f) 1 else -1
                             scrubDirection = direction
                             onSwipeTab(direction)
                             accumulated = 0f
+                            dragProgress = 0f
                         }
                     },
-                    onDragEnd = { accumulated = 0f },
-                    onDragCancel = { accumulated = 0f }
+                    onDragEnd = { accumulated = 0f; dragProgress = 0f },
+                    onDragCancel = { accumulated = 0f; dragProgress = 0f }
                 )
             }
     ) {
@@ -429,19 +436,17 @@ fun ArcAiWebTogglePill(
         androidx.compose.runtime.mutableStateOf(webMode)
     }
     val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
+    val motionEnabled = LocalArcMotionEnabled.current
     val indicatorOffset by animateDpAsState(
         targetValue = if (selectedWeb) (48f * coordinateScale).dp else 0.dp,
-        animationSpec = spring(stiffness = 420f, dampingRatio = 0.683f),
+        animationSpec = if (motionEnabled) spring(stiffness = 420f, dampingRatio = 0.683f) else snap(),
         label = "arc-ai-web-indicator"
     )
     val scope = rememberCoroutineScope()
     Surface(
         onClick = {
             selectedWeb = !selectedWeb
-            scope.launch {
-                delay(260)
-                onToggle()
-            }
+            if (motionEnabled) scope.launch { delay(260); onToggle() } else onToggle()
         },
         modifier = modifier.width((107f * coordinateScale).dp).height((59f * coordinateScale).dp),
         shape = CircleShape,
