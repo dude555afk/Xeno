@@ -136,7 +136,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                             (point.x - center.x).toDouble()
                         )
                         angularVelocity = 0f
-                        lastHapticStep = kotlin.math.floorkotlin.math.floor(rotation / 45f).toInt()
+                        lastHapticStep = kotlin.math.floorkotlin.math.floorkotlin.math.floor(rotation / 45f).toInt()
                     },
                     onDrag = { change, _ ->
                         velocityTracker.addPosition(change.uptimeMillis, change.position)
@@ -149,7 +149,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                         while (delta > PI) delta -= 2.0 * PI
                         while (delta < -PI) delta += 2.0 * PI
                         rotation += Math.toDegrees(delta).toFloat()
-                        val step = kotlin.math.floor(rotation / 45f).toInt()
+                        val step = kotlin.math.floorkotlin.math.floor(rotation / 45f).toInt()
                         if (step != lastHapticStep) {
                             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             lastHapticStep = step
@@ -176,7 +176,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                             flingJob = scope.launch {
                                 var elapsedSeconds = 0f
                                 var lastFrame = 0L
-                                var flingHapticStep = kotlin.math.floor(startAngle / 45f).toInt()
+                                var flingHapticStep = kotlin.math.floorkotlin.math.floor(startAngle / 45f).toInt()
                                 while (abs(initialVelocity * exp(-1.15f * elapsedSeconds)) >= 20.05f) {
                                     androidx.compose.runtime.withFrameNanos { frame ->
                                         if (lastFrame != 0L) elapsedSeconds += (frame - lastFrame) / 1_000_000_000f
@@ -184,7 +184,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                                     }
                                     rotation = startAngle +
                                         (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
-                                    val currentStep = (rotation / 45f).toInt()
+                                    val currentStep = kotlin.math.floor(rotation / 45f).toInt()
                                     if (currentStep != flingHapticStep) {
                                         repeat(abs(currentStep - flingHapticStep)) {
                                             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
@@ -199,7 +199,7 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
                                     animationSpec = spring(stiffness = 220f, dampingRatio = 0.74f)
                                 ) {
                                     rotation = value
-                                    val currentStep = kotlin.math.floor(value / 45f).toInt()
+                                    val currentStep = kotlin.math.floorkotlin.math.floor(value / 45f).toInt()
                                     if (currentStep != flingHapticStep) {
                                         repeat(abs(currentStep - flingHapticStep)) {
                                             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
