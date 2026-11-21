@@ -111,7 +111,7 @@ fun BrowserScreen(
             pinchScale < 1f -> 1f - (0.38f * pinchProgress)
             else -> 1f
         },
-        animationSpec = if (state.animationsEnabled) spring(stiffness = 380f, dampingRatio = 1f) else snap(),
+        animationSpec = if (state.animationsEnabled) spring(stiffness = 350f, dampingRatio = 0.80f) else snap(),
         label = "arc-shared-page-scale"
     )
     val pageOffsetY by animateFloatAsState(
