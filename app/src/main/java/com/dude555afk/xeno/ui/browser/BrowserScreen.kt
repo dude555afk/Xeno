@@ -60,7 +60,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.dude555afk.xeno.ui.answersheet.AnswerSheet
 import com.dude555afk.xeno.ui.arc.ArcFindInPageBar
 import com.dude555afk.xeno.ui.arc.ArchiveSheet
-import com.dude555afk.xeno.ui.arc.ArcPageAddress
 import com.dude555afk.xeno.ui.arc.ArcAiWebTogglePill
 import com.dude555afk.xeno.ui.arc.ArcSettingsScreen
 import com.dude555afk.xeno.ui.arc.ArcSiteActionsSheet
@@ -324,21 +323,6 @@ fun BrowserScreen(
                         trackColor = Color.Transparent
                     )
                 }
-
-                ArcPageAddress(
-                    url = displayUrl,
-                    title = state.load.title.ifBlank { state.activeTab?.title.orEmpty() },
-                    displayLabel = addressLabel,
-                    onClick = viewModel::openPalette,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                        .graphicsLayer {
-                            scaleX = pageScale
-                            scaleY = pageScale
-                            translationY = with(density) { pageOffsetY.dp.toPx() }
-                            transformOrigin = TransformOrigin(0.5f, 0.5f)
-                        }
-                        .padding(top = 54.dp)
-                )
 
                 AnimatedVisibility(
                     visible = state.chromeVisible,
