@@ -200,7 +200,7 @@ class SearchEngine(private val context: Context) {
                 try {
                   var parsed = new URL(href);
                   var redirect = parsed.searchParams.get('uddg');
-                  if (redirect) href = decodeURIComponent(redirect);
+                  if (redirect) href = redirect;
                 } catch (e) {}
                 out.push({u: href, t: (a.innerText||'').trim().slice(0,120), s: snips[i] ? (snips[i].innerText||'').trim().slice(0,220) : ''});
               }
