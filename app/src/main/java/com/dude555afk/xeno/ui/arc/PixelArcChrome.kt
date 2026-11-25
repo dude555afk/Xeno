@@ -285,6 +285,7 @@ fun PixelBottomDock(
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
     val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.5f, 1.5f)
+    val scrubThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { (72f * coordinateScale).dp.toPx() }
     val dockSurface = if (homeMode) Color.Transparent else Color(0xFF2D2E32)
     var dragProgress by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var scrubDirection by androidx.compose.runtime.remember { mutableIntStateOf(1) }
@@ -308,10 +309,10 @@ fun PixelBottomDock(
                 detectHorizontalDragGestures(
                     onHorizontalDrag = { change, amount ->
                         accumulated += amount
-                        dragProgress = (accumulated / 72f).coerceIn(-1f, 1f)
+                        dragProgress = (accumulated / scrubThresholdPx).coerceIn(-1f, 1f)
                         if (abs(accumulated) > 4f) scrubDirection = if (accumulated < 0f) 1 else -1
                         change.consume()
-                        if (abs(accumulated) >= 72f) {
+                        if (abs(accumulated) >= scrubThresholdPx) {
                             val direction = if (accumulated < 0f) 1 else -1
                             scrubDirection = direction
                             onSwipeTab(direction)
