@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ fun SummarySheet(
     onDismiss: () -> Unit
 ) {
     val motionEnabled = LocalArcMotionEnabled.current
+    val density = LocalDensity.current
     val parsed = remember(streamText) { AnswerText.parse(streamText) }
     var introFinished by remember(visible, pageTitle) { mutableStateOf(false) }
     val pulseTransition = rememberInfiniteTransition(label = "summary-intro-pulse")
@@ -92,7 +94,7 @@ fun SummarySheet(
     LaunchedEffect(visible, pageTitle) {
         introFinished = false
         if (visible) {
-            delay(1500)
+            if (motionEnabled) delay(1500)
             introFinished = true
         }
     }
@@ -249,28 +251,34 @@ fun SummarySheet(
                             Spacer(Modifier.height(Dimens.spaceM))
                         }
 
-                        if (!introFinished || streamText.isBlank()) {
+                        if ((error == null || streamText.isNotBlank()) && (!introFinished || streamText.isBlank())) {
                             Column(horizontalAlignment = Alignment.Start) {
                                 Text(
                                     "Summarizing for you…",
-                                    color = accent.copy(alpha = introPulse),
+                                    color = accent.copy(alpha = if (motionEnabled) introPulse else 1f),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Spacer(Modifier.height(Dimens.spaceM))
                                 SummarySkeleton(motionEnabled)
                             }
-                        } else {
+                        } else if (streamText.isNotBlank()) {
                             SelectionContainer {
                                 Column {
                                     parsed.blocks.forEachIndexed { index, block ->
-                                        var blockVisible by remember(block, visible) { mutableStateOf(false) }
-                                        LaunchedEffect(block, visible) {
-                                            delay(index * 65L)
+                                        val blockType = when (block) {
+                                            is AnswerText.Parsed.Block.Heading -> "heading"
+                                            is AnswerText.Parsed.Block.Paragraph -> "paragraph"
+                                            is AnswerText.Parsed.Block.Bullet -> "bullet"
+                                        }
+                                        val blockKey = "$index:$blockType"
+                                        var blockVisible by remember(blockKey, visible) { mutableStateOf(false) }
+                                        LaunchedEffect(blockKey, visible) {
+                                            if (motionEnabled) delay(index * 50L)
                                             blockVisible = true
                                         }
                                         AnimatedVisibility(
                                             visible = blockVisible,
-                                            enter = fadeIn(tween(220)) + slideInVertically(initialOffsetY = { 16 })
+                                            enter = if (motionEnabled) fadeIn(tween(220)) + slideInVertically(initialOffsetY = { with(density) { 16.dp.roundToPx() } }) else EnterTransition.None
                                         ) {
                                             val text: AnnotatedString = when (block) {
                                                 is AnswerText.Parsed.Block.Heading ->

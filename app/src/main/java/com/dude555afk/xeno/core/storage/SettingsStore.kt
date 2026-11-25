@@ -33,8 +33,40 @@ class SettingsStore(context: Context) {
         set(value) = prefs.edit { putString(KEY_MODEL, value) }
 
     var blockingEnabled: Boolean
+        get() = adBlock
+        set(value) { adBlock = value }
+
+    var adBlock: Boolean
         get() = prefs.getBoolean(KEY_BLOCKING, true)
         set(value) = prefs.edit { putBoolean(KEY_BLOCKING, value) }
+
+    var searchEngine: String
+        get() = prefs.getString(KEY_SEARCH_ENGINE, "duckduckgo") ?: "duckduckgo"
+        set(value) = prefs.edit { putString(KEY_SEARCH_ENGINE, value) }
+
+    var languageMode: String
+        get() = prefs.getString(KEY_LANGUAGE_MODE, "infer") ?: "infer"
+        set(value) = prefs.edit { putString(KEY_LANGUAGE_MODE, value) }
+
+    var archiveAfter: String
+        get() = prefs.getString(KEY_ARCHIVE_AFTER, "1d") ?: "1d"
+        set(value) = prefs.edit { putString(KEY_ARCHIVE_AFTER, value) }
+
+    var alwaysOpenAppLinks: Boolean
+        get() = prefs.getBoolean(KEY_ALWAYS_OPEN_APP_LINKS, false)
+        set(value) = prefs.edit { putBoolean(KEY_ALWAYS_OPEN_APP_LINKS, value) }
+
+    var allowGoogleTranslate: Boolean
+        get() = prefs.getBoolean(KEY_ALLOW_GOOGLE_TRANSLATE, true)
+        set(value) = prefs.edit { putBoolean(KEY_ALLOW_GOOGLE_TRANSLATE, value) }
+
+    var forceDark: Boolean
+        get() = prefs.getBoolean(KEY_FORCE_DARK, true)
+        set(value) = prefs.edit { putBoolean(KEY_FORCE_DARK, value) }
+
+    var appIcon: String
+        get() = prefs.getString(KEY_APP_ICON, "default") ?: "default"
+        set(value) = prefs.edit { putString(KEY_APP_ICON, value) }
 
     var autoOpenKeyboard: Boolean
         get() = prefs.getBoolean(KEY_AUTO_OPEN_KEYBOARD, true)
@@ -101,5 +133,12 @@ class SettingsStore(context: Context) {
         const val KEY_ANIMATIONS_ENABLED = "animations_enabled"
         const val KEY_SPACE = "active_space"
         const val KEY_PINNED_URLS = "pinned_urls"
+        const val KEY_SEARCH_ENGINE = "search_engine"
+        const val KEY_LANGUAGE_MODE = "language_mode"
+        const val KEY_ARCHIVE_AFTER = "archive_after"
+        const val KEY_ALWAYS_OPEN_APP_LINKS = "always_open_app_links"
+        const val KEY_ALLOW_GOOGLE_TRANSLATE = "allow_google_translate"
+        const val KEY_FORCE_DARK = "force_dark"
+        const val KEY_APP_ICON = "app_icon"
     }
 }

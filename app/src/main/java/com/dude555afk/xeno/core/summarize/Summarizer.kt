@@ -53,7 +53,8 @@ class Summarizer(private val ai: AiClient) {
     suspend fun summarize(
         content: ExtractedContent,
         config: ProviderConfig,
-        tone: Prompts.Tone
+        tone: Prompts.Tone,
+        languageMode: String = "infer"
     ): SummaryOutcome {
         if (content.text.isBlank() || content.isJunk) return SummaryOutcome.Unreadable
 
@@ -65,9 +66,9 @@ class Summarizer(private val ai: AiClient) {
         if (config.apiKey.isBlank()) return SummaryOutcome.Offline(fallback)
 
         val upstream = if (content.text.length <= SINGLE_SHOT_CHARS) {
-            singleShot(config, content.text, tone)
+            singleShot(config, content.text, tone, languageInstruction(languageMode))
         } else {
-            mapReduce(config, content.text, tone, fallback)
+            mapReduce(config, content.text, tone, fallback, languageInstruction(languageMode))
         }
 
         return SummaryOutcome.Streaming(ensureFallback(upstream, fallback))
@@ -80,12 +81,13 @@ class Summarizer(private val ai: AiClient) {
     private fun singleShot(
         config: ProviderConfig,
         text: String,
-        tone: Prompts.Tone
+        tone: Prompts.Tone,
+        languageInstruction: String
     ): Flow<SummaryDelta> = flow {
         val request = ChatRequest(
             model = config.model,
             messages = listOf(
-                ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM),
+                ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM + " " + languageInstruction),
                 ChatMessage.user(Prompts.summarizePage(text))
             ),
             stream = true,
@@ -112,7 +114,8 @@ class Summarizer(private val ai: AiClient) {
         config: ProviderConfig,
         text: String,
         tone: Prompts.Tone,
-        fallback: String
+        fallback: String,
+        languageInstruction: String
     ): Flow<SummaryDelta> {
         val pieces = chunk(text, CHUNK_CHARS)
         val summaries = ArrayList<String>(pieces.size)
@@ -123,7 +126,7 @@ class Summarizer(private val ai: AiClient) {
                 val request = ChatRequest(
                     model = config.model,
                     messages = listOf(
-                        ChatMessage.system(Prompts.SUMMARIZER_SYSTEM),
+                        ChatMessage.system(Prompts.SUMMARIZER_SYSTEM + " " + languageInstruction),
                         ChatMessage.user(Prompts.chunkPass(piece, index + 1, pieces.size))
                     ),
                     stream = true,
@@ -152,7 +155,7 @@ class Summarizer(private val ai: AiClient) {
             val request = ChatRequest(
                 model = config.model,
                 messages = listOf(
-                    ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM),
+                    ChatMessage.system(tone.system + " " + Prompts.SUMMARIZER_SYSTEM + " " + languageInstruction),
                     ChatMessage.user(Prompts.reducePass(summaries))
                 ),
                 stream = true,
@@ -239,6 +242,13 @@ class Summarizer(private val ai: AiClient) {
         val sb = StringBuilder()
         collect { sb.append(it) }
         return sb.toString().trim()
+    }
+
+    private fun languageInstruction(mode: String): String = when (mode) {
+        "en" -> "Write the summary in English."
+        "hi" -> "Write the summary in Hindi."
+        "bn" -> "Write the summary in Bengali."
+        else -> "Infer the summary language from the page's main language."
     }
 
     private companion object {

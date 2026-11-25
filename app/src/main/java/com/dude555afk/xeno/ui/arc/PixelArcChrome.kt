@@ -5,6 +5,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import android.os.SystemClock
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.core.Animatable
@@ -13,6 +16,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
@@ -29,6 +33,8 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.exp
+import kotlin.math.roundToInt
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -55,6 +61,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -96,35 +103,44 @@ fun PixelArcAmbientBackground(modifier: Modifier = Modifier) {
 
 /** Arc's five-limbed sticker mark, sized to the audit's 183×151 base grid. */
 @Composable
-fun PixelArcMark(modifier: Modifier = Modifier) {
+fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val motionEnabled = LocalArcMotionEnabled.current
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.5f, 1.5f)
     var rotation by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var angularVelocity by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     var flingJob by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Job?>(null) }
 
     Canvas(
         modifier
-            .size(width = 156.dp, height = 128.dp)
+            .size(width = (183f * coordinateScale).dp, height = (151f * coordinateScale).dp)
             .graphicsLayer {
                 rotationZ = rotation
                 transformOrigin = TransformOrigin(0.5f, 0.53f)
             }
-            .pointerInput(Unit) {
+            .then(if (enabled) Modifier.pointerInput(enabled, motionEnabled) {
+                val center = Offset(size.width * 0.5f, size.height * 0.53f)
                 var previousAngle = 0.0
-                var previousTime = 0L
+                var lastTouch = Offset.Zero
+                var velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                var lastHapticStep = 0
                 detectDragGestures(
                     onDragStart = { point ->
                         flingJob?.cancel()
-                        val center = Offset(size.width * 0.5f, size.height * 0.53f)
+                        velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                        velocityTracker.addPosition(android.os.SystemClock.uptimeMillis(), point)
+                        lastTouch = point
                         previousAngle = atan2(
                             (point.y - center.y).toDouble(),
                             (point.x - center.x).toDouble()
                         )
-                        previousTime = SystemClock.uptimeMillis()
                         angularVelocity = 0f
+                        lastHapticStep = kotlin.math.floor(rotation / 45f).toInt()
                     },
                     onDrag = { change, _ ->
-                        val center = Offset(size.width * 0.5f, size.height * 0.53f)
+                        velocityTracker.addPosition(change.uptimeMillis, change.position)
+                        lastTouch = change.position
                         val angle = atan2(
                             (change.position.y - center.y).toDouble(),
                             (change.position.x - center.x).toDouble()
@@ -132,72 +148,103 @@ fun PixelArcMark(modifier: Modifier = Modifier) {
                         var delta = angle - previousAngle
                         while (delta > PI) delta -= 2.0 * PI
                         while (delta < -PI) delta += 2.0 * PI
-                        val now = SystemClock.uptimeMillis()
-                        val elapsed = (now - previousTime).coerceAtLeast(1L)
-                        val degrees = Math.toDegrees(delta).toFloat()
-                        rotation += degrees
-                        angularVelocity = degrees / elapsed.toFloat()
+                        rotation += Math.toDegrees(delta).toFloat()
+                        val step = kotlin.math.floor(rotation / 45f).toInt()
+                        if (step != lastHapticStep) {
+                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            lastHapticStep = step
+                        }
                         previousAngle = angle
-                        previousTime = now
                         change.consume()
                     },
                     onDragEnd = {
-                        val initialVelocity = angularVelocity
-                        flingJob = scope.launch {
-                            var velocity = initialVelocity
-                            var elapsed = 0
-                            while (elapsed < 3800 && abs(velocity) > 0.008f) {
-                                delay(16)
-                                val decay = exp((-0.0012f * 16f).toDouble()).toFloat()
-                                rotation += velocity * (1f - decay) / 0.0012f
-                                velocity *= decay
-                                elapsed += 16
+                        if (!motionEnabled) {
+                            rotation = (rotation / 360f).roundToInt() * 360f
+                            angularVelocity = 0f
+                        } else {
+                            val velocity = velocityTracker.calculateVelocity()
+                            val dx = velocity.x
+                            val dy = velocity.y
+                            val tx = lastTouch.x - center.x
+                            val ty = lastTouch.y - center.y
+                            val radiusSquared = maxOf(1f, tx * tx + ty * ty)
+                            val omega0Radians = ((tx * dy) - (ty * dx)) / radiusSquared
+                            val omega0 = omega0Radians * (180f / kotlin.math.PI.toFloat())
+                            angularVelocity = omega0
+                            val startAngle = rotation
+                            val initialVelocity = omega0
+                            flingJob = scope.launch {
+                                var elapsedSeconds = 0f
+                                var lastFrame = 0L
+                                var flingHapticStep = kotlin.math.floor(startAngle / 45f).toInt()
+                                while (abs(initialVelocity * exp(-1.15f * elapsedSeconds)) >= 20.05f) {
+                                    androidx.compose.runtime.withFrameNanos { frame ->
+                                        if (lastFrame != 0L) elapsedSeconds += (frame - lastFrame) / 1_000_000_000f
+                                        lastFrame = frame
+                                    }
+                                    rotation = startAngle +
+                                        (initialVelocity / 1.15f) * (1f - exp(-1.15f * elapsedSeconds))
+                                    val currentStep = kotlin.math.floor(rotation / 45f).toInt()
+                                    if (currentStep != flingHapticStep) {
+                                        repeat(abs(currentStep - flingHapticStep)) {
+                                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        }
+                                        flingHapticStep = currentStep
+                                    }
+                                }
+                                val uprightTarget = (rotation / 360f).roundToInt() * 360f
+                                val settle = Animatable(rotation)
+                                settle.animateTo(
+                                    targetValue = uprightTarget,
+                                    animationSpec = spring(stiffness = 220f, dampingRatio = 0.74f)
+                                ) {
+                                    rotation = value
+                                    val currentStep = kotlin.math.floor(value / 45f).toInt()
+                                    if (currentStep != flingHapticStep) {
+                                        repeat(abs(currentStep - flingHapticStep)) {
+                                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        }
+                                        flingHapticStep = currentStep
+                                    }
+                                }
+                                rotation = uprightTarget
                             }
-                            val settle = Animatable(rotation)
-                            settle.animateTo(
-                                targetValue = 0f,
-                                animationSpec = spring(
-                                    dampingRatio = 0.48f,
-                                    stiffness = 260f
-                                )
-                            ) { rotation = value }
                         }
                     },
                     onDragCancel = { angularVelocity = 0f }
                 )
-            }
+            } else Modifier)
     ) {
         val path = Path().apply {
+            // Five-point organic Arc mark: peak, two legs and two lateral arms.
             moveTo(89f, 5f)
-            cubicTo(97f, 0f, 106f, 4f, 110f, 13f)
-            lineTo(177f, 128f)
-            cubicTo(184f, 141f, 175f, 151f, 162f, 151f)
-            cubicTo(153f, 151f, 147f, 146f, 142f, 137f)
-            lineTo(93f, 51f)
-            lineTo(43f, 139f)
-            cubicTo(37f, 150f, 27f, 153f, 17f, 147f)
-            cubicTo(7f, 141f, 5f, 131f, 11f, 120f)
+            cubicTo(97f, 0f, 106f, 4f, 111f, 13f)
+            lineTo(135f, 57f)
+            cubicTo(149f, 51f, 163f, 46f, 174f, 48f)
+            cubicTo(184f, 50f, 185f, 61f, 176f, 68f)
+            lineTo(145f, 87f)
+            lineTo(162f, 119f)
+            cubicTo(168f, 130f, 163f, 143f, 152f, 149f)
+            cubicTo(141f, 155f, 132f, 148f, 126f, 137f)
+            lineTo(92f, 77f)
+            lineTo(58f, 138f)
+            cubicTo(52f, 149f, 42f, 153f, 32f, 148f)
+            cubicTo(21f, 143f, 18f, 132f, 24f, 121f)
+            lineTo(41f, 88f)
+            lineTo(9f, 69f)
+            cubicTo(0f, 63f, 2f, 51f, 12f, 48f)
+            cubicTo(23f, 45f, 37f, 51f, 49f, 57f)
             lineTo(77f, 13f)
-            cubicTo(80f, 9f, 84f, 6f, 89f, 5f)
+            cubicTo(80f, 8f, 84f, 6f, 89f, 5f)
             close()
         }
         scale(size.width / 183f, size.height / 151f, pivot = Offset.Zero) {
-            drawPath(
-                path = path,
-                color = Color.White,
-                style = Stroke(width = 15f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-            drawPath(
-                path = path,
-                brush = Brush.verticalGradient(
-                    listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2))
-                )
-            )
+            drawPath(path = path, color = Color.White,
+                style = Stroke(width = 15f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(path = path, brush = Brush.verticalGradient(
+                listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2)), startY = 0f, endY = 151f))
             val cutout = Path().apply {
-                moveTo(82f, 90f)
-                lineTo(101f, 90f)
-                lineTo(91.5f, 108f)
-                close()
+                moveTo(91.5f, 69f); lineTo(82.5f, 86f); lineTo(100.5f, 86f); close()
             }
             drawPath(cutout, Color.White)
         }
@@ -210,12 +257,13 @@ fun PixelArcHomeScreen(
     onOpenSettings: () -> Unit,
     tabCount: Int,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(modifier.fillMaxSize()) {
         PixelArcAmbientBackground()
-        PixelArcMark(Modifier.align(Alignment.Center))
+        PixelArcMark(Modifier.align(Alignment.Center), enabled = tabCount == 0)
         PixelBottomDock(
             tabCount = tabCount,
             homeMode = true,
@@ -223,6 +271,7 @@ fun PixelArcHomeScreen(
             onNewTab = onOpenSearch,
             onOpenControls = onOpenSettings,
             onVoiceStart = onVoiceStart,
+            onVoiceEnd = onVoiceEnd,
             onSwipeTab = onSwipeTab,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
@@ -239,41 +288,49 @@ fun PixelBottomDock(
     onNewTab: () -> Unit,
     onOpenControls: () -> Unit,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val motionEnabled = LocalArcMotionEnabled.current
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.5f, 1.5f)
+    val scrubThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { (72f * coordinateScale).dp.toPx() }
     val dockSurface = if (homeMode) Color.Transparent else Color(0xFF2D2E32)
+    var dragProgress by androidx.compose.runtime.remember { mutableFloatStateOf(0f) }
     var scrubDirection by androidx.compose.runtime.remember { mutableIntStateOf(1) }
     val leftCardTilt by animateFloatAsState(
-        targetValue = if (scrubDirection > 0) -15f else 12f,
-        animationSpec = spring(stiffness = 420f, dampingRatio = 0.78f),
+        targetValue = if (dragProgress >= 0f) -15f + 27f * abs(dragProgress) else 12f - 27f * abs(dragProgress),
+        animationSpec = if (motionEnabled) spring(stiffness = 360f, dampingRatio = 0.90f) else snap(),
         label = "tab-mini-card-left-tilt"
     )
     val rightCardTilt by animateFloatAsState(
-        targetValue = if (scrubDirection > 0) 12f else -15f,
-        animationSpec = spring(stiffness = 420f, dampingRatio = 0.78f),
+        targetValue = if (dragProgress >= 0f) 12f - 27f * abs(dragProgress) else -15f + 27f * abs(dragProgress),
+        animationSpec = if (motionEnabled) spring(stiffness = 360f, dampingRatio = 0.90f) else snap(),
         label = "tab-mini-card-right-tilt"
     )
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(76.dp)
+            .height((85f * coordinateScale).dp)
             .background(dockSurface)
             .pointerInput(onSwipeTab) {
                 var accumulated = 0f
                 detectHorizontalDragGestures(
                     onHorizontalDrag = { change, amount ->
                         accumulated += amount
+                        dragProgress = (accumulated / scrubThresholdPx).coerceIn(-1f, 1f)
+                        if (abs(accumulated) > 4f) scrubDirection = if (accumulated < 0f) 1 else -1
                         change.consume()
-                        if (abs(accumulated) >= 72f) {
+                        if (abs(accumulated) >= scrubThresholdPx) {
                             val direction = if (accumulated < 0f) 1 else -1
                             scrubDirection = direction
                             onSwipeTab(direction)
                             accumulated = 0f
+                            dragProgress = 0f
                         }
                     },
-                    onDragEnd = { accumulated = 0f },
-                    onDragCancel = { accumulated = 0f }
+                    onDragEnd = { accumulated = 0f; dragProgress = 0f },
+                    onDragCancel = { accumulated = 0f; dragProgress = 0f }
                 )
             }
     ) {
@@ -347,15 +404,24 @@ fun PixelBottomDock(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize().combinedClickable(
-                        onClick = onNewTab,
-                        onLongClick = onVoiceStart
-                    ),
+                    modifier = Modifier.fillMaxSize().pointerInput(onNewTab, onVoiceStart) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            val released = withTimeoutOrNull(180L) { waitForUpOrCancellation() }
+                            if (released == null) {
+                                onVoiceStart()
+                                waitForUpOrCancellation()
+                                onVoiceEnd()
+                            } else {
+                                onNewTab()
+                            }
+                        }
+                    },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.Add,
-                        contentDescription = "New search. Long press for voice search",
+                        contentDescription = "New search. Hold for voice search",
                         tint = Color.White,
                         modifier = Modifier.size(23.dp)
                     )
@@ -397,43 +463,39 @@ fun ArcAiWebTogglePill(
     var selectedWeb by androidx.compose.runtime.remember(webMode) {
         androidx.compose.runtime.mutableStateOf(webMode)
     }
+    val coordinateScale = (LocalConfiguration.current.screenWidthDp / 462f).coerceIn(0.75f, 1.1f)
+    val motionEnabled = LocalArcMotionEnabled.current
     val indicatorOffset by animateDpAsState(
-        targetValue = if (selectedWeb) 48.dp else 0.dp,
-        animationSpec = tween(
-            durationMillis = 250,
-            easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)
-        ),
+        targetValue = if (selectedWeb) (48f * coordinateScale).dp else 0.dp,
+        animationSpec = if (motionEnabled) spring(stiffness = 420f, dampingRatio = 0.683f) else snap(),
         label = "arc-ai-web-indicator"
     )
     val scope = rememberCoroutineScope()
     Surface(
         onClick = {
             selectedWeb = !selectedWeb
-            scope.launch {
-                delay(260)
-                onToggle()
-            }
+            if (motionEnabled) scope.launch { delay(260); onToggle() } else onToggle()
         },
-        modifier = modifier.width(107.dp).height(59.dp),
+        modifier = modifier.width((107f * coordinateScale).dp).height((59f * coordinateScale).dp),
         shape = CircleShape,
         color = Color(0xFF3C404E)
     ) {
-        Box(Modifier.fillMaxSize().padding(5.dp)) {
+        Box(Modifier.fillMaxSize().padding((5f * coordinateScale).dp)) {
             Box(
-                Modifier.offset(x = indicatorOffset).size(49.dp)
+                Modifier.offset(x = indicatorOffset).size((49f * coordinateScale).dp)
                     .background(Color(0xFF873EA7), CircleShape)
             )
             Icon(
                 Icons.Rounded.AutoAwesome,
                 contentDescription = "AI mode",
                 tint = if (selectedWeb) Color(0xFF9DA1B2) else Color.White,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp).size(20.dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = (14f * coordinateScale).dp).size((20f * coordinateScale).dp)
             )
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = "Web mode",
                 tint = if (selectedWeb) Color.White else Color(0xFF7E8294),
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp).size(20.dp)
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = (14f * coordinateScale).dp).size((20f * coordinateScale).dp)
             )
         }
     }

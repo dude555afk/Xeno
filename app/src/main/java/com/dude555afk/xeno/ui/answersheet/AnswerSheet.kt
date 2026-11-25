@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dude555afk.xeno.core.model.AnswerResult
@@ -98,9 +99,11 @@ fun AnswerSheet(
     onOpenControls: () -> Unit,
     tabCount: Int,
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
+    val s = LocalConfiguration.current.screenWidthDp / 462f
     val parsed = remember(result?.markdown) { AnswerText.parse(result?.markdown.orEmpty()) }
     val loadingMotion = rememberInfiniteTransition(label = "browse-loading")
     val shimmerPhase by loadingMotion.animateFloat(
@@ -126,14 +129,15 @@ fun AnswerSheet(
         exit = if (motion) fadeOut() else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize().background(AnswerBg)) {
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            Column(Modifier.fillMaxSize()) {
                 if (markdownReady) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(74.dp).padding(start = 18.dp, end = 18.dp, top = 38.dp),
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding()
+                            .padding(horizontal = (21f * s).dp, vertical = (20f * s).dp),
                         verticalAlignment = Alignment.Top
                     ) {
                         Surface(
-                            modifier = Modifier.fillMaxWidth().height(58.dp),
+                            modifier = Modifier.fillMaxWidth().height((68f * s).dp),
                             shape = CircleShape,
                             color = Color(0xFF44454A)
                         ) {
@@ -220,7 +224,7 @@ fun AnswerSheet(
                         item {
                             LazyRow(
                                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp),
-                                horizontalArrangement = Arrangement.spacedBy(13.dp)
+                                horizontalArrangement = Arrangement.spacedBy((15f * s).dp)
                             ) {
                                 if (imageSources.isNotEmpty()) {
                                     items(imageSources, key = { "image-${it.index}" }) { source ->
@@ -229,7 +233,7 @@ fun AnswerSheet(
                                 } else {
                                     items(3) { index ->
                                         Box(
-                                            Modifier.width(160.dp).height(238.dp).clip(RoundedCornerShape(22.dp))
+                                            Modifier.width((160f * s).dp).height((238f * s).dp).clip(RoundedCornerShape(22.dp))
                                                 .background(Brush.linearGradient(listOf(Color(0xFF46464E), Color(0xFF2D3037), Color(0xFF292B31))))
                                         ) {
                                             MediaCardShimmer(shimmerPhase)
@@ -359,6 +363,7 @@ fun AnswerSheet(
                 onNewTab = onNewTab,
                 onOpenControls = onOpenControls,
                 onVoiceStart = onVoiceStart,
+                onVoiceEnd = onVoiceEnd,
                 onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

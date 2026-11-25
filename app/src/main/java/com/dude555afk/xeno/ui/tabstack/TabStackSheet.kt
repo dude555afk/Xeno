@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -37,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
@@ -79,6 +82,7 @@ fun TabStackSheet(
     onOpenSettings: () -> Unit = onDismiss,
     onUndoClose: () -> Unit = {},
     onVoiceStart: () -> Unit = {},
+    onVoiceEnd: () -> Unit = {},
     onSwipeTab: (Int) -> Unit = {}
 ) {
     val motion = LocalArcMotionEnabled.current
@@ -87,16 +91,23 @@ fun TabStackSheet(
     val density = LocalDensity.current
     val activeTab = tabs.getOrNull(activeIndex)
     var showUndo by remember { mutableStateOf(false) }
+    var undoTriggerCount by remember { mutableIntStateOf(0) }
     val gestureScope = rememberCoroutineScope()
 
     BackHandler(enabled = visible, onBack = onDismiss)
+    LaunchedEffect(undoTriggerCount, showUndo) {
+        if (showUndo) {
+            delay(4500L)
+            showUndo = false
+        }
+    }
     AnimatedVisibility(
         visible = visible,
         enter = if (motion) fadeIn() + scaleIn(
             initialScale = 0.6364f,
-            animationSpec = spring(stiffness = 350f, dampingRatio = 1f)
+            animationSpec = spring(stiffness = 350f, dampingRatio = 0.80f)
         ) else EnterTransition.None,
-        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.98f) else ExitTransition.None
+        exit = if (motion) fadeOut() + scaleOut(targetScale = 0.6364f, animationSpec = spring(stiffness = 350f, dampingRatio = 0.80f)) else ExitTransition.None
     ) {
         Box(Modifier.fillMaxSize()) {
             PixelArcAmbientBackground()
@@ -112,7 +123,7 @@ fun TabStackSheet(
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 145.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isAi = activeTab.url.startsWith("xeno://answer", ignoreCase = true)
+                    val isAi = activeTab.type == "ai"
                     Icon(
                         if (isAi) Icons.Rounded.AutoAwesome else Icons.Rounded.Language,
                         contentDescription = null,
@@ -134,13 +145,14 @@ fun TabStackSheet(
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center)
             ) {
-                val cardWidth = minOf(250.dp, maxWidth * 0.64f)
-                val cardHeight = minOf(471.dp, maxHeight * 0.56f)
-                val sideInset = ((maxWidth - cardWidth) / 2).coerceAtLeast(12.dp)
+                val s = maxWidth / 462f
+                val cardWidth = s * 294f
+                val cardHeight = s * 554f
+                val sideInset = s * 84f
                 LaunchedEffect(visible, activeTabId, tabs.size, cardWidth) {
                     if (visible && tabs.isNotEmpty()) {
                         val firstIndex = (activeIndex - 1).coerceAtLeast(0)
-                        val offset = if (activeIndex > 0) with(density) { (cardWidth + 17.dp).roundToPx() } else 0
+                        val offset = if (activeIndex > 0) with(density) { (cardWidth + s * 20f).roundToPx() } else 0
                         runCatching {
                             if (motion) listState.animateScrollToItem(firstIndex, offset)
                             else listState.scrollToItem(firstIndex, offset)
@@ -149,9 +161,10 @@ fun TabStackSheet(
                 }
                 LazyRow(
                     state = listState,
+                    flingBehavior = rememberSnapFlingBehavior(lazyListState = listState),
                     modifier = Modifier.fillMaxWidth().height(cardHeight),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = sideInset),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(17.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(s * 20f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     items(tabs, key = { it.id }) { tab ->
@@ -165,46 +178,65 @@ fun TabStackSheet(
                                     alpha = (1f - abs(cardOffset.value) / 430f).coerceIn(0f, 1f)
                                 }
                                 .pointerInput(tab.id) {
+                                    var velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                                     detectVerticalDragGestures(
+                                        onDragStart = { point ->
+                                            velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                                            velocityTracker.addPosition(android.os.SystemClock.uptimeMillis(), point)
+                                        },
                                         onVerticalDrag = { change, dragAmount ->
+                                            velocityTracker.addPosition(change.uptimeMillis, change.position)
                                             change.consume()
                                             gestureScope.launch {
-                                                cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(-520f, 520f))
+                                                cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(with(density) { (-520).dp.toPx() }, with(density) { 520.dp.toPx() }))
                                             }
                                         },
                                         onDragEnd = {
+                                            val velocityY = velocityTracker.calculateVelocity().y
                                             when {
-                                                cardOffset.value < -120f -> {
-                                                    showUndo = true
-                                                    onClose(tab)
+                                                cardOffset.value < with(density) { (-140).dp.toPx() } || velocityY < with(density) { (-600).dp.toPx() } -> {
+                                                    gestureScope.launch {
+                                                        val flingTarget = with(density) { (-600).dp.toPx() }
+                                                        if (motion) cardOffset.animateTo(
+                                                            flingTarget,
+                                                            spring(stiffness = 350f, dampingRatio = 0.80f)
+                                                        ) else cardOffset.snapTo(flingTarget)
+                                                        showUndo = true
+                                                        undoTriggerCount++
+                                                        onClose(tab)
+                                                    }
                                                 }
-                                                cardOffset.value > 120f && showUndo -> {
+                                                cardOffset.value > with(density) { 120.dp.toPx() } && showUndo -> {
                                                     showUndo = false
                                                     onUndoClose()
+                                                    gestureScope.launch {
+                                                        if (motion) cardOffset.animateTo(0f, spring(stiffness = 350f, dampingRatio = 0.80f))
+                                                        else cardOffset.snapTo(0f)
+                                                    }
                                                 }
                                                 else -> gestureScope.launch {
-                                                    cardOffset.animateTo(
+                                                    if (motion) cardOffset.animateTo(
                                                         0f,
-                                                        spring(stiffness = 350f, dampingRatio = 0.82f)
-                                                    )
+                                                        spring(stiffness = 350f, dampingRatio = 0.80f)
+                                                    ) else cardOffset.snapTo(0f)
                                                 }
                                             }
                                         },
                                         onDragCancel = {
                                             gestureScope.launch {
-                                                cardOffset.animateTo(
+                                                if (motion) cardOffset.animateTo(
                                                     0f,
                                                     spring(stiffness = 350f, dampingRatio = 0.82f)
-                                                )
+                                                ) else cardOffset.snapTo(0f)
                                             }
                                         }
                                     )
                                 },
-                            shape = RoundedCornerShape(13.dp),
+                            shape = RoundedCornerShape(15.dp),
                             color = Color(0xFF202126),
                             border = BorderStroke(1.dp, CardStroke)
                         ) {
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(13.dp))) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(15.dp))) {
                                 if (preview != null && !preview.isRecycled) {
                                     Image(
                                         bitmap = preview.asImageBitmap(),
@@ -267,6 +299,7 @@ fun TabStackSheet(
                 onNewTab = onNewTab,
                 onOpenControls = onOpenSettings,
                 onVoiceStart = onVoiceStart,
+                onVoiceEnd = onVoiceEnd,
                 onSwipeTab = onSwipeTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
