@@ -216,26 +216,35 @@ fun PixelArcMark(modifier: Modifier = Modifier, enabled: Boolean = true) {
             } else Modifier)
     ) {
         val path = Path().apply {
+            // Five-point organic Arc mark: peak, two legs and two lateral arms.
             moveTo(89f, 5f)
-            cubicTo(97f, 0f, 106f, 4f, 110f, 13f)
-            lineTo(177f, 128f)
-            cubicTo(184f, 141f, 175f, 151f, 162f, 151f)
-            cubicTo(153f, 151f, 147f, 146f, 142f, 137f)
-            lineTo(93f, 51f)
-            lineTo(43f, 139f)
-            cubicTo(37f, 150f, 27f, 153f, 17f, 147f)
-            cubicTo(7f, 141f, 5f, 131f, 11f, 120f)
+            cubicTo(97f, 0f, 106f, 4f, 111f, 13f)
+            lineTo(135f, 57f)
+            cubicTo(149f, 51f, 163f, 46f, 174f, 48f)
+            cubicTo(184f, 50f, 185f, 61f, 176f, 68f)
+            lineTo(145f, 87f)
+            lineTo(162f, 119f)
+            cubicTo(168f, 130f, 163f, 143f, 152f, 149f)
+            cubicTo(141f, 155f, 132f, 148f, 126f, 137f)
+            lineTo(92f, 77f)
+            lineTo(58f, 138f)
+            cubicTo(52f, 149f, 42f, 153f, 32f, 148f)
+            cubicTo(21f, 143f, 18f, 132f, 24f, 121f)
+            lineTo(41f, 88f)
+            lineTo(9f, 69f)
+            cubicTo(0f, 63f, 2f, 51f, 12f, 48f)
+            cubicTo(23f, 45f, 37f, 51f, 49f, 57f)
             lineTo(77f, 13f)
-            cubicTo(80f, 9f, 84f, 6f, 89f, 5f)
+            cubicTo(80f, 8f, 84f, 6f, 89f, 5f)
             close()
         }
         scale(size.width / 183f, size.height / 151f, pivot = Offset.Zero) {
             drawPath(path = path, color = Color.White,
                 style = Stroke(width = 15f, cap = StrokeCap.Round, join = StrokeJoin.Round))
             drawPath(path = path, brush = Brush.verticalGradient(
-                listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2))))
+                listOf(Color(0xFFF3ABD9), Color(0xFFF5BBC9), Color(0xFFF8D4B2)), startY = 0f, endY = 151f))
             val cutout = Path().apply {
-                moveTo(82f, 90f); lineTo(101f, 90f); lineTo(91.5f, 108f); close()
+                moveTo(91.5f, 69f); lineTo(82.5f, 86f); lineTo(100.5f, 86f); close()
             }
             drawPath(cutout, Color.White)
         }
