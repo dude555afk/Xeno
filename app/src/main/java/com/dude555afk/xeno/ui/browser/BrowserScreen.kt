@@ -173,16 +173,6 @@ fun BrowserScreen(
     LaunchedEffect(viewModel) { viewModel.showStartupSearchIfConfigured() }
 
     val displayUrl = state.load.url.ifBlank { state.activeTab?.url.orEmpty() }
-    val currentHost = remember(displayUrl) {
-        runCatching { java.net.URI(displayUrl).host?.removePrefix("www.") }.getOrNull().orEmpty()
-    }
-    val isSearchResultsPage = currentHost.contains("duckduckgo.com", true) ||
-        currentHost.contains("google.", true) || currentHost.contains("bing.com", true)
-    val addressLabel = if (isSearchResultsPage) {
-        state.activeTab?.query?.takeIf { it.isNotBlank() } ?: currentHost
-    } else {
-        currentHost.ifBlank { state.load.title.ifBlank { state.activeTab?.title.orEmpty() } }
-    }
     val showingAiAnswer = state.activeTab?.type == "ai" && state.answer != null && !answerWebMode
     val isHome = !showingAiAnswer && (displayUrl.isBlank() || displayUrl == "about:blank")
 
