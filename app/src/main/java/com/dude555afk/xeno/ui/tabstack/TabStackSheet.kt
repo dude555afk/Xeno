@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -144,13 +145,14 @@ fun TabStackSheet(
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center)
             ) {
-                val cardWidth = minOf(250.dp, maxWidth * 0.64f)
-                val cardHeight = minOf(471.dp, maxHeight * 0.56f)
-                val sideInset = ((maxWidth - cardWidth) / 2).coerceAtLeast(12.dp)
+                val s = maxWidth / 462f
+                val cardWidth = s * 294f
+                val cardHeight = s * 554f
+                val sideInset = s * 84f
                 LaunchedEffect(visible, activeTabId, tabs.size, cardWidth) {
                     if (visible && tabs.isNotEmpty()) {
                         val firstIndex = (activeIndex - 1).coerceAtLeast(0)
-                        val offset = if (activeIndex > 0) with(density) { (cardWidth + 17.dp).roundToPx() } else 0
+                        val offset = if (activeIndex > 0) with(density) { (cardWidth + s * 20f).roundToPx() } else 0
                         runCatching {
                             if (motion) listState.animateScrollToItem(firstIndex, offset)
                             else listState.scrollToItem(firstIndex, offset)
@@ -159,9 +161,10 @@ fun TabStackSheet(
                 }
                 LazyRow(
                     state = listState,
+                    flingBehavior = rememberSnapFlingBehavior(lazyListState = listState),
                     modifier = Modifier.fillMaxWidth().height(cardHeight),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = sideInset),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(17.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(s * 20f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     items(tabs, key = { it.id }) { tab ->
