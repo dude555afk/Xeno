@@ -94,7 +94,7 @@ fun SummarySheet(
     LaunchedEffect(visible, pageTitle) {
         introFinished = false
         if (visible) {
-            delay(1500)
+            if (motionEnabled) delay(1500)
             introFinished = true
         }
     }
@@ -251,7 +251,7 @@ fun SummarySheet(
                             Spacer(Modifier.height(Dimens.spaceM))
                         }
 
-                        if (!introFinished || streamText.isBlank()) {
+                        if ((error == null || streamText.isNotBlank()) && (!introFinished || streamText.isBlank())) {
                             Column(horizontalAlignment = Alignment.Start) {
                                 Text(
                                     "Summarizing for you…",
@@ -261,12 +261,18 @@ fun SummarySheet(
                                 Spacer(Modifier.height(Dimens.spaceM))
                                 SummarySkeleton(motionEnabled)
                             }
-                        } else {
+                        } else if (streamText.isNotBlank()) {
                             SelectionContainer {
                                 Column {
                                     parsed.blocks.forEachIndexed { index, block ->
-                                        var blockVisible by remember(block, visible) { mutableStateOf(false) }
-                                        LaunchedEffect(block, visible) {
+                                        val blockType = when (block) {
+                                            is AnswerText.Parsed.Block.Heading -> "heading"
+                                            is AnswerText.Parsed.Block.Paragraph -> "paragraph"
+                                            is AnswerText.Parsed.Block.Bullet -> "bullet"
+                                        }
+                                        val blockKey = "$index:$blockType"
+                                        var blockVisible by remember(blockKey, visible) { mutableStateOf(false) }
+                                        LaunchedEffect(blockKey, visible) {
                                             if (motionEnabled) delay(index * 50L)
                                             blockVisible = true
                                         }
