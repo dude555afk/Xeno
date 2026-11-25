@@ -177,7 +177,7 @@ class SearchEngine(private val context: Context) {
                 try {
                   var parsed = new URL(href);
                   var redirect = parsed.searchParams.get('uddg');
-                  if (redirect) href = decodeURIComponent(redirect);
+                  if (redirect) href = redirect;
                 } catch (e) {}
                 if (href.indexOf('http') !== 0) continue;
                 if (href.indexOf('duckduckgo.com') !== -1) continue;
