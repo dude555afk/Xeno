@@ -18,6 +18,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +47,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -160,7 +160,7 @@ fun CommandPalette(
                             color = SearchPill
                         ) {
                             Row(
-                                modifier = Modifier.height((58f * scale).dp).padding(start = (25f * scale).dp, end = (12f * scale).dp),
+                                modifier = Modifier.height((68f * scale).dp).padding(start = (25f * scale).dp, end = (12f * scale).dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BasicTextField(
@@ -194,7 +194,7 @@ fun CommandPalette(
                                     decorationBox = { inner ->
                                         Box {
                                             if (query.isBlank()) {
-                                                Text("Search...", color = SecondaryText, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                                                Text("Search...", color = SecondaryText, fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = (4f * scale).dp))
                                             }
                                             inner()
                                         }
@@ -217,17 +217,24 @@ fun CommandPalette(
                                     ) {
                                         Icon(Icons.Rounded.Mic, contentDescription = "Voice search", tint = SecondaryText, modifier = Modifier.size(21.dp))
                                     }
-                                    Row(
-                                        modifier = Modifier.padding(start = 2.dp).clickable(onClick = onToggleIncognito),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Canvas(
+                                        modifier = Modifier.padding(start = (2f * scale).dp)
+                                            .size((26f * scale).dp, (24f * scale).dp)
+                                            .clickable(onClick = onToggleIncognito)
                                     ) {
-                                        Text("00", color = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText,
-                                            fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        Icon(
-                                            Icons.Rounded.VisibilityOff,
-                                            contentDescription = if (incognitoMode) "Disable incognito" else "Enable incognito",
-                                            tint = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText,
-                                            modifier = Modifier.padding(start = 2.dp).size(23.dp)
+                                        val eyeTint = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText
+                                        val stroke = 2.2f * scale
+                                        drawOval(
+                                            color = eyeTint,
+                                            topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.08f, size.height * 0.16f),
+                                            size = androidx.compose.ui.geometry.Size(size.width * 0.34f, size.height * 0.66f),
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+                                        )
+                                        drawOval(
+                                            color = eyeTint,
+                                            topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.58f, size.height * 0.16f),
+                                            size = androidx.compose.ui.geometry.Size(size.width * 0.34f, size.height * 0.66f),
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
                                         )
                                     }
                                 } else {
