@@ -89,10 +89,11 @@ fun TabStackSheet(
     val density = LocalDensity.current
     val activeTab = tabs.getOrNull(activeIndex)
     var showUndo by remember { mutableStateOf(false) }
+    var undoTriggerCount by remember { mutableIntStateOf(0) }
     val gestureScope = rememberCoroutineScope()
 
     BackHandler(enabled = visible, onBack = onDismiss)
-    LaunchedEffect(showUndo) {
+    LaunchedEffect(undoTriggerCount, showUndo) {
         if (showUndo) {
             delay(4500L)
             showUndo = false
@@ -183,13 +184,13 @@ fun TabStackSheet(
                                             velocityTracker.addPosition(change.uptimeMillis, change.position)
                                             change.consume()
                                             gestureScope.launch {
-                                                cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(-520f, 520f))
+                                                cardOffset.snapTo((cardOffset.value + dragAmount).coerceIn(with(density) { (-520).dp.toPx() }, with(density) { 520.dp.toPx() }))
                                             }
                                         },
                                         onDragEnd = {
                                             val velocityY = velocityTracker.calculateVelocity().y
                                             when {
-                                                cardOffset.value < -140f || velocityY < -600f -> {
+                                                cardOffset.value < with(density) { (-140).dp.toPx() } || velocityY < with(density) { (-600).dp.toPx() } -> {
                                                     gestureScope.launch {
                                                         val flingTarget = with(density) { (-600).dp.toPx() }
                                                         if (motion) cardOffset.animateTo(
@@ -197,12 +198,17 @@ fun TabStackSheet(
                                                             spring(stiffness = 350f, dampingRatio = 0.80f)
                                                         ) else cardOffset.snapTo(flingTarget)
                                                         showUndo = true
+                                                        undoTriggerCount++
                                                         onClose(tab)
                                                     }
                                                 }
-                                                cardOffset.value > 120f && showUndo -> {
+                                                cardOffset.value > with(density) { 120.dp.toPx() } && showUndo -> {
                                                     showUndo = false
                                                     onUndoClose()
+                                                    gestureScope.launch {
+                                                        if (motion) cardOffset.animateTo(0f, spring(stiffness = 350f, dampingRatio = 0.80f))
+                                                        else cardOffset.snapTo(0f)
+                                                    }
                                                 }
                                                 else -> gestureScope.launch {
                                                     if (motion) cardOffset.animateTo(
@@ -214,10 +220,10 @@ fun TabStackSheet(
                                         },
                                         onDragCancel = {
                                             gestureScope.launch {
-                                                cardOffset.animateTo(
+                                                if (motion) cardOffset.animateTo(
                                                     0f,
                                                     spring(stiffness = 350f, dampingRatio = 0.82f)
-                                                )
+                                                ) else cardOffset.snapTo(0f)
                                             }
                                         }
                                     )
