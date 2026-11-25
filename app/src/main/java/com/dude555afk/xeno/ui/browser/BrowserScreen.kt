@@ -206,12 +206,14 @@ fun BrowserScreen(
                                     val span = pointers.map {
                                         kotlin.math.hypot(it.position.x - centerX, it.position.y - centerY)
                                     }.average().toFloat()
-                                    if (previousSpan > 0f) {
+                                    if (previousSpan > 0f && span < previousSpan) {
                                         gestureScale = (gestureScale * (span / previousSpan)).coerceIn(0.5f, 1f)
                                         pinchScale = gestureScale
+                                        if (gestureScale < 1f) {
+                                            event.changes.forEach { it.consume() }
+                                        }
                                     }
                                     previousSpan = span
-                                    event.changes.forEach { it.consume() }
                                 } else previousSpan = 0f
                             } while (event.changes.any { it.pressed })
                             val shouldSummarize = gestureScale <= 0.65f && !state.summaryVisible
@@ -226,7 +228,7 @@ fun BrowserScreen(
                     translationX = tabSwipeOffset.value
                     rotationX = pageFoldRotation
                     cameraDistance = if (state.summaryVisible || pinchScale < 1f) 12f * density.density else 900f * density.density
-                    transformOrigin = if (state.summaryVisible) {
+                    transformOrigin = if (state.summaryVisible || pinchScale < 1f) {
                         TransformOrigin(0.5f, 0.08f)
                     } else {
                         TransformOrigin(0.5f, 0.5f)
