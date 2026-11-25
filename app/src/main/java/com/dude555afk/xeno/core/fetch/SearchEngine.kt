@@ -135,13 +135,23 @@ class SearchEngine(private val context: Context) {
 
             array.mapNotNull { element ->
                 val obj = element as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
-                val url = obj["u"]?.jsonPrimitive?.contentOrNull().orEmpty()
+                val rawUrl = obj["u"]?.jsonPrimitive?.contentOrNull().orEmpty()
+                val url = normalizeResultUrl(rawUrl)
                 val title = obj["t"]?.jsonPrimitive?.contentOrNull().orEmpty()
                 val snippet = obj["s"]?.jsonPrimitive?.contentOrNull().orEmpty()
                 if (url.isBlank()) null else SearchHit(url, title.ifBlank { url }, snippet)
             }.distinctBy { it.url }.take(limit)
         }.getOrDefault(emptyList())
     }
+
+    private fun normalizeResultUrl(raw: String): String = runCatching {
+        val uri = java.net.URI(raw)
+        val redirect = uri.rawQuery.orEmpty().split('&').firstNotNullOfOrNull { part ->
+            val key = part.substringBefore('=')
+            if (key == "uddg") java.net.URLDecoder.decode(part.substringAfter('=', ""), "UTF-8") else null
+        }
+        redirect?.takeIf { it.startsWith("http://") || it.startsWith("https://") } ?: raw
+    }.getOrDefault(raw)
 
     private fun String.urlEncoded(): String =
         java.net.URLEncoder.encode(this, "UTF-8")
@@ -164,6 +174,12 @@ class SearchEngine(private val context: Context) {
                 if (!a) continue;
                 var href = a.href || '';
                 if (href.indexOf('http') !== 0) continue;
+                try {
+                  var parsed = new URL(href);
+                  var redirect = parsed.searchParams.get('uddg');
+                  if (redirect) href = decodeURIComponent(redirect);
+                } catch (e) {}
+                if (href.indexOf('http') !== 0) continue;
                 if (href.indexOf('duckduckgo.com') !== -1) continue;
                 var s = n.querySelector('.result__snippet, [data-result="snippet"]');
                 out.push({u: href, t: (a.innerText || '').trim().slice(0,120), s: s ? (s.innerText||'').trim().slice(0,220) : ''});
@@ -180,7 +196,13 @@ class SearchEngine(private val context: Context) {
               for (var i = 0; i < links.length && out.length < 12; i++) {
                 var a = links[i];
                 if (!a.href || a.href.indexOf('http') !== 0) continue;
-                out.push({u: a.href, t: (a.innerText||'').trim().slice(0,120), s: snips[i] ? (snips[i].innerText||'').trim().slice(0,220) : ''});
+                var href = a.href;
+                try {
+                  var parsed = new URL(href);
+                  var redirect = parsed.searchParams.get('uddg');
+                  if (redirect) href = decodeURIComponent(redirect);
+                } catch (e) {}
+                out.push({u: href, t: (a.innerText||'').trim().slice(0,120), s: snips[i] ? (snips[i].innerText||'').trim().slice(0,220) : ''});
               }
               return JSON.stringify(out);
             })()
