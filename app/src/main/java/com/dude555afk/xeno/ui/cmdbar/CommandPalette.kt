@@ -223,7 +223,7 @@ fun CommandPalette(
                                             .clickable(onClick = onToggleIncognito)
                                     ) {
                                         val eyeTint = if (incognitoMode) Color(0xFFB8BFFF) else SecondaryText
-                                        val stroke = 2.2f * scale
+                                        val stroke = 2.2f * scale.dp.toPx()
                                         drawOval(
                                             color = eyeTint,
                                             topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.08f, size.height * 0.16f),
