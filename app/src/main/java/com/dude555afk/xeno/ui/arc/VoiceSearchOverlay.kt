@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -357,11 +358,11 @@ fun VoiceSearchOverlay(
                 }
             }
 
-            // The transcript occupies the audited 167px-wide line below the face.
+            // The transcript spans the audited 36..426px region below the face.
             Box(
                 modifier = Modifier
-                    .offset(x = unit * 148f, y = unit * 857f)
-                    .size(width = unit * 167f, height = unit * 33f),
+                    .offset(x = unit * 36f, y = unit * 857f)
+                    .size(width = unit * 390f, height = unit * 48f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -371,8 +372,8 @@ fun VoiceSearchOverlay(
                     lineHeight = (22f * unit.value).sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    softWrap = false
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
