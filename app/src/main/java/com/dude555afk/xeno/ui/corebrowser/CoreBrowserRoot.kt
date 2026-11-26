@@ -26,7 +26,7 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val s = configuration.screenWidthDp / 462f
-    val pool = remember(context.applicationContext) { WebViewPool(context.applicationContext) }
+    val pool = remember(context) { WebViewPool(context) }
     val tabs = remember {
         mutableStateListOf(CoreTab(id = 1L))
     }
@@ -90,6 +90,7 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
         val closed = lastClosed ?: return
         if (tabs.none { it.id == closed.tab.id }) {
             tabs.add(closed.index.coerceIn(0, tabs.size), closed.tab)
+            if (closed.tab.url.isNotBlank()) pool.navigate(closed.tab.id, closed.tab.url)
             activeTabId = closed.tab.id
             screen = CoreScreen.TABS
         }
@@ -140,7 +141,12 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
             snapshot = snapshot,
             s = s,
             onOpenTabs = { screen = CoreScreen.TABS },
-            onNewSearch = { screen = CoreScreen.SEARCH }
+            onNewSearch = { screen = CoreScreen.SEARCH },
+            isPinned = activeTab.pinned,
+            onTogglePin = { pinned ->
+                val index = tabs.indexOfFirst { it.id == activeTabId }
+                if (index >= 0) tabs[index] = tabs[index].copy(pinned = pinned)
+            }
         )
         CoreScreen.SEARCH -> {
             if (activeTab.url.isBlank()) {
@@ -159,7 +165,12 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
                     snapshot = snapshot,
                     s = s,
                     onOpenTabs = { screen = CoreScreen.TABS },
-                    onNewSearch = { screen = CoreScreen.SEARCH }
+                    onNewSearch = { screen = CoreScreen.SEARCH },
+                    isPinned = activeTab.pinned,
+                    onTogglePin = { pinned ->
+                        val index = tabs.indexOfFirst { it.id == activeTabId }
+                        if (index >= 0) tabs[index] = tabs[index].copy(pinned = pinned)
+                    }
                 )
             }
             SearchBottomSheet(
@@ -175,6 +186,7 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
             activeTabId = activeTabId,
             s = s,
             onSelect = { selected ->
+                if (selected.url.isNotBlank() && !pool.contains(selected.id)) pool.navigate(selected.id, selected.url)
                 activeTabId = selected.id
                 screen = if (selected.url.isBlank()) CoreScreen.HOME else CoreScreen.BROWSER
             },
