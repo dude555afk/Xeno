@@ -112,7 +112,7 @@ fun TabSwitcherScreen(
             Spacer(Modifier.height((28f * s).dp))
             HorizontalPager(
                 state = pagerState,
-                key = { page -> tabs[page].id },
+                key = { page -> tabs.getOrNull(page)?.id ?: page },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 pageSize = PageSize.Fixed((294f * s).dp),
                 pageSpacing = (20f * s).dp,
