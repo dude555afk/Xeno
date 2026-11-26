@@ -27,6 +27,7 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
     val configuration = LocalConfiguration.current
     val s = configuration.screenWidthDp / 462f
     val pool = remember(context) { WebViewPool(context) }
+    pool.updateActivityContext(context)
     val tabs = remember {
         mutableStateListOf(CoreTab(id = 1L))
     }
