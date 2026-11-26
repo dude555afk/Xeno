@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: layer1-release-${{ github.ref }}
+  group: xeno-core-browser-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
