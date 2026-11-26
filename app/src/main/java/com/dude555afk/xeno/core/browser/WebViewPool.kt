@@ -2,6 +2,7 @@ package com.dude555afk.xeno.core.browser
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.MutableContextWrapper
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
@@ -22,7 +23,8 @@ import kotlinx.coroutines.flow.update
 data class CoreTab(
     val id: Long,
     val url: String = "",
-    val title: String = "New tab"
+    val title: String = "New tab",
+    val pinned: Boolean = false
 )
 
 data class PageSnapshot(
@@ -32,22 +34,27 @@ data class PageSnapshot(
     val loading: Boolean = false,
     val canGoBack: Boolean = false,
     val canGoForward: Boolean = false,
-    val favicon: Bitmap? = null
+    val favicon: Bitmap? = null,
+    val desktopSite: Boolean = false
 )
 
 /** Owns WebViews independently from Compose chrome and overlay state. */
 @Stable
 class WebViewPool(context: Context) {
-    private val appContext = context.applicationContext
+    private val webContext = MutableContextWrapper(context)
     private val views = LinkedHashMap<Long, WebView>()
     private val zoomLevels = HashMap<Long, Int>()
+    private val desktopSites = HashMap<Long, Boolean>()
     private val _snapshots = MutableStateFlow<Map<Long, PageSnapshot>>(emptyMap())
     val snapshots: StateFlow<Map<Long, PageSnapshot>> = _snapshots.asStateFlow()
 
     @SuppressLint("SetJavaScriptEnabled")
     fun obtain(tabId: Long): WebView {
         views[tabId]?.let { return it }
-        val view = WebView(appContext).apply {
+        webContext.baseContext = contextForCurrentActivity()
+        val view = WebView(webContext).apply {
+            settings.textZoom = zoomLevels[tabId] ?: 100
+            if (desktopSites[tabId] == true) settings.userAgentString = DESKTOP_USER_AGENT
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -101,15 +108,20 @@ class WebViewPool(context: Context) {
         return view
     }
 
+    private fun contextForCurrentActivity(): Context = webContext.baseContext
+
     private fun publish(tabId: Long, view: WebView, transform: PageSnapshot.() -> PageSnapshot) {
         _snapshots.update { current ->
             val old = current[tabId] ?: PageSnapshot()
             current + (tabId to transform(old).copy(
                 canGoBack = view.canGoBack(),
-                canGoForward = view.canGoForward()
+                canGoForward = view.canGoForward(),
+                desktopSite = desktopSites[tabId] == true
             ))
         }
     }
+
+    fun contains(tabId: Long): Boolean = views.containsKey(tabId)
 
     fun navigate(tabId: Long, url: String) {
         obtain(tabId).loadUrl(url)
@@ -120,22 +132,24 @@ class WebViewPool(context: Context) {
     fun reload(tabId: Long) { views[tabId]?.reload() }
     fun find(tabId: Long, query: String) { views[tabId]?.findAllAsync(query) }
     fun clearFind(tabId: Long) { views[tabId]?.clearMatches() }
+    fun findNext(tabId: Long, forward: Boolean) { views[tabId]?.findNext(forward) }
     fun zoomLevel(tabId: Long): Int = zoomLevels[tabId] ?: 100
 
     fun zoom(tabId: Long, percent: Int) {
         val view = views[tabId] ?: return
         val next = percent.coerceIn(50, 200)
-        val previous = zoomLevels[tabId] ?: 100
-        if (next != previous) view.zoomBy(next.toFloat() / previous.toFloat())
+        view.settings.textZoom = next
         zoomLevels[tabId] = next
     }
 
     fun setDesktopSite(tabId: Long, enabled: Boolean) {
+        desktopSites[tabId] = enabled
+        _snapshots.update { current -> current + (tabId to (current[tabId] ?: PageSnapshot()).copy(desktopSite = enabled)) }
         views[tabId]?.let { view ->
             view.settings.userAgentString = if (enabled) {
                 DESKTOP_USER_AGENT
             } else {
-                WebSettings.getDefaultUserAgent(appContext)
+                WebSettings.getDefaultUserAgent(webContext)
             }
             view.settings.useWideViewPort = true
             view.settings.loadWithOverviewMode = true
@@ -156,6 +170,7 @@ class WebViewPool(context: Context) {
             }
         }
         zoomLevels.remove(tabId)
+        desktopSites.remove(tabId)
         _snapshots.update { it - tabId }
     }
 
