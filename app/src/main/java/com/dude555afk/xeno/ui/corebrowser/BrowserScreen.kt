@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -102,6 +103,7 @@ fun BrowserScreen(
                             if (it.isNotBlank()) pool.find(tabId, it) else pool.clearFind(tabId)
                         },
                         modifier = Modifier.weight(1f),
+                        cursorBrush = SolidColor(Color.White),
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         decorationBox = { inner ->
