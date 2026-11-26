@@ -3,6 +3,7 @@ package com.dude555afk.xeno.ui.corebrowser
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,8 +27,8 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val s = configuration.screenWidthDp / 462f
-    val pool = remember(context) { WebViewPool(context) }
-    pool.updateActivityContext(context)
+    val pool = remember { WebViewPool(context) }
+    SideEffect { pool.updateActivityContext(context) }
     val tabs = remember {
         mutableStateListOf(CoreTab(id = 1L))
     }
@@ -55,7 +56,7 @@ fun CoreBrowserRoot(initialUrl: String? = null) {
         }
     }
 
-    DisposableEffect(pool) {
+    DisposableEffect(Unit) {
         onDispose { pool.destroyAll() }
     }
 
