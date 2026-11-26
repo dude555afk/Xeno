@@ -41,6 +41,7 @@ data class PageSnapshot(
 /** Owns WebViews independently from Compose chrome and overlay state. */
 @Stable
 class WebViewPool(context: Context) {
+    private val activityContext = context
     private val webContext = MutableContextWrapper(context)
     private val views = LinkedHashMap<Long, WebView>()
     private val zoomLevels = HashMap<Long, Int>()
@@ -51,7 +52,7 @@ class WebViewPool(context: Context) {
     @SuppressLint("SetJavaScriptEnabled")
     fun obtain(tabId: Long): WebView {
         views[tabId]?.let { return it }
-        webContext.baseContext = contextForCurrentActivity()
+        webContext.baseContext = activityContext
         val view = WebView(webContext).apply {
             settings.textZoom = zoomLevels[tabId] ?: 100
             if (desktopSites[tabId] == true) settings.userAgentString = DESKTOP_USER_AGENT
@@ -107,8 +108,6 @@ class WebViewPool(context: Context) {
         publish(tabId, view) { copy(url = view.url.orEmpty(), title = view.title.orEmpty()) }
         return view
     }
-
-    private fun contextForCurrentActivity(): Context = webContext.baseContext
 
     private fun publish(tabId: Long, view: WebView, transform: PageSnapshot.() -> PageSnapshot) {
         _snapshots.update { current ->
