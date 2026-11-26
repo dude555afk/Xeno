@@ -41,8 +41,8 @@ data class PageSnapshot(
 /** Owns WebViews independently from Compose chrome and overlay state. */
 @Stable
 class WebViewPool(context: Context) {
-    private val activityContext = context
-    private val webContext = MutableContextWrapper(context)
+    private var activityContext = context
+    private val webContexts = HashMap<Long, MutableContextWrapper>()
     private val views = LinkedHashMap<Long, WebView>()
     private val zoomLevels = HashMap<Long, Int>()
     private val desktopSites = HashMap<Long, Boolean>()
@@ -52,8 +52,9 @@ class WebViewPool(context: Context) {
     @SuppressLint("SetJavaScriptEnabled")
     fun obtain(tabId: Long): WebView {
         views[tabId]?.let { return it }
-        webContext.baseContext = activityContext
-        val view = WebView(webContext).apply {
+        val viewContext = MutableContextWrapper(activityContext)
+        webContexts[tabId] = viewContext
+        val view = WebView(viewContext).apply {
             settings.textZoom = zoomLevels[tabId] ?: 100
             if (desktopSites[tabId] == true) settings.userAgentString = DESKTOP_USER_AGENT
             layoutParams = ViewGroup.LayoutParams(
@@ -120,6 +121,11 @@ class WebViewPool(context: Context) {
         }
     }
 
+    fun updateActivityContext(context: Context) {
+        activityContext = context
+        webContexts.values.forEach { it.baseContext = context }
+    }
+
     fun contains(tabId: Long): Boolean = views.containsKey(tabId)
 
     fun navigate(tabId: Long, url: String) {
@@ -148,7 +154,7 @@ class WebViewPool(context: Context) {
             view.settings.userAgentString = if (enabled) {
                 DESKTOP_USER_AGENT
             } else {
-                WebSettings.getDefaultUserAgent(webContext)
+                WebSettings.getDefaultUserAgent(webContexts[tabId] ?: activityContext)
             }
             view.settings.useWideViewPort = true
             view.settings.loadWithOverviewMode = true
@@ -170,6 +176,7 @@ class WebViewPool(context: Context) {
         }
         zoomLevels.remove(tabId)
         desktopSites.remove(tabId)
+        webContexts.remove(tabId)
         _snapshots.update { it - tabId }
     }
 
