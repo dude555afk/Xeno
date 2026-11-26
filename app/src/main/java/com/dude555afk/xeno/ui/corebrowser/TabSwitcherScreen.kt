@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -111,6 +112,7 @@ fun TabSwitcherScreen(
             Spacer(Modifier.height((28f * s).dp))
             HorizontalPager(
                 state = pagerState,
+                key = { page -> tabs[page].id },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 pageSize = PageSize.Fixed((294f * s).dp),
                 pageSpacing = (20f * s).dp,
@@ -149,10 +151,12 @@ private fun TabPreviewCard(
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
-    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val offset = remember(tab.id) { androidx.compose.animation.core.Animatable(0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val closeThresholdPx = with(density) { (120f * s).dp.toPx() }
+    val fadeDistancePx = with(density) { (520f * s).dp.toPx() }
+    val maxSwipePx = with(density) { (700f * s).dp.toPx() }
     val domain = runCatching { android.net.Uri.parse(tab.url).host }
         .getOrNull()?.removePrefix("www.")?.takeIf { it.isNotBlank() } ?: "New tab"
     Surface(
@@ -162,13 +166,13 @@ private fun TabPreviewCard(
             .height((490f * s).dp)
             .graphicsLayer {
                 translationY = offset.value
-                alpha = (1f - abs(offset.value) / (520f * s)).coerceIn(0f, 1f)
+                alpha = (1f - abs(offset.value) / fadeDistancePx).coerceIn(0f, 1f)
             }
             .pointerInput(tab.id) {
                 detectVerticalDragGestures(
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()
-                        scope.launch { offset.snapTo((offset.value + dragAmount).coerceIn(-700f, 700f)) }
+                        scope.launch { offset.snapTo((offset.value + dragAmount).coerceIn(-maxSwipePx, 0f)) }
                     },
                     onDragEnd = {
                         if (offset.value < -closeThresholdPx) {
