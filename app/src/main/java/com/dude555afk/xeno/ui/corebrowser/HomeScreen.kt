@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.background
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -132,9 +133,9 @@ fun CoreBottomDock(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height((85f * s).dp)
-            .navigationBarsPadding()
             .background(if (browserMode) Color(0xFF2D2E32) else Color.Transparent)
+            .navigationBarsPadding()
+            .height((85f * s).dp)
     ) {
         IconButton(
             onClick = onOpenTabs,
