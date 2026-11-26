@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -24,6 +25,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +67,7 @@ fun SearchBottomSheet(
         dragHandle = {}
     ) {
         LaunchedEffect(Unit) {
+            delay(120)
             focusRequester.requestFocus()
             keyboard?.show()
         }
@@ -114,12 +117,14 @@ fun SearchBottomSheet(
                     }
                 }
             )
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { query = "" }) {
-                    Icon(Icons.Rounded.Close, contentDescription = "Clear", tint = Color.White)
+            Box(Modifier.width(48.dp), contentAlignment = Alignment.Center) {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Clear", tint = Color.White)
+                    }
+                } else {
+                    Icon(Icons.Rounded.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.72f))
                 }
-            } else {
-                Icon(Icons.Rounded.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.72f))
             }
         }
     }
@@ -136,7 +141,7 @@ fun resolveSearchTarget(input: String): String {
     val uri = runCatching { Uri.parse(candidate) }.getOrNull()
     val host = uri?.host
     val looksLikeUrl = !text.contains(' ') &&
-        uri?.scheme in listOf("http", "https") &&
+        uri?.scheme?.lowercase() in listOf("http", "https") &&
         !host.isNullOrBlank() &&
         (host.contains('.') || host == "localhost" || host.startsWith("192.168.") || host.startsWith("10."))
     return if (looksLikeUrl) candidate else {
